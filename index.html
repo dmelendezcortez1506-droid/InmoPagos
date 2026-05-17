@@ -576,7 +576,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div class="fg"><label>Renta mensual ($)</label><input type="number" id="fi-ren" placeholder="0.00" step="0.01"></div>
     <div class="fg"><label>Día de pago</label><input type="number" id="fi-dia" placeholder="5" min="1" max="28"></div>
     <div class="fg"><label>Personas habitando</label><input type="number" id="fi-per" placeholder="1" min="1" max="10"></div>
-    <div class="fg"><label>Fecha inicio contrato</label><input type="date" id="fi-fini"></div>
+<div class="fg"><label>Fecha inicio contrato</label><input type="date" id="fi-fini"></div>
     <div class="fg"><label>Fecha término contrato</label><input type="date" id="fi-fter"></div>
     <div class="fg full"><label>Notas</label><textarea id="fi-not" placeholder="Observaciones..."></textarea></div>
   </div>
@@ -732,6 +732,11 @@ async function unirseWS(){
 }
 function entrarWS(id,nombre,code,role){
   CW={id,nombre,invite_code:code,role};
+  // Guardar en localStorage para sobrevivir el refresco de página
+  localStorage.setItem('ib_ws_id',id);
+  localStorage.setItem('ib_ws_nombre',nombre);
+  localStorage.setItem('ib_ws_code',code);
+  localStorage.setItem('ib_ws_role',role);
   document.getElementById('sb-wsn').textContent=nombre;
   document.getElementById('sb-fecha').textContent=new Date().toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short'});
   const un=(CU.user_metadata?.full_name||CU.email.split('@')[0]);
@@ -740,7 +745,14 @@ function entrarWS(id,nombre,code,role){
   document.getElementById('show-code').textContent=code;
   show('s-app');cargarTodo();suscribir();cargarConfig();
 }
-function goWS(){cargarWS()}
+function goWS(){
+  // Limpiar workspace guardado para que pueda elegir otro
+  localStorage.removeItem('ib_ws_id');
+  localStorage.removeItem('ib_ws_nombre');
+  localStorage.removeItem('ib_ws_code');
+  localStorage.removeItem('ib_ws_role');
+  cargarWS();
+}
 function copiarCodigo(){navigator.clipboard?.writeText(CW.invite_code).then(()=>toast('Código copiado','ti-copy'))}
 
 // ═══════════════════════════════════════
@@ -930,97 +942,34 @@ function calcSvcRows(){
 
 function recalcSvc(){recalcAllSvc()}
 function recalcAllSvc(){
-  const total = parseFloat(document.getElementById('sv-total').value) || 0;
-  const iniStr = document.getElementById('sv-ini').value;
-  const finStr = document.getElementById('sv-fin').value;
-  if(!iniStr || !finStr) return;
-
-  // Fechas del período del servicio (factura de agua/luz/gas)
-  const periodoIni = new Date(iniStr + 'T00:00:00');
-  const periodoFin = new Date(finStr + 'T00:00:00');
-
-  let sumPond = 0;
-  const filas = [];
-
-  inmuebles.forEach((inm, idx) => {
-    const aplicaCheck = document.getElementById(`sv-aplica-${idx}`);
-    if(!aplicaCheck) return;
-
-    const finiContratoStr = inm.fecha_inicio_contrato;
-    const fterContratoStr = inm.fecha_termino_contrato;
-
-    // Si el depto no tiene fechas de contrato guardadas → respetar días manuales del usuario
-    if(!finiContratoStr) {
-      const aplica = aplicaCheck.checked;
-      const dias = aplica ? (parseInt(document.getElementById(`sv-dias-${idx}`)?.value) || 0) : 0;
-      const pers = aplica ? (parseInt(document.getElementById(`sv-pers-${idx}`)?.value) || 0) : 0;
-      const pond = dias * pers;
-      sumPond += pond;
-      filas.push({idx, pond, inmId: inm.id});
-      return;
-    }
-
-    const contratoIni = new Date(finiContratoStr + 'T00:00:00');
-    const contratoFin = fterContratoStr ? new Date(fterContratoStr + 'T00:00:00') : null;
-
-    // REGLA 1 (igual que Excel): ¿Corresponde Uso?
-    // El contrato debe haber iniciado ANTES o EN el fin del período
-    // Y no debe haber terminado ANTES del inicio del período
-    const activoDurantePeriodo =
-      contratoIni <= periodoFin &&
-      (!contratoFin || contratoFin >= periodoIni);
-
-    if(!activoDurantePeriodo || !aplicaCheck.checked) {
-      // No corresponde → días = 0, igual que "NO" en el Excel
-      const diasInput = document.getElementById(`sv-dias-${idx}`);
-      if(diasInput) diasInput.value = 0;
-      filas.push({idx, pond: 0, inmId: inm.id});
-      return;
-    }
-
-    // REGLA 2 (igual que Excel): Calcular Días de Uso
-    // Desde: MAX(inicio período, inicio contrato)  → el depto no puede usar antes de entrar
-    // Hasta: MIN(fin período, fecha salida/término) → el depto no paga después de irse
-    const desde = new Date(Math.max(periodoIni.getTime(), contratoIni.getTime()));
-    let hasta = new Date(periodoFin.getTime()); // por defecto: fin del período
-
-    // Si el contrato terminó dentro del período → la fecha de salida es el límite
-    if(contratoFin && contratoFin < periodoFin) {
-      hasta = new Date(contratoFin.getTime());
-    }
-
-    // +1 porque ambos extremos son inclusivos (igual que Excel: FIN - INI + 1)
-    let diasUso = Math.round((hasta - desde) / 86400000) + 1;
-    diasUso = Math.max(0, diasUso);
-
-    // Actualizar campo visible en la tabla para que el usuario vea y pueda corregir
-    const diasInput = document.getElementById(`sv-dias-${idx}`);
-    if(diasInput) diasInput.value = diasUso;
-
-    const pers = parseInt(document.getElementById(`sv-pers-${idx}`)?.value) || (inm.personas || 1);
-    const pond = diasUso * pers; // Ponderación = Días × Personas (fórmula exacta del Excel)
-    sumPond += pond;
-    filas.push({idx, pond, inmId: inm.id});
+  const total=parseFloat(document.getElementById('sv-total').value)||0;
+  let sumPond=0;
+  const rows=inmuebles.map((inm,idx)=>{
+    const aplica=document.getElementById(`sv-aplica-${idx}`)?.checked;
+    const dias=aplica?(parseInt(document.getElementById(`sv-dias-${idx}`)?.value)||0):0;
+    const pers=aplica?(parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||0):0;
+    const pond=dias*pers;
+    sumPond+=pond;
+    return{idx,pond,inmId:inm.id};
   });
-
-  // REGLA 3 (igual que Excel): % = ponderación propia / suma total ponderaciones
-  // $ Pagar = % × total factura
-  filas.forEach(({idx, pond}) => {
-    const pct = sumPond > 0 ? pond / sumPond : 0;
-    const mto = pct * total;
-    const pEl  = document.getElementById(`sv-pond-${idx}`);
-    const pcEl = document.getElementById(`sv-pct-${idx}`);
-    const mEl  = document.getElementById(`sv-mto-${idx}`);
-    if(pEl)  pEl.textContent  = pond;
-    if(pcEl) pcEl.textContent = Math.round(pct * 100) + '%';
-    if(mEl)  mEl.textContent  = fmt(mto);
+  // Administración es el 23% promedio del total en el ejemplo, pero aquí lo calculamos como residuo
+  // Para simplificar: distribuimos 100% entre deptos, luego administración es el sobrante si se define
+  // En el modelo original: los deptos suman menos del 100%, la diferencia es "Subsidio Administración"
+  rows.forEach(({idx,pond})=>{
+    const pct=sumPond>0?pond/sumPond:0;
+    const mto=pct*total;
+    if(document.getElementById(`sv-pond-${idx}`)){
+      document.getElementById(`sv-pond-${idx}`).textContent=pond;
+      document.getElementById(`sv-pct-${idx}`).textContent=Math.round(pct*100)+'%';
+      document.getElementById(`sv-mto-${idx}`).textContent=fmt(mto);
+    }
   });
-
-  document.getElementById('sv-adm-pond').textContent = sumPond;
-  document.getElementById('sv-adm-pct').textContent  = '';
-  document.getElementById('sv-adm-mto').textContent  = '';
-  document.getElementById('sv-tot-pond').textContent = sumPond;
-  document.getElementById('sv-tot-mto').textContent  = fmt(total);
+  // Administración = 0 en este modelo simplificado (todos reciben su parte proporcional)
+  document.getElementById('sv-adm-pond').textContent=sumPond;
+  document.getElementById('sv-adm-pct').textContent='';
+  document.getElementById('sv-adm-mto').textContent='';
+  document.getElementById('sv-tot-pond').textContent=sumPond;
+  document.getElementById('sv-tot-mto').textContent=fmt(total);
 }
 
 document.getElementById('sv-total').addEventListener('input',recalcAllSvc);
@@ -1301,9 +1250,14 @@ async function guardarPago(){
   const inmueble_id=document.getElementById('fp-dep').value,monto=parseFloat(document.getElementById('fp-mto').value)||0,pagado=Math.min(parseFloat(document.getElementById('fp-pag').value)||0,monto),vencimiento=document.getElementById('fp-venc').value;
   if(!inmueble_id||!monto||!vencimiento){toast('Completa los campos requeridos','ti-alert-triangle');return}
   const d={workspace_id:CW.id,inmueble_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null};
-  const {error}=editPagoId?await sb.from('pagos').update(d).eq('id',editPagoId):await sb.from('pagos').insert(d);
+  const {data:savedPago,error}=editPagoId
+    ? await sb.from('pagos').update(d).eq('id',editPagoId).select().single()
+    : await sb.from('pagos').insert(d).select().single();
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  if(editPagoId){const idx=pagos.findIndex(x=>x.id===editPagoId);if(idx!==-1)pagos[idx]=savedPago;}
+  else{pagos.unshift(savedPago);}
   closeM('m-pago');toast(editPagoId?'Pago actualizado':'Pago registrado');
+  refresh();
 }
 async function elimPago(){if(!confirm('¿Eliminar este pago?'))return;await sb.from('pagos').delete().eq('id',editPagoId);closeM('m-pago');toast('Pago eliminado','ti-trash')}
 
@@ -1321,9 +1275,14 @@ async function guardarInm(){
   const num=document.getElementById('fi-num').value.trim(),inq=document.getElementById('fi-inq').value.trim();
   if(!num||!inq){toast('Número e inquilino son obligatorios','ti-alert-triangle');return}
   const d={workspace_id:CW.id,num,piso:document.getElementById('fi-pis').value||null,inquilino:inq,tel:document.getElementById('fi-tel').value||null,email:document.getElementById('fi-em').value||null,renta:parseFloat(document.getElementById('fi-ren').value)||0,dia:parseInt(document.getElementById('fi-dia').value)||1,personas:parseInt(document.getElementById('fi-per').value)||1,fecha_inicio_contrato:document.getElementById('fi-fini').value||null,fecha_termino_contrato:document.getElementById('fi-fter').value||null,notas:document.getElementById('fi-not').value||null};
-  const {error}=editInmId?await sb.from('inmuebles').update(d).eq('id',editInmId):await sb.from('inmuebles').insert(d);
+  const {data:savedInm,error}=editInmId
+    ? await sb.from('inmuebles').update(d).eq('id',editInmId).select().single()
+    : await sb.from('inmuebles').insert(d).select().single();
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;}
+  else{inmuebles.push(savedInm);inmuebles.sort((a,b)=>a.num.localeCompare(b.num));}
   closeM('m-inm');toast(editInmId?'Departamento actualizado':'Departamento agregado');
+  renderInm();refresh();
 }
 async function elimInm(){if(!confirm('¿Eliminar este departamento y todos sus pagos?'))return;await sb.from('pagos').delete().eq('inmueble_id',editInmId);await sb.from('inmuebles').delete().eq('id',editInmId);closeM('m-inm');toast('Eliminado','ti-trash')}
 
@@ -1374,7 +1333,21 @@ function refresh(){renderStats();renderPagos();renderAl();renderEC();renderSvcLi
 
   sb=supabase.createClient(url,key);
   const {data:{session}}=await sb.auth.getSession();
-  if(session){CU=session.user;cargarWS()}else{show('s-auth')}
+  if(session){
+    CU=session.user;
+    // Si hay un workspace guardado de la sesión anterior, entrar directo sin pasar por la lista
+    const wsId    = localStorage.getItem('ib_ws_id');
+    const wsNom   = localStorage.getItem('ib_ws_nombre');
+    const wsCode  = localStorage.getItem('ib_ws_code');
+    const wsRole  = localStorage.getItem('ib_ws_role');
+    if(wsId && wsNom && wsCode){
+      entrarWS(wsId, wsNom, wsCode, wsRole||'member');
+    } else {
+      cargarWS();
+    }
+  } else {
+    show('s-auth');
+  }
 })();
 </script>
 </body>
