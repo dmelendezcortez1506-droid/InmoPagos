@@ -1304,8 +1304,9 @@ function refresh(){renderStats();renderPagos();renderAl();renderEC();renderSvcLi
 //  BOOT
 // ═══════════════════════════════════════
 (async()=>{
-  const url=localStorage.getItem('ib_url'),key=localStorage.getItem('ib_key');
-  if(!url||!key){show('s-setup');return}
+  const url = 'https://pfkkjpoedvcecgdnxmuy.supabase.co';
+  const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBma2tqcG9lZHZjZWNnZG54bXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NjIxMTksImV4cCI6MjA5NDUzODExOX0.JyGoO06OgK46eOeeR3CSzrmUcghwB0szpfMlRdC45dE';
+  
   sb=supabase.createClient(url,key);
   const {data:{session}}=await sb.auth.getSession();
   if(session){CU=session.user;cargarWS()}else{show('s-auth')}
