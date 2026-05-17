@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InmoPagos — MC Conecta Living</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F8F7F4;--surface:#FFFFFF;--sf2:#F1EFE8;
+  --tx:#1A1917;--tx2:#6B6963;--tx3:#9D9B96;
+  --bd:#E2E0D8;--bd2:#CBC9C0;
+  --teal:#1D9E75;--teal-bg:#E1F5EE;--teal-tx:#085041;
+  --amber:#BA7517;--amber-bg:#FAEEDA;--amber-tx:#633806;
+  --red:#E24B4A;--red-bg:#FCEBEB;--red-tx:#791F1F;
+  --blue:#378ADD;--blue-bg:#E6F1FB;--blue-tx:#0C447C;
+  --green:#639922;--green-bg:#EAF3DE;--green-tx:#3B6D11;
+  --r:8px;--rl:14px;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shl:0 4px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;line-height:1.5}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+
+/* ── SETUP ── */
+#s-setup{align-items:center;justify-content:center;padding:1rem}
+.setup-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);box-shadow:var(--shl);padding:2.5rem;width:100%;max-width:500px}
+.setup-card h1{font-size:19px;font-weight:600;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.sub{font-size:13px;color:var(--tx2);margin-bottom:1.5rem;padding-left:32px}
+.sql-box{background:#1a1917;color:#a8ff78;font-family:'DM Mono',monospace;font-size:11px;border-radius:var(--r);padding:12px;overflow:auto;white-space:pre;max-height:200px;margin-top:6px}
+.step-list{margin-bottom:1.5rem;display:flex;flex-direction:column;gap:9px}
+.step{background:var(--sf2);border-radius:var(--r);padding:11px 13px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.sn{background:var(--tx);color:#fff;border-radius:50%;width:20px;height:20px;min-width:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:1px}
+code{background:var(--bd);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px}
+
+/* ── AUTH ── */
+#s-auth{align-items:center;justify-content:center;padding:1rem}
+.auth-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);box-shadow:var(--shl);padding:2.5rem;width:100%;max-width:400px}
+.auth-tabs{display:flex;margin-bottom:1.5rem;border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.atab{flex:1;padding:9px;font-size:13px;font-weight:500;font-family:inherit;border:none;background:none;cursor:pointer;color:var(--tx2)}
+.atab.active{background:var(--tx);color:#fff}
+
+/* ── WORKSPACE ── */
+#s-workspace{align-items:center;justify-content:center;padding:1rem}
+.ws-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);box-shadow:var(--shl);padding:2rem;width:100%;max-width:520px}
+.ws-item{background:var(--surface);border:1px solid var(--bd);border-radius:var(--r);padding:13px 15px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;margin-bottom:8px}
+.ws-item:hover{border-color:var(--bd2);box-shadow:var(--sh)}
+.ws-av{width:38px;height:38px;border-radius:50%;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0}
+.ws-role{margin-left:auto;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+.ws-role.owner{background:var(--teal-bg);color:var(--teal-tx)}
+.ws-role.member{background:var(--blue-bg);color:var(--blue-tx)}
+.divider{display:flex;align-items:center;gap:10px;margin:1.25rem 0;color:var(--tx3);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+/* ── APP LAYOUT ── */
+#s-app{flex-direction:row}
+.sidebar{width:230px;background:var(--surface);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;overflow-y:auto}
+.sb-logo{padding:1.25rem;border-bottom:1px solid var(--bd)}
+.sb-logo h1{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-logo p{font-size:11px;color:var(--tx3);margin-top:2px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--tx3);display:inline-block;margin-left:4px;vertical-align:middle}
+.dot.on{background:var(--teal)}
+.ns{padding:10px 0 4px;font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;padding-left:1.25rem}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 1.25rem;font-size:13px;color:var(--tx2);cursor:pointer;border:none;background:none;width:100%;text-align:left;position:relative;transition:all .15s}
+.ni:hover{background:var(--sf2);color:var(--tx)}
+.ni.active{background:var(--sf2);color:var(--tx);font-weight:500}
+.ni.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--tx);border-radius:0 2px 2px 0}
+.ni i{font-size:16px;width:18px;text-align:center}
+.nb{margin-left:auto;background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600}
+.sb-foot{margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--bd)}
+.sb-ua{width:30px;height:30px;border-radius:50%;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.sb-ui strong{font-size:12px;font-weight:500;display:block;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-ui span{font-size:11px;color:var(--tx3)}
+.sb-btn{font-size:11px;color:var(--tx3);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;font-family:inherit}
+.sb-btn:hover{color:var(--tx)}
+.main{flex:1;padding:2rem;min-width:0;overflow-y:auto;max-height:100vh}
+
+/* ── GENERICS ── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;gap:1rem;flex-wrap:wrap}
+.ph h2{font-size:20px;font-weight:600}
+.ph p{font-size:13px;color:var(--tx2);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-family:inherit;font-weight:500;border:1px solid var(--bd2);background:var(--surface);border-radius:var(--r);cursor:pointer;color:var(--tx);transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--sf2)}.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--tx);color:#fff;border-color:var(--tx)}.btn.primary:hover{opacity:.88}
+.btn.teal{background:var(--teal);color:#fff;border-color:var(--teal)}.btn.teal:hover{opacity:.88}
+.btn.danger{color:var(--red-tx);border-color:#F7C1C1}.btn.danger:hover{background:var(--red-bg)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:12px;font-weight:500;color:var(--tx2)}
+.fg input,.fg select,.fg textarea,.auth-card input,.fg2 input,.fg2 select{font-size:13px;font-family:inherit;padding:8px 11px;border:1px solid var(--bd);background:var(--surface);border-radius:var(--r);color:var(--tx);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus,.auth-card input:focus,.fg2 input:focus,.fg2 select:focus{border-color:var(--tx);box-shadow:0 0 0 3px rgba(0,0,0,.07)}
+.fg textarea{resize:vertical;min-height:65px}
+.fg2{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg2 label{font-size:12px;font-weight:500;color:var(--tx2)}
+.fg2 small{font-size:11px;color:var(--tx3)}
+
+/* ── CARD / TABLE ── */
+.card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--sf2)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#FAFAF8}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge.pagado{background:var(--green-bg);color:var(--green-tx)}
+.badge.pendiente{background:var(--amber-bg);color:var(--amber-tx)}
+.badge.vencido{background:var(--red-bg);color:var(--red-tx)}
+.badge.parcial{background:var(--blue-bg);color:var(--blue-tx)}
+
+/* ── STATS ── */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.75rem}
+.sc{background:var(--surface);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.1rem;box-shadow:var(--sh)}
+.sc .sl{font-size:11px;color:var(--tx3);font-weight:500;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:4px;margin-bottom:6px}
+.sc .sv{font-size:22px;font-weight:600;letter-spacing:-.02em}
+.sc .ss{font-size:11px;color:var(--tx3);margin-top:3px}
+.sc.hl{background:var(--tx);border-color:var(--tx)}
+.sc.hl .sl,.sc.hl .sv,.sc.hl .ss{color:#fff}
+.sc.hl .sl{opacity:.7}.sc.hl .ss{opacity:.6}
+
+/* ── MONTH NAV ── */
+.mn{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--bd);border-radius:var(--r);padding:4px 8px}
+.mn button{border:none;background:none;cursor:pointer;color:var(--tx2);width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.mn button:hover{background:var(--sf2)}
+.mn span{font-size:13px;font-weight:500;min-width:130px;text-align:center}
+.toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{font-size:13px;font-family:inherit;padding:7px 11px;border:1px solid var(--bd);background:var(--surface);border-radius:var(--r);color:var(--tx);height:36px;outline:none;width:auto}
+.toolbar input{flex:1;min-width:160px}
+
+/* ── INMUEBLE CARDS ── */
+.ig{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.ic{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.1rem 1.25rem;box-shadow:var(--sh);transition:all .15s}
+.ic:hover{box-shadow:var(--shl);border-color:var(--bd2)}
+.ict{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.iav{width:40px;height:40px;border-radius:50%;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;font-family:'DM Mono',monospace;flex-shrink:0}
+.imet strong{font-size:14px;font-weight:600;display:block}
+.imet span{font-size:12px;color:var(--tx2)}
+.iren{margin-left:auto;text-align:right}
+.iren strong{font-size:15px;font-weight:600;display:block}
+.iren span{font-size:11px;color:var(--tx3)}
+.idet{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--tx3);margin-bottom:10px}
+.idet span{display:flex;align-items:center;gap:4px}
+.pb{height:5px;background:var(--sf2);border-radius:3px;overflow:hidden;margin-top:5px}
+.pf{height:100%;border-radius:3px;transition:width .4s}
+.pf.g{background:var(--teal)}.pf.w{background:var(--amber)}.pf.b{background:var(--red)}
+.iact{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
+
+/* ── ALERTS ── */
+.al{display:flex;flex-direction:column;gap:8px}
+.ali{background:var(--surface);border:1px solid var(--bd);border-radius:var(--r);padding:13px 15px;display:flex;align-items:flex-start;gap:11px;box-shadow:var(--sh)}
+.ali.vencido{border-left:3px solid var(--red)}
+.ali.proximo{border-left:3px solid var(--amber)}
+.aic{font-size:18px;flex-shrink:0;margin-top:1px}
+.aic.vencido{color:var(--red)}.aic.proximo{color:var(--amber)}
+.aib strong{font-size:13px;font-weight:600;display:block}
+.aib span{font-size:12px;color:var(--tx2)}
+
+/* ── SERVICIOS ── */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:1.5rem}
+.svc-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;box-shadow:var(--sh)}
+.svc-card h3{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.svc-card .svc-total{font-size:22px;font-weight:600;color:var(--teal);margin-bottom:12px}
+.svc-card .svc-period{font-size:12px;color:var(--tx2);margin-bottom:12px}
+.svc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.svc-row:last-child{border-bottom:none;font-weight:600}
+.svc-depto{color:var(--tx2)}
+.svc-actions{display:flex;gap:8px;margin-top:1rem}
+
+/* ── ESTADO DE CUENTA ── */
+.ec-list{display:flex;flex-direction:column;gap:10px}
+.ec-item{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.1rem 1.25rem;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
+.ec-num{width:42px;height:42px;border-radius:50%;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'DM Mono',monospace;font-size:13px;flex-shrink:0}
+.ec-info{flex:1}
+.ec-info strong{font-size:14px;font-weight:600;display:block}
+.ec-info span{font-size:12px;color:var(--tx2)}
+.ec-total{text-align:right}
+.ec-total strong{font-size:16px;font-weight:600;color:var(--tx)}
+.ec-total span{font-size:11px;color:var(--tx3);display:block}
+.ec-actions{display:flex;gap:6px}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;padding:1rem}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--rl);box-shadow:var(--shl);padding:1.75rem;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;animation:fu .2s ease}
+.modal.sm{max-width:400px}
+.modal.lg{max-width:700px}
+@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.mh h3{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.mc{border:none;background:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:4px;border-radius:4px}
+.mc:hover{background:var(--sf2);color:var(--tx)}
+.fg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--bd)}
+
+/* ── MEMBERS ── */
+.mem-item{background:var(--surface);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.mem-av{width:34px;height:34px;border-radius:50%;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.mem-role{margin-left:auto;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+.code-box{background:var(--sf2);border:2px dashed var(--bd2);border-radius:var(--r);padding:1rem;text-align:center;margin:1rem 0}
+.inv-code{font-family:'DM Mono',monospace;font-size:26px;font-weight:600;letter-spacing:.12em}
+
+/* ── MISC ── */
+.empty{text-align:center;padding:4rem 1rem;color:var(--tx3)}
+.empty i{font-size:40px;display:block;margin-bottom:1rem;opacity:.3}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--bd2);border-top-color:var(--tx);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{background:var(--red-bg);color:var(--red-tx);border-radius:var(--r);padding:9px 13px;font-size:13px;margin-bottom:12px;display:none}
+.ok{background:var(--teal-bg);color:var(--teal-tx);border-radius:var(--r);padding:9px 13px;font-size:13px;margin-bottom:12px;display:none}
+.toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--tx);color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;font-weight:500;box-shadow:var(--shl);animation:fu .25s ease;display:flex;align-items:center;gap:8px;max-width:300px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.pill.agua{background:#E6F1FB;color:#0C447C}
+.pill.luz{background:#FAEEDA;color:#633806}
+.pill.gas{background:#FCEBEB;color:#791F1F}
+.rep-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:1.5rem}
+input[type=number]{-moz-appearance:textfield}
+
+/* ── RESPONSIVE ── */
+@media(max-width:760px){
+  .sidebar{display:none}.main{padding:1rem;max-height:unset;padding-bottom:80px}
+  .sg{grid-template-columns:1fr 1fr}.fg-grid{grid-template-columns:1fr}.fg.full{grid-column:1}
+  .mobile-nav{display:flex}
+}
+@media(min-width:761px){.mobile-nav{display:none}}
+.mobile-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--bd);z-index:100;justify-content:space-around;padding:6px 0}
+.mobile-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--tx3);font-family:inherit}
+.mobile-nav button.active{color:var(--tx);font-weight:600}
+.mobile-nav button i{font-size:20px}
+</style>
+</head>
+<body>
+
+<!-- ════ SETUP ════ -->
+<div id="s-setup" class="screen">
+<div class="setup-card">
+  <h1><i class="ti ti-building" style="color:var(--teal)"></i>InmoPagos — Configuración inicial</h1>
+  <p class="sub">Solo necesitas hacer esto una vez.</p>
+  <div class="step-list">
+    <div class="step"><div class="sn">1</div><div><b>Crea cuenta gratis en Supabase</b>Ve a <a href="https://supabase.com" target="_blank" style="color:var(--teal)">supabase.com</a> → New Project</div></div>
+    <div class="step"><div class="sn">2</div><div><b>Activa autenticación por email</b>Authentication → Providers → Email → Enable</div></div>
+    <div class="step"><div class="sn">3</div><div><b>Ejecuta este SQL en SQL Editor → New Query → Run:</b>
+<div class="sql-box">-- Workspaces (negocios)
+CREATE TABLE workspaces (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  nombre text NOT NULL,
+  owner_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  invite_code text UNIQUE DEFAULT upper(substr(replace(gen_random_uuid()::text,'-',''),1,8)),
+  empresa text DEFAULT 'MC Conecta Living',
+  direccion text,
+  clabe text,
+  cuenta_scotiabank text,
+  tarjeta_oxxo text,
+  nombre_cobrador text,
+  created_at timestamptz DEFAULT now()
+);
+CREATE TABLE memberships (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text DEFAULT 'member',
+  email text,
+  UNIQUE(workspace_id, user_id)
+);
+CREATE TABLE inmuebles (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  num text NOT NULL,
+  piso text,
+  inquilino text NOT NULL,
+  tel text,
+  email text,
+  renta numeric DEFAULT 0,
+  dia integer DEFAULT 1,
+  personas integer DEFAULT 1,
+  notas text,
+  created_at timestamptz DEFAULT now()
+);
+CREATE TABLE pagos (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  inmueble_id uuid REFERENCES inmuebles(id) ON DELETE CASCADE,
+  concepto text DEFAULT 'renta',
+  monto numeric DEFAULT 0,
+  pagado numeric DEFAULT 0,
+  vencimiento date NOT NULL,
+  fecha_pago date,
+  notas text,
+  created_at timestamptz DEFAULT now()
+);
+CREATE TABLE servicios (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  tipo text NOT NULL,
+  total numeric NOT NULL,
+  periodo_ini date NOT NULL,
+  periodo_fin date NOT NULL,
+  dias_servicio integer,
+  mes integer,
+  anio integer,
+  notas text,
+  created_at timestamptz DEFAULT now()
+);
+CREATE TABLE servicio_detalles (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  servicio_id uuid REFERENCES servicios(id) ON DELETE CASCADE,
+  inmueble_id uuid REFERENCES inmuebles(id) ON DELETE CASCADE,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  dias_uso integer DEFAULT 0,
+  personas integer DEFAULT 1,
+  ponderacion numeric DEFAULT 0,
+  porcentaje numeric DEFAULT 0,
+  monto numeric DEFAULT 0,
+  es_administracion boolean DEFAULT false
+);
+ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inmuebles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pagos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE servicios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE servicio_detalles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ws" ON workspaces FOR ALL USING (id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
+CREATE POLICY "mem" ON memberships FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
+CREATE POLICY "inm" ON inmuebles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
+CREATE POLICY "pag" ON pagos FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
+CREATE POLICY "svc" ON servicios FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
+CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));</div></div></div>
+    <div class="step"><div class="sn">4</div><div><b>Copia URL y Anon Key</b>Project Settings → API</div></div>
+  </div>
+  <div class="fg2"><label>Supabase Project URL</label><input type="url" id="cfg-url" placeholder="https://xxxx.supabase.co"></div>
+  <div class="fg2"><label>Supabase Anon Key</label><input type="text" id="cfg-key" placeholder="eyJhbGciOiJI..."></div>
+  <div class="err" id="setup-err"></div>
+  <button class="btn primary" style="width:100%;justify-content:center;padding:11px" onclick="doSetup()"><i class="ti ti-plug"></i>Guardar y continuar</button>
+</div>
+</div>
+
+<!-- ════ AUTH ════ -->
+<div id="s-auth" class="screen">
+<div class="auth-card">
+  <div style="font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-building" style="color:var(--teal)"></i>InmoPagos</div>
+  <div style="font-size:12px;color:var(--tx3);margin-bottom:1.75rem;padding-left:30px">Gestión de pagos de inmuebles</div>
+  <div class="auth-tabs">
+    <button class="atab active" onclick="atab('login',this)">Iniciar sesión</button>
+    <button class="atab" onclick="atab('reg',this)">Crear cuenta</button>
+  </div>
+  <div id="a-login">
+    <div class="fg2"><label>Correo</label><input type="email" id="a-email" placeholder="correo@ejemplo.com"></div>
+    <div class="fg2"><label>Contraseña</label><input type="password" id="a-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="err" id="login-err"></div>
+    <button class="btn primary" style="width:100%;justify-content:center;padding:11px" onclick="doLogin()" id="btn-login"><i class="ti ti-login"></i>Entrar</button>
+  </div>
+  <div id="a-reg" style="display:none">
+    <div class="fg2"><label>Nombre completo</label><input type="text" id="r-name" placeholder="Tu nombre"></div>
+    <div class="fg2"><label>Correo</label><input type="email" id="r-email" placeholder="correo@ejemplo.com"></div>
+    <div class="fg2"><label>Contraseña</label><input type="password" id="r-pass" placeholder="Mínimo 6 caracteres"></div>
+    <div class="err" id="reg-err"></div><div class="ok" id="reg-ok"></div>
+    <button class="btn primary" style="width:100%;justify-content:center;padding:11px" onclick="doReg()" id="btn-reg"><i class="ti ti-user-plus"></i>Crear cuenta</button>
+  </div>
+</div>
+</div>
+
+<!-- ════ WORKSPACE ════ -->
+<div id="s-workspace" class="screen">
+<div class="ws-card">
+  <h2 style="font-size:17px;font-weight:600;margin-bottom:4px">Tus negocios</h2>
+  <p style="font-size:13px;color:var(--tx2);margin-bottom:1.5rem">Selecciona un negocio o crea/únete a uno nuevo</p>
+  <div id="ws-list"></div>
+  <div class="divider">o</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button class="btn" style="justify-content:center" onclick="openM('m-cws')"><i class="ti ti-plus"></i>Crear nuevo</button>
+    <button class="btn" style="justify-content:center" onclick="openM('m-jws')"><i class="ti ti-door-enter"></i>Unirse con código</button>
+  </div>
+  <div style="margin-top:1rem;text-align:right"><button class="sb-btn" onclick="doLogout()">Cerrar sesión</button></div>
+</div>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="s-app" class="screen">
+<aside class="sidebar">
+  <div class="sb-logo">
+    <h1><i class="ti ti-building" style="color:var(--teal)"></i><span id="sb-wsn">Workspace</span><span class="dot on" id="sb-dot"></span></h1>
+    <p id="sb-fecha"></p>
+  </div>
+  <nav>
+    <div class="ns">Principal</div>
+    <button class="ni active" onclick="setTab('pagos',this)" data-tab="pagos"><i class="ti ti-receipt"></i>Pagos</button>
+    <button class="ni" onclick="setTab('inmuebles',this)" data-tab="inmuebles"><i class="ti ti-building"></i>Departamentos</button>
+    <button class="ni" onclick="setTab('alertas',this)" data-tab="alertas"><i class="ti ti-bell"></i>Alertas<span class="nb" id="nb-al" style="display:none"></span></button>
+    <button class="ni" onclick="setTab('reporte',this)" data-tab="reporte"><i class="ti ti-chart-bar"></i>Reporte</button>
+    <div class="ns">Servicios</div>
+    <button class="ni" onclick="setTab('servicios',this)" data-tab="servicios"><i class="ti ti-bolt"></i>Agua / Luz / Gas</button>
+    <button class="ni" onclick="setTab('edocuenta',this)" data-tab="edocuenta"><i class="ti ti-file-invoice"></i>Estado de Cuenta</button>
+    <div class="ns">Equipo</div>
+    <button class="ni" onclick="setTab('miembros',this)" data-tab="miembros"><i class="ti ti-users"></i>Miembros</button>
+    <button class="ni" onclick="setTab('config',this)" data-tab="config"><i class="ti ti-settings"></i>Configuración</button>
+  </nav>
+  <div class="sb-foot">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="sb-ua" id="sb-av"></div>
+      <div class="sb-ui"><strong id="sb-uname"></strong><span id="sb-uemail"></span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="sb-btn" onclick="goWS()">Cambiar negocio</button>
+      <span style="color:var(--bd2)">·</span>
+      <button class="sb-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <!-- PAGOS -->
+  <div id="sec-pagos">
+    <div class="ph">
+      <div><h2>Pagos mensuales</h2><p id="pagos-sub"></p></div>
+      <div class="btn-group">
+        <div class="mn"><button onclick="chM(-1)"><i class="ti ti-chevron-left"></i></button><span id="mes-lbl"></span><button onclick="chM(1)"><i class="ti ti-chevron-right"></i></button></div>
+        <button class="btn primary" onclick="abrirPago('')"><i class="ti ti-plus"></i>Nuevo pago</button>
+      </div>
+    </div>
+    <div class="sg" id="stats-grid"></div>
+    <div class="toolbar">
+      <input type="text" id="sp" placeholder="Buscar depto, inquilino..." oninput="renderPagos()">
+      <select id="fe" onchange="renderPagos()"><option value="">Todos los estados</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option><option value="vencido">Vencido</option><option value="parcial">Parcial</option></select>
+      <select id="fc" onchange="renderPagos()"><option value="">Todos los conceptos</option><option value="renta">Renta</option><option value="mantenimiento">Mant.</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="servicios">Servicios</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select>
+    </div>
+    <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Concepto</th><th>Monto</th><th>Pagado</th><th>Vencimiento</th><th>Fecha pago</th><th>Estado</th><th></th></tr></thead><tbody id="t-pagos"><tr><td colspan="9" style="text-align:center;padding:2rem"><span class="spinner"></span></td></tr></tbody></table></div></div>
+  </div>
+
+  <!-- INMUEBLES -->
+  <div id="sec-inmuebles" style="display:none">
+    <div class="ph"><div><h2>Departamentos</h2><p>Directorio de unidades e inquilinos</p></div><button class="btn primary" onclick="abrirInm(null)"><i class="ti ti-home-plus"></i>Agregar</button></div>
+    <div class="toolbar"><input type="text" id="si" placeholder="Buscar..." oninput="renderInm()"></div>
+    <div class="ig" id="l-inm"></div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div id="sec-alertas" style="display:none">
+    <div class="ph"><div><h2>Alertas</h2><p>Pagos vencidos y próximos a vencer</p></div></div>
+    <div class="al" id="l-al"></div>
+  </div>
+
+  <!-- REPORTE -->
+  <div id="sec-reporte" style="display:none">
+    <div class="ph"><div><h2>Reporte general</h2><p>Resumen financiero</p></div></div>
+    <div id="rep"></div>
+  </div>
+
+  <!-- SERVICIOS -->
+  <div id="sec-servicios" style="display:none">
+    <div class="ph">
+      <div><h2>Distribución de Servicios</h2><p>Agua, Luz y Gas — prorrateo por días de uso y personas</p></div>
+      <button class="btn primary" onclick="openM('m-new-svc')"><i class="ti ti-plus"></i>Registrar servicio</button>
+    </div>
+    <div id="svc-list"></div>
+  </div>
+
+  <!-- ESTADO DE CUENTA -->
+  <div id="sec-edocuenta" style="display:none">
+    <div class="ph">
+      <div><h2>Estado de Cuenta</h2><p>Genera y descarga el estado de cuenta mensual por departamento</p></div>
+      <div class="btn-group">
+        <div class="mn"><button onclick="chM(-1)"><i class="ti ti-chevron-left"></i></button><span id="ec-mes-lbl"></span><button onclick="chM(1)"><i class="ti ti-chevron-right"></i></button></div>
+        <button class="btn teal" onclick="generarTodosPDF()"><i class="ti ti-download"></i>Descargar todos</button>
+      </div>
+    </div>
+    <div class="ec-list" id="l-ec"></div>
+  </div>
+
+  <!-- MIEMBROS -->
+  <div id="sec-miembros" style="display:none">
+    <div class="ph"><div><h2>Miembros del equipo</h2><p>Personas con acceso a este negocio</p></div>
+      <div class="btn-group">
+        <button class="btn" onclick="openM('m-inv-code')"><i class="ti ti-copy"></i>Compartir código</button>
+        <button class="btn primary" onclick="openM('m-inv-email')"><i class="ti ti-mail"></i>Invitar por correo</button>
+      </div>
+    </div>
+    <div id="l-mem"></div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="sec-config" style="display:none">
+    <div class="ph"><div><h2>Configuración del negocio</h2><p>Datos que aparecen en el estado de cuenta PDF</p></div></div>
+    <div class="card" style="padding:1.75rem;max-width:600px">
+      <div class="fg-grid">
+        <div class="fg full"><label>Nombre de la empresa / negocio</label><input type="text" id="cfg-empresa" placeholder="MC Conecta Living"></div>
+        <div class="fg full"><label>Nombre del cobrador / propietario</label><input type="text" id="cfg-cobrador" placeholder="Brenda Verenice Cortez Suarez"></div>
+        <div class="fg full"><label>Dirección del inmueble</label><input type="text" id="cfg-dir" placeholder="Girasol $7012, Col. Santa María, Guadalupe, N.L."></div>
+        <div class="fg full"><label>CLABE interbancaria</label><input type="text" id="cfg-clabe" placeholder="044420038023331555"></div>
+        <div class="fg"><label>Cuenta Scotiabank</label><input type="text" id="cfg-scott" placeholder="0248687525"></div>
+        <div class="fg"><label>Tarjeta OXXO (Scotiabank)</label><input type="text" id="cfg-oxxo" placeholder="4421 7700 3018 5061"></div>
+      </div>
+      <div style="margin-top:1.25rem"><button class="btn primary" onclick="guardarConfig()"><i class="ti ti-check"></i>Guardar configuración</button></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<nav class="mobile-nav" id="mobile-nav" style="display:none">
+  <button class="active" onclick="setTabM('pagos',this)"><i class="ti ti-receipt"></i>Pagos</button>
+  <button onclick="setTabM('inmuebles',this)"><i class="ti ti-building"></i>Deptos</button>
+  <button onclick="setTabM('servicios',this)"><i class="ti ti-bolt"></i>Servicios</button>
+  <button onclick="setTabM('edocuenta',this)"><i class="ti ti-file-invoice"></i>EDC</button>
+</nav>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<!-- ══ Modals ══ -->
+<!-- Crear workspace -->
+<div class="overlay" id="m-cws"><div class="modal sm">
+  <div class="mh"><h3><i class="ti ti-plus" style="color:var(--teal)"></i>Crear negocio</h3><button class="mc" onclick="closeM('m-cws')"><i class="ti ti-x"></i></button></div>
+  <div class="fg2"><label>Nombre *</label><input type="text" id="wn" placeholder="Ej: Departamentos Girasol"></div>
+  <div class="err" id="cws-err"></div>
+  <div class="mf"><button class="btn" onclick="closeM('m-cws')">Cancelar</button><button class="btn primary" onclick="crearWS()"><i class="ti ti-check"></i>Crear</button></div>
+</div></div>
+
+<!-- Unirse con código -->
+<div class="overlay" id="m-jws"><div class="modal sm">
+  <div class="mh"><h3><i class="ti ti-door-enter" style="color:var(--blue)"></i>Unirse con código</h3><button class="mc" onclick="closeM('m-jws')"><i class="ti ti-x"></i></button></div>
+  <div class="fg2"><label>Código de invitación</label><input type="text" id="jcode" placeholder="AB12CD34" style="text-transform:uppercase;font-family:'DM Mono',monospace;font-size:20px;letter-spacing:.1em;text-align:center"></div>
+  <div class="err" id="jws-err"></div>
+  <div class="mf"><button class="btn" onclick="closeM('m-jws')">Cancelar</button><button class="btn primary" onclick="unirseWS()"><i class="ti ti-check"></i>Unirse</button></div>
+</div></div>
+
+<!-- Código de invitación -->
+<div class="overlay" id="m-inv-code"><div class="modal sm">
+  <div class="mh"><h3><i class="ti ti-copy" style="color:var(--teal)"></i>Código de acceso</h3><button class="mc" onclick="closeM('m-inv-code')"><i class="ti ti-x"></i></button></div>
+  <p style="font-size:13px;color:var(--tx2);margin-bottom:8px">Comparte este código con quien quieras que acceda a este negocio.</p>
+  <div class="code-box"><div class="inv-code" id="show-code">——</div><p style="font-size:12px;color:var(--tx2);margin-top:4px">Código de acceso al negocio</p></div>
+  <button class="btn" style="width:100%;justify-content:center" onclick="copiarCodigo()"><i class="ti ti-copy"></i>Copiar código</button>
+</div></div>
+
+<!-- Invitar email -->
+<div class="overlay" id="m-inv-email"><div class="modal sm">
+  <div class="mh"><h3><i class="ti ti-mail" style="color:var(--blue)"></i>Invitar por correo</h3><button class="mc" onclick="closeM('m-inv-email')"><i class="ti ti-x"></i></button></div>
+  <p style="font-size:13px;color:var(--tx2);margin-bottom:12px">Comparte el código de acceso con esta persona por correo.</p>
+  <div class="fg2"><label>Correo electrónico</label><input type="email" id="inv-em" placeholder="correo@ejemplo.com"></div>
+  <div class="err" id="ie-err"></div><div class="ok" id="ie-ok"></div>
+  <div class="mf"><button class="btn" onclick="closeM('m-inv-email')">Cerrar</button><button class="btn primary" onclick="invEmail()"><i class="ti ti-send"></i>Enviar código</button></div>
+</div></div>
+
+<!-- Pago -->
+<div class="overlay" id="m-pago"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-receipt" style="color:var(--teal)"></i><span id="mp-ttl">Registrar pago</span></h3><button class="mc" onclick="closeM('m-pago')"><i class="ti ti-x"></i></button></div>
+  <div class="fg-grid">
+    <div class="fg"><label>Departamento *</label><select id="fp-dep"></select></div>
+    <div class="fg"><label>Concepto *</label><select id="fp-con"><option value="renta">Renta mensual</option><option value="servicios">Servicios (Agua+Luz+Gas)</option><option value="mantenimiento">Mantenimiento</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select></div>
+    <div class="fg"><label>Monto total *</label><input type="number" id="fp-mto" placeholder="0.00" step="0.01" min="0"></div>
+    <div class="fg"><label>Monto pagado</label><input type="number" id="fp-pag" placeholder="0.00" step="0.01" min="0"></div>
+    <div class="fg"><label>Fecha de vencimiento *</label><input type="date" id="fp-venc"></div>
+    <div class="fg"><label>Fecha de pago</label><input type="date" id="fp-fpag"></div>
+    <div class="fg full"><label>Notas</label><textarea id="fp-not" placeholder="Observaciones..."></textarea></div>
+  </div>
+  <div class="mf">
+    <button class="btn danger" id="btn-del-p" style="display:none;margin-right:auto" onclick="elimPago()"><i class="ti ti-trash"></i>Eliminar</button>
+    <button class="btn" onclick="closeM('m-pago')">Cancelar</button>
+    <button class="btn primary" onclick="guardarPago()"><i class="ti ti-check"></i>Guardar</button>
+  </div>
+</div></div>
+
+<!-- Inmueble -->
+<div class="overlay" id="m-inm"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-home-plus" style="color:var(--teal)"></i><span id="mi-ttl">Agregar departamento</span></h3><button class="mc" onclick="closeM('m-inm')"><i class="ti ti-x"></i></button></div>
+  <div class="fg-grid">
+    <div class="fg"><label>Número / ID *</label><input type="text" id="fi-num" placeholder="Ej: A-101"></div>
+    <div class="fg"><label>Piso</label><input type="text" id="fi-pis" placeholder="Ej: 1"></div>
+    <div class="fg full"><label>Inquilino *</label><input type="text" id="fi-inq" placeholder="Nombre completo"></div>
+    <div class="fg"><label>Teléfono</label><input type="tel" id="fi-tel" placeholder="55 0000 0000"></div>
+    <div class="fg"><label>Correo</label><input type="email" id="fi-em" placeholder="correo@ejemplo.com"></div>
+    <div class="fg"><label>Renta mensual ($)</label><input type="number" id="fi-ren" placeholder="0.00" step="0.01"></div>
+    <div class="fg"><label>Día de pago</label><input type="number" id="fi-dia" placeholder="5" min="1" max="28"></div>
+    <div class="fg"><label>Personas habitando</label><input type="number" id="fi-per" placeholder="1" min="1" max="10"></div>
+    <div class="fg full"><label>Notas</label><textarea id="fi-not" placeholder="Observaciones..."></textarea></div>
+  </div>
+  <div class="mf">
+    <button class="btn danger" id="btn-del-i" style="display:none;margin-right:auto" onclick="elimInm()"><i class="ti ti-trash"></i>Eliminar</button>
+    <button class="btn" onclick="closeM('m-inm')">Cancelar</button>
+    <button class="btn primary" onclick="guardarInm()"><i class="ti ti-check"></i>Guardar</button>
+  </div>
+</div></div>
+
+<!-- Nuevo Servicio -->
+<div class="overlay" id="m-new-svc"><div class="modal lg">
+  <div class="mh"><h3><i class="ti ti-bolt" style="color:var(--amber)"></i>Registrar servicio</h3><button class="mc" onclick="closeM('m-new-svc')"><i class="ti ti-x"></i></button></div>
+  <div class="fg-grid" style="margin-bottom:1rem">
+    <div class="fg"><label>Tipo de servicio *</label><select id="sv-tipo"><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option></select></div>
+    <div class="fg"><label>Monto total de la factura *</label><input type="number" id="sv-total" placeholder="0.00" step="0.01" min="0"></div>
+    <div class="fg"><label>Inicio del período *</label><input type="date" id="sv-ini"></div>
+    <div class="fg"><label>Fin del período *</label><input type="date" id="sv-fin"></div>
+    <div class="fg full"><label>Notas</label><input type="text" id="sv-not" placeholder="Ej: Factura CFE marzo-abril"></div>
+  </div>
+  <p style="font-size:13px;font-weight:600;margin-bottom:.75rem">Distribución por departamento <span style="font-weight:400;color:var(--tx2)">(días de uso × personas = ponderación)</span></p>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Depto.</th><th>Inquilino</th><th>¿Aplica?</th><th>Días de uso</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ a pagar</th></tr></thead>
+    <tbody id="sv-rows"></tbody>
+    <tfoot><tr style="background:var(--sf2)">
+      <td colspan="5" style="font-weight:600;padding:10px 14px">Subsidio Administración</td>
+      <td id="sv-adm-pond" style="padding:10px 14px;font-weight:600"></td>
+      <td id="sv-adm-pct" style="padding:10px 14px;font-weight:600"></td>
+      <td id="sv-adm-mto" style="padding:10px 14px;font-weight:600"></td>
+    </tr>
+    <tr style="background:var(--sf2)">
+      <td colspan="5" style="font-weight:700;padding:10px 14px">TOTAL</td>
+      <td id="sv-tot-pond" style="padding:10px 14px;font-weight:700"></td>
+      <td style="padding:10px 14px;font-weight:700">100%</td>
+      <td id="sv-tot-mto" style="padding:10px 14px;font-weight:700"></td>
+    </tr></tfoot>
+  </table></div></div>
+  <div class="mf">
+    <button class="btn" onclick="closeM('m-new-svc')">Cancelar</button>
+    <button class="btn primary" onclick="guardarServicio()"><i class="ti ti-check"></i>Guardar distribución</button>
+  </div>
+</div></div>
+
+<!-- Ver servicio detalle -->
+<div class="overlay" id="m-svc-det"><div class="modal lg">
+  <div class="mh"><h3 id="msv-ttl"><i class="ti ti-bolt"></i>Detalle de servicio</h3><button class="mc" onclick="closeM('m-svc-det')"><i class="ti ti-x"></i></button></div>
+  <div id="msv-body"></div>
+  <div class="mf">
+    <button class="btn danger" id="btn-del-svc" style="margin-right:auto" onclick="elimServicio()"><i class="ti ti-trash"></i>Eliminar</button>
+    <button class="btn" onclick="closeM('m-svc-det')">Cerrar</button>
+  </div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ═══════════════════════════════════════
+//  GLOBALS
+// ═══════════════════════════════════════
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let sb=null,CU=null,CW=null;
+let pagos=[],inmuebles=[],servicios=[],svcDet=[];
+let editPagoId=null,editInmId=null,editSvcId=null;
+let vM=new Date().getMonth(),vY=new Date().getFullYear();
+
+// ═══════════════════════════════════════
+//  SCREEN HELPERS
+// ═══════════════════════════════════════
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('mobile-nav').style.display=(id==='s-app')?'flex':'none'}
+function openM(id){document.getElementById(id).classList.add('open')}
+function closeM(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(m=>m.classList.remove('open'))});
+function se(el,msg){el.textContent=msg;el.style.display='block'}
+function toast(msg,icon='ti-check'){const el=document.createElement('div');el.className='toast';el.innerHTML=`<i class="ti ${icon}"></i>${msg}`;document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),3000)}
+function fmt(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n||0)}
+function fd(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}
+function getInm(id){return inmuebles.find(x=>x.id===id)||null}
+function dB(a,b){return Math.round((b-a)/86400000)}
+
+// ═══════════════════════════════════════
+//  SETUP
+// ═══════════════════════════════════════
+async function doSetup(){
+  const url=document.getElementById('cfg-url').value.trim(),key=document.getElementById('cfg-key').value.trim(),err=document.getElementById('setup-err');
+  err.style.display='none';
+  if(!url.startsWith('https://')){se(err,'La URL debe comenzar con https://');return}
+  if(key.length<20){se(err,'La clave anon parece incorrecta');return}
+  try{
+    const c=supabase.createClient(url,key);
+    const {error}=await c.from('workspaces').select('id').limit(1);
+    if(error&&!['PGRST116','PGRST301','42501','42P01'].includes(error.code))throw error;
+    localStorage.setItem('ib_url',url);localStorage.setItem('ib_key',key);
+    sb=c;show('s-auth');
+  }catch(e){se(err,'Error: '+e.message)}
+}
+
+// ═══════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════
+function atab(t,btn){document.querySelectorAll('.atab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=t==='login'?'block':'none';document.getElementById('a-reg').style.display=t==='reg'?'block':'none'}
+async function doLogin(){
+  const em=document.getElementById('a-email').value.trim(),ps=document.getElementById('a-pass').value,err=document.getElementById('login-err'),btn=document.getElementById('btn-login');
+  err.style.display='none';if(!em||!ps){se(err,'Completa todos los campos');return}
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  const {data,error}=await sb.auth.signInWithPassword({email:em,password:ps});
+  btn.innerHTML='<i class="ti ti-login"></i>Entrar';btn.disabled=false;
+  if(error){se(err,'Correo o contraseña incorrectos');return}
+  CU=data.user;cargarWS();
+}
+async function doReg(){
+  const nm=document.getElementById('r-name').value.trim(),em=document.getElementById('r-email').value.trim(),ps=document.getElementById('r-pass').value,err=document.getElementById('reg-err'),ok=document.getElementById('reg-ok'),btn=document.getElementById('btn-reg');
+  err.style.display='none';ok.style.display='none';if(!nm||!em||!ps){se(err,'Completa todos los campos');return}
+  if(ps.length<6){se(err,'Contraseña mínimo 6 caracteres');return}
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  const {data,error}=await sb.auth.signUp({email:em,password:ps,options:{data:{full_name:nm}}});
+  btn.innerHTML='<i class="ti ti-user-plus"></i>Crear cuenta';btn.disabled=false;
+  if(error){se(err,error.message);return}
+  CU=data.user;ok.textContent='¡Cuenta creada!';ok.style.display='block';setTimeout(()=>cargarWS(),1200);
+}
+async function doLogout(){await sb.auth.signOut();CU=null;CW=null;show('s-auth')}
+
+// ═══════════════════════════════════════
+//  WORKSPACES
+// ═══════════════════════════════════════
+async function cargarWS(){
+  show('s-workspace');
+  const {data}=await sb.from('memberships').select('role,workspaces(id,nombre,invite_code)').eq('user_id',CU.id);
+  const el=document.getElementById('ws-list');
+  if(!data?.length){el.innerHTML=`<p style="font-size:13px;color:var(--tx2);padding:1rem 0">Sin negocios. Crea uno o únete con un código.</p>`;return}
+  el.innerHTML=data.map(m=>`<div class="ws-item" onclick="entrarWS('${m.workspaces.id}','${m.workspaces.nombre}','${m.workspaces.invite_code}','${m.role}')">
+    <div class="ws-av">${m.workspaces.nombre.slice(0,2).toUpperCase()}</div>
+    <div style="flex:1"><strong style="font-size:14px;font-weight:500;display:block">${m.workspaces.nombre}</strong><span style="font-size:12px;color:var(--tx2)">${m.role==='owner'?'Propietario':'Miembro'}</span></div>
+    <span class="ws-role ${m.role}">${m.role==='owner'?'Propietario':'Miembro'}</span>
+  </div>`).join('');
+}
+async function crearWS(){
+  const n=document.getElementById('wn').value.trim(),err=document.getElementById('cws-err');
+  if(!n){se(err,'Ingresa un nombre');return}
+  const {data:ws,error}=await sb.from('workspaces').insert({nombre:n,owner_id:CU.id}).select().single();
+  if(error){se(err,error.message);return}
+  await sb.from('memberships').insert({workspace_id:ws.id,user_id:CU.id,role:'owner',email:CU.email});
+  closeM('m-cws');toast('Negocio creado');cargarWS();
+}
+async function unirseWS(){
+  const code=document.getElementById('jcode').value.trim().toUpperCase(),err=document.getElementById('jws-err');
+  if(!code){se(err,'Ingresa el código');return}
+  const {data:ws}=await sb.from('workspaces').select('id,nombre').eq('invite_code',code).single();
+  if(!ws){se(err,'Código inválido');return}
+  const {data:ex}=await sb.from('memberships').select('id').eq('workspace_id',ws.id).eq('user_id',CU.id).single();
+  if(!ex)await sb.from('memberships').insert({workspace_id:ws.id,user_id:CU.id,role:'member',email:CU.email});
+  closeM('m-jws');toast('¡Te uniste a "'+ws.nombre+'"!');cargarWS();
+}
+function entrarWS(id,nombre,code,role){
+  CW={id,nombre,invite_code:code,role};
+  document.getElementById('sb-wsn').textContent=nombre;
+  document.getElementById('sb-fecha').textContent=new Date().toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short'});
+  const un=(CU.user_metadata?.full_name||CU.email.split('@')[0]);
+  document.getElementById('sb-uname').textContent=un;document.getElementById('sb-uemail').textContent=CU.email;
+  document.getElementById('sb-av').textContent=un.slice(0,1).toUpperCase();
+  document.getElementById('show-code').textContent=code;
+  show('s-app');cargarTodo();suscribir();cargarConfig();
+}
+function goWS(){cargarWS()}
+function copiarCodigo(){navigator.clipboard?.writeText(CW.invite_code).then(()=>toast('Código copiado','ti-copy'))}
+
+// ═══════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════
+async function cargarTodo(){
+  const wsId=CW.id;
+  const [ri,rp,rs,rd]=await Promise.all([
+    sb.from('inmuebles').select('*').eq('workspace_id',wsId).order('num'),
+    sb.from('pagos').select('*').eq('workspace_id',wsId).order('vencimiento',{ascending:false}),
+    sb.from('servicios').select('*').eq('workspace_id',wsId).order('created_at',{ascending:false}),
+    sb.from('servicio_detalles').select('*').eq('workspace_id',wsId)
+  ]);
+  inmuebles=ri.data||[];pagos=rp.data||[];servicios=rs.data||[];svcDet=rd.data||[];
+  refresh();
+}
+function suscribir(){
+  ['inmuebles','pagos','servicios','servicio_detalles'].forEach(tbl=>{
+    sb.channel('ws-'+tbl+'-'+CW.id)
+      .on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'workspace_id=eq.'+CW.id},async()=>{
+        await cargarTodo();
+      }).subscribe(s=>document.getElementById('sb-dot').classList[s==='SUBSCRIBED'?'add':'remove']('on'));
+  });
+}
+
+// ═══════════════════════════════════════
+//  HELPERS PAGOS
+// ═══════════════════════════════════════
+function getEstado(p){
+  const t=new Date();t.setHours(0,0,0,0);const v=new Date(p.vencimiento+'T00:00:00');
+  if(Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0)return'pagado';
+  if(Number(p.pagado)>0&&Number(p.pagado)<Number(p.monto))return'parcial';
+  if(v<t)return'vencido';return'pendiente';
+}
+
+// ═══════════════════════════════════════
+//  RENDER STATS
+// ═══════════════════════════════════════
+function renderStats(){
+  const t=new Date();t.setHours(0,0,0,0);
+  const mes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY});
+  const esp=mes.reduce((s,p)=>s+Number(p.monto),0),cob=mes.reduce((s,p)=>s+Number(p.pagado),0);
+  const venc=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v<t&&Number(p.pagado)<Number(p.monto)});
+  const pend=mes.filter(p=>getEstado(p)==='pendiente').length,pct=esp>0?Math.round(cob/esp*100):0;
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="sc hl"><div class="sl"><i class="ti ti-calendar-month" style="font-size:12px"></i>Esperado</div><div class="sv">${fmt(esp)}</div><div class="ss">${MESES[vM]} ${vY}</div></div>
+    <div class="sc"><div class="sl" style="color:var(--teal-tx)"><i class="ti ti-check" style="color:var(--teal);font-size:12px"></i>Cobrado</div><div class="sv" style="color:var(--teal)">${fmt(cob)}</div><div class="ss">${pct}% del total</div></div>
+    <div class="sc"><div class="sl"><i class="ti ti-clock" style="color:var(--amber);font-size:12px"></i>Pendientes</div><div class="sv">${pend}</div><div class="ss">este mes</div></div>
+    <div class="sc"><div class="sl"><i class="ti ti-alert-triangle" style="color:var(--red);font-size:12px"></i>Vencidos</div><div class="sv" style="color:var(--red)">${venc.length}</div><div class="ss">sin pagar</div></div>
+    <div class="sc"><div class="sl"><i class="ti ti-building" style="font-size:12px"></i>Departamentos</div><div class="sv">${inmuebles.length}</div><div class="ss">registrados</div></div>`;
+}
+
+// ═══════════════════════════════════════
+//  RENDER PAGOS
+// ═══════════════════════════════════════
+function renderPagos(){
+  document.getElementById('mes-lbl').textContent=MESES[vM]+' '+vY;
+  document.getElementById('pagos-sub').textContent=`Pagos de ${MESES[vM]} ${vY}`;
+  const q=(document.getElementById('sp').value||'').toLowerCase(),fe=document.getElementById('fe').value,fc=document.getElementById('fc').value;
+  const t=new Date();t.setHours(0,0,0,0);
+  let list=pagos.filter(p=>{
+    const v=new Date(p.vencimiento+'T00:00:00');
+    if(v.getMonth()!==vM||v.getFullYear()!==vY)return false;
+    if(fe&&getEstado(p)!==fe)return false;if(fc&&p.concepto!==fc)return false;
+    if(q){const i=getInm(p.inmueble_id);if(!((i?.num||'')+(i?.inquilino||'')+(p.concepto||'')).toLowerCase().includes(q))return false}
+    return true;
+  }).sort((a,b)=>{const o={vencido:0,parcial:1,pendiente:2,pagado:3},ea=getEstado(a),eb=getEstado(b);return o[ea]!==o[eb]?o[ea]-o[eb]:new Date(a.vencimiento)-new Date(b.vencimiento)});
+  const tb=document.getElementById('t-pagos');
+  if(!list.length){tb.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--tx3)"><i class="ti ti-inbox" style="font-size:28px;display:block;margin-bottom:8px;opacity:.35"></i>Sin pagos para este mes</td></tr>`;return}
+  const ic={pagado:'ti-check',pendiente:'ti-clock',vencido:'ti-alert-triangle',parcial:'ti-percentage'},lb={pagado:'Pagado',pendiente:'Pendiente',vencido:'Vencido',parcial:'Parcial'};
+  tb.innerHTML=list.map(p=>{
+    const i=getInm(p.inmueble_id),est=getEstado(p);
+    const v=new Date(p.vencimiento+'T00:00:00'),dv=est==='vencido'?Math.abs(dB(t,v)):null,dp=est==='pendiente'?dB(t,v):null;
+    let ex='';if(dv!==null)ex=` <span style="font-size:10px;opacity:.7">(${dv}d)</span>`;if(est==='parcial')ex=` <span style="font-size:10px;opacity:.7">(${fmt(p.pagado)})</span>`;
+    return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong>${i?.piso?`<br><span style="font-size:11px;color:var(--tx3)">P${i.piso}</span>`:''}</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i?.inquilino||'—'}</td><td style="text-transform:capitalize;color:var(--tx2)">${p.concepto}</td><td style="font-weight:500">${fmt(p.monto)}</td><td style="color:${Number(p.pagado)>=Number(p.monto)?'var(--teal)':Number(p.pagado)>0?'var(--amber)':'var(--tx3)'}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</td><td style="color:${est==='vencido'?'var(--red)':est==='pendiente'&&dp<=3?'var(--amber)':'var(--tx2)'}">${fd(p.vencimiento)}</td><td>${p.fecha_pago?fd(p.fecha_pago):`<span style="color:var(--tx3)">—</span>`}</td><td><span class="badge ${est}"><i class="ti ${ic[est]}" style="font-size:11px"></i>${lb[est]}${ex}</span></td><td><button class="btn sm" onclick="abrirEditPago('${p.id}')"><i class="ti ti-edit"></i></button></td></tr>`;
+  }).join('');
+}
+function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}renderStats();renderPagos();renderEC()}
+
+// ═══════════════════════════════════════
+//  RENDER INMUEBLES
+// ═══════════════════════════════════════
+function renderInm(){
+  const q=(document.getElementById('si').value||'').toLowerCase(),list=inmuebles.filter(i=>!q||(i.num+i.inquilino).toLowerCase().includes(q)),el=document.getElementById('l-inm');
+  if(!list.length){el.innerHTML=`<div class="empty"><i class="ti ti-building"></i><p>Sin departamentos registrados.</p></div>`;return}
+  el.innerHTML=list.map(i=>{
+    const mp=pagos.filter(p=>p.inmueble_id===i.id),pm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&getEstado(p)==='pagado'}).length,tm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY}).length;
+    const tv=mp.some(p=>getEstado(p)==='vencido'),pct=tm?Math.round(pm/tm*100):0,cls=pct===100?'g':pct>=50?'w':'b';
+    return`<div class="ic"><div class="ict"><div class="iav">${i.num.slice(0,3).toUpperCase()}</div><div class="imet"><strong>Depto. ${i.num}</strong><span>${i.inquilino}</span></div><div class="iren"><strong>${fmt(i.renta)}</strong><span>/mes · día ${i.dia||'—'}</span></div></div>
+    <div class="idet">${i.piso?`<span><i class="ti ti-stairs" style="font-size:12px"></i>Piso ${i.piso}</span>`:''}<span><i class="ti ti-users" style="font-size:12px"></i>${i.personas||1} personas</span>${i.tel?`<span><i class="ti ti-phone" style="font-size:12px"></i>${i.tel}</span>`:''} ${tv?`<span style="color:var(--red)"><i class="ti ti-alert-triangle" style="font-size:12px"></i>Vencidos</span>`:''}</div>
+    ${tm>0?`<div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx3);margin-bottom:3px"><span>Pagos ${MESES[vM].slice(0,3)}</span><span>${pm}/${tm} (${pct}%)</span></div><div class="pb"><div class="pf ${cls}" style="width:${pct}%"></div></div></div>`:''}
+    <div class="iact"><button class="btn sm" onclick="abrirInm('${i.id}')"><i class="ti ti-edit"></i>Editar</button><button class="btn sm" onclick="abrirPago('${i.id}')"><i class="ti ti-plus"></i>Pago</button><button class="btn sm teal" onclick="generarPDF('${i.id}')"><i class="ti ti-file-invoice"></i>PDF</button></div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+//  RENDER ALERTAS
+// ═══════════════════════════════════════
+function renderAl(){
+  const t=new Date();t.setHours(0,0,0,0);const al=[];
+  pagos.forEach(p=>{
+    const v=new Date(p.vencimiento+'T00:00:00'),i=getInm(p.inmueble_id),est=getEstado(p),nm=i?.num||'?',d=dB(t,v);
+    if(est==='vencido'){const dd=Math.abs(d);al.push({type:'vencido',icon:'ti-alert-triangle',title:`Depto. ${nm} — ${p.concepto}`,sub:`Vencido hace ${dd} día${dd!==1?'s':''}. Pendiente: ${fmt(Number(p.monto)-Number(p.pagado))}`,pri:0})}
+    else if(est==='pendiente'&&d>=0&&d<=5)al.push({type:'proximo',icon:'ti-clock',title:`Depto. ${nm} — ${p.concepto}`,sub:`Vence ${d===0?'hoy':d===1?'mañana':`en ${d} días`} (${fd(p.vencimiento)}). Monto: ${fmt(p.monto)}`,pri:1});
+    else if(est==='parcial')al.push({type:'proximo',icon:'ti-percentage',title:`Depto. ${nm} — pago parcial`,sub:`Pendiente: ${fmt(Number(p.monto)-Number(p.pagado))} de ${fmt(p.monto)}`,pri:2});
+  });
+  al.sort((a,b)=>a.pri-b.pri);
+  const nb=document.getElementById('nb-al');if(al.length){nb.style.display='inline';nb.textContent=al.length}else nb.style.display='none';
+  const el=document.getElementById('l-al');
+  if(!al.length){el.innerHTML=`<div class="empty"><i class="ti ti-circle-check" style="color:var(--teal);opacity:1"></i><p>Sin alertas activas. Todo al corriente.</p></div>`;return}
+  el.innerHTML=al.map(a=>`<div class="ali ${a.type}"><i class="ti ${a.icon} aic ${a.type}"></i><div class="aib"><strong>${a.title}</strong><span>${a.sub}</span></div></div>`).join('');
+}
+
+// ═══════════════════════════════════════
+//  RENDER REPORTE
+// ═══════════════════════════════════════
+function renderRep(){
+  const tg=pagos.reduce((s,p)=>s+Number(p.monto),0),cg=pagos.reduce((s,p)=>s+Number(p.pagado),0),pct=tg>0?Math.round(cg/tg*100):0;
+  const rows=inmuebles.map(i=>{const mp=pagos.filter(p=>p.inmueble_id===i.id),e=mp.reduce((s,p)=>s+Number(p.monto),0),c=mp.reduce((s,p)=>s+Number(p.pagado),0),vc=mp.filter(p=>getEstado(p)==='vencido').length;return{i,e,c,p:e-c,vc}}).sort((a,b)=>b.p-a.p);
+  document.getElementById('rep').innerHTML=`
+    <div class="rep-sum">
+      <div class="sc hl"><div class="sl">Total facturado</div><div class="sv">${fmt(tg)}</div><div class="ss">todos los periodos</div></div>
+      <div class="sc"><div class="sl" style="color:var(--teal-tx)">Cobrado</div><div class="sv" style="color:var(--teal)">${fmt(cg)}</div><div class="ss">${pct}% eficiencia</div></div>
+      <div class="sc"><div class="sl" style="color:var(--red-tx)">Pendiente</div><div class="sv" style="color:var(--red)">${fmt(tg-cg)}</div><div class="ss">por cobrar</div></div>
+    </div>
+    <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Renta</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th><th>Vencidos</th></tr></thead>
+    <tbody>${rows.map(({i,e,c,p,vc})=>`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i.num}</strong></td><td>${i.inquilino}</td><td>${fmt(i.renta)}</td><td>${fmt(e)}</td><td style="color:var(--teal);font-weight:500">${fmt(c)}</td><td style="color:${p>0?'var(--red)':'var(--tx3)'}${p>0?';font-weight:500':''}">${fmt(p)}</td><td>${vc>0?`<span class="badge vencido">${vc} venc.</span>`:`<span style="color:var(--tx3)">—</span>`}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+
+// ═══════════════════════════════════════
+//  SERVICIOS — DISTRIBUCIÓN
+// ═══════════════════════════════════════
+function renderSvcList(){
+  const el=document.getElementById('svc-list');
+  if(!servicios.length){el.innerHTML=`<div class="empty"><i class="ti ti-bolt"></i><p>Sin servicios registrados.<br>Registra el primer servicio de Agua, Luz o Gas.</p></div>`;return}
+  // Group by mes/anio
+  const groups={};
+  servicios.forEach(s=>{const k=`${s.anio||'?'}-${(s.mes||0)+1}`;if(!groups[k])groups[k]={label:MESES[s.mes||0]+' '+(s.anio||''),svcs:[]};groups[k].svcs.push(s)});
+  el.innerHTML=Object.entries(groups).map(([k,g])=>`
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:.75rem;margin-top:1.25rem;color:var(--tx2)">${g.label}</h3>
+    <div class="svc-grid">${g.svcs.map(s=>{
+      const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion);
+      const colores={agua:'var(--blue)',luz:'var(--amber)',gas:'var(--red)'};
+      const iconos={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'};
+      return`<div class="svc-card"><h3><i class="ti ${iconos[s.tipo]}" style="color:${colores[s.tipo]}"></i>${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)} <span class="pill ${s.tipo}" style="font-size:11px">${fd(s.periodo_ini)} — ${fd(s.periodo_fin)}</span></h3>
+        <div class="svc-total">${fmt(s.total)}</div>
+        ${det.slice(0,4).map(d=>{const i=getInm(d.inmueble_id);return`<div class="svc-row"><span class="svc-depto">Depto. ${i?.num||'?'}</span><span>${fmt(d.monto)}</span></div>`}).join('')}
+        ${det.length>4?`<div style="font-size:12px;color:var(--tx3);padding:4px 0">+${det.length-4} departamentos más</div>`:''}
+        <div class="svc-actions"><button class="btn sm" onclick="verServicio('${s.id}')"><i class="ti ti-eye"></i>Ver detalle</button></div>
+      </div>`;
+    }).join('')}</div>`).join('');
+}
+
+function abrirNuevoSvc(){
+  // Calcular días automáticamente
+  const ini=document.getElementById('sv-ini'),fin=document.getElementById('sv-fin');
+  [ini,fin].forEach(el=>{el.addEventListener('change',calcSvcRows)});
+  document.getElementById('sv-ini').value='';document.getElementById('sv-fin').value='';
+  document.getElementById('sv-total').value='';document.getElementById('sv-not').value='';
+  calcSvcRows();openM('m-new-svc');
+}
+
+function calcSvcRows(){
+  const total=parseFloat(document.getElementById('sv-total').value)||0;
+  const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
+  const iniDate=iniStr?new Date(iniStr+'T00:00:00'):null,finDate=finStr?new Date(finStr+'T00:00:00'):null;
+  const diasTotal=iniDate&&finDate?Math.max(1,dB(iniDate,finDate)+1):31;
+
+  const tbody=document.getElementById('sv-rows');
+  if(!inmuebles.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:1rem">Agrega departamentos primero</td></tr>`;return}
+
+  tbody.innerHTML=inmuebles.map((inm,idx)=>{
+    const diasDefault=diasTotal;
+    return`<tr id="sv-row-${idx}">
+      <td><strong style="font-family:'DM Mono',monospace;font-size:12px">${inm.num}</strong></td>
+      <td style="font-size:12px">${inm.inquilino.split(' ')[0]}</td>
+      <td><input type="checkbox" id="sv-aplica-${idx}" checked onchange="recalcSvc(${idx},'${inm.id}')" style="width:18px;height:18px;cursor:pointer"></td>
+      <td><input type="number" id="sv-dias-${idx}" value="${diasDefault}" min="0" max="${diasTotal}" style="width:70px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
+      <td><input type="number" id="sv-pers-${idx}" value="${inm.personas||1}" min="0" max="20" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
+      <td id="sv-pond-${idx}" style="font-family:'DM Mono',monospace;font-size:13px">0</td>
+      <td id="sv-pct-${idx}" style="font-size:13px">0%</td>
+      <td id="sv-mto-${idx}" style="font-weight:500;font-size:13px">$0.00</td>
+    </tr>`;
+  }).join('');
+  recalcAllSvc();
+}
+
+function recalcSvc(){recalcAllSvc()}
+function recalcAllSvc(){
+  const total=parseFloat(document.getElementById('sv-total').value)||0;
+  let sumPond=0;
+  const rows=inmuebles.map((inm,idx)=>{
+    const aplica=document.getElementById(`sv-aplica-${idx}`)?.checked;
+    const dias=aplica?(parseInt(document.getElementById(`sv-dias-${idx}`)?.value)||0):0;
+    const pers=aplica?(parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||0):0;
+    const pond=dias*pers;
+    sumPond+=pond;
+    return{idx,pond,inmId:inm.id};
+  });
+  // Administración es el 23% promedio del total en el ejemplo, pero aquí lo calculamos como residuo
+  // Para simplificar: distribuimos 100% entre deptos, luego administración es el sobrante si se define
+  // En el modelo original: los deptos suman menos del 100%, la diferencia es "Subsidio Administración"
+  rows.forEach(({idx,pond})=>{
+    const pct=sumPond>0?pond/sumPond:0;
+    const mto=pct*total;
+    if(document.getElementById(`sv-pond-${idx}`)){
+      document.getElementById(`sv-pond-${idx}`).textContent=pond;
+      document.getElementById(`sv-pct-${idx}`).textContent=Math.round(pct*100)+'%';
+      document.getElementById(`sv-mto-${idx}`).textContent=fmt(mto);
+    }
+  });
+  // Administración = 0 en este modelo simplificado (todos reciben su parte proporcional)
+  document.getElementById('sv-adm-pond').textContent=sumPond;
+  document.getElementById('sv-adm-pct').textContent='';
+  document.getElementById('sv-adm-mto').textContent='';
+  document.getElementById('sv-tot-pond').textContent=sumPond;
+  document.getElementById('sv-tot-mto').textContent=fmt(total);
+}
+
+document.getElementById('sv-total').addEventListener('input',recalcAllSvc);
+
+async function guardarServicio(){
+  const tipo=document.getElementById('sv-tipo').value,total=parseFloat(document.getElementById('sv-total').value)||0;
+  const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
+  if(!total||!iniStr||!finStr){toast('Completa todos los campos requeridos','ti-alert-triangle');return}
+  const iniDate=new Date(iniStr+'T00:00:00'),finDate=new Date(finStr+'T00:00:00');
+  const dias=Math.max(1,dB(iniDate,finDate)+1);
+  const {data:svc,error:se}=await sb.from('servicios').insert({workspace_id:CW.id,tipo,total,periodo_ini:iniStr,periodo_fin:finStr,dias_servicio:dias,mes:iniDate.getMonth(),anio:iniDate.getFullYear(),notas:document.getElementById('sv-not').value||null}).select().single();
+  if(se){toast('Error: '+se.message,'ti-alert-triangle');return}
+
+  let sumPond=0;
+  const detalles=inmuebles.map((inm,idx)=>{
+    const aplica=document.getElementById(`sv-aplica-${idx}`)?.checked||false;
+    const ds=aplica?parseInt(document.getElementById(`sv-dias-${idx}`)?.value||0):0;
+    const ps=aplica?parseInt(document.getElementById(`sv-pers-${idx}`)?.value||1):0;
+    const pond=ds*ps;sumPond+=pond;
+    return{servicio_id:svc.id,workspace_id:CW.id,inmueble_id:inm.id,dias_uso:ds,personas:ps,ponderacion:pond};
+  });
+  // Calcular montos
+  detalles.forEach(d=>{d.porcentaje=sumPond>0?d.ponderacion/sumPond:0;d.monto=d.porcentaje*total});
+  await sb.from('servicio_detalles').insert(detalles);
+  closeM('m-new-svc');toast('Servicio registrado correctamente');
+}
+
+async function verServicio(id){
+  editSvcId=id;
+  const svc=servicios.find(s=>s.id===id);if(!svc)return;
+  const det=svcDet.filter(d=>d.servicio_id===id&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
+  const sumPond=det.reduce((s,d)=>s+d.ponderacion,0);
+  const iconos={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'};
+  document.getElementById('msv-ttl').innerHTML=`<i class="ti ${iconos[svc.tipo]}" style="color:var(--amber)"></i>${svc.tipo.charAt(0).toUpperCase()+svc.tipo.slice(1)} — ${fmt(svc.total)}`;
+  document.getElementById('msv-body').innerHTML=`
+    <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+      <div><span style="font-size:12px;color:var(--tx2)">Período</span><br><strong>${fd(svc.periodo_ini)} al ${fd(svc.periodo_fin)}</strong></div>
+      <div><span style="font-size:12px;color:var(--tx2)">Días</span><br><strong>${svc.dias_servicio}</strong></div>
+      <div><span style="font-size:12px;color:var(--tx2)">Total factura</span><br><strong>${fmt(svc.total)}</strong></div>
+    </div>
+    <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Días</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ Pagar</th></tr></thead>
+    <tbody>${det.map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((d.ponderacion/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
+    <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:700;padding:10px 14px">TOTAL</td><td style="font-weight:700;padding:10px 14px">${sumPond}</td><td style="font-weight:700;padding:10px 14px">100%</td><td style="font-weight:700;padding:10px 14px">${fmt(svc.total)}</td></tr>
+    </tbody></table></div></div>`;
+  openM('m-svc-det');
+}
+
+async function elimServicio(){
+  if(!confirm('¿Eliminar este servicio y su distribución?'))return;
+  await sb.from('servicio_detalles').delete().eq('servicio_id',editSvcId);
+  await sb.from('servicios').delete().eq('id',editSvcId);
+  closeM('m-svc-det');toast('Servicio eliminado','ti-trash');
+}
+
+// ═══════════════════════════════════════
+//  ESTADO DE CUENTA
+// ═══════════════════════════════════════
+function renderEC(){
+  document.getElementById('ec-mes-lbl').textContent=MESES[vM]+' '+vY;
+  const el=document.getElementById('l-ec');
+  if(!inmuebles.length){el.innerHTML=`<div class="empty"><i class="ti ti-file-invoice"></i><p>Sin departamentos registrados.</p></div>`;return}
+  el.innerHTML=inmuebles.map(inm=>{
+    const pagosMes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&p.inmueble_id===inm.id});
+    const renta=pagosMes.filter(p=>p.concepto==='renta').reduce((s,p)=>s+Number(p.monto),0);
+    const svcs=getSvcMonto(inm.id,vM,vY);
+    const totalEC=renta+svcs;
+    return`<div class="ec-item">
+      <div class="ec-num">${inm.num}</div>
+      <div class="ec-info"><strong>Depto. ${inm.num} — ${inm.inquilino}</strong><span>Renta: ${fmt(renta)} · Servicios: ${fmt(svcs)}</span></div>
+      <div class="ec-total"><strong>${fmt(totalEC)}</strong><span>Total ${MESES[vM]}</span></div>
+      <div class="ec-actions">
+        <button class="btn sm" onclick="verEC('${inm.id}')"><i class="ti ti-eye"></i>Ver</button>
+        <button class="btn sm teal" onclick="generarPDF('${inm.id}')"><i class="ti ti-file-invoice"></i>PDF</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getSvcMonto(inmId,mes,anio){
+  // Suma de servicios del período mes/anio para este depto
+  const svcsDelMes=servicios.filter(s=>s.mes===mes&&s.anio===anio);
+  let total=0;
+  svcsDelMes.forEach(s=>{
+    const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
+    if(d)total+=Number(d.monto);
+  });
+  return total;
+}
+
+function verEC(inmId){
+  // Genera el estado de cuenta en pantalla
+  generarPDF(inmId,false);
+}
+
+// ═══════════════════════════════════════
+//  CONFIGURACIÓN DEL NEGOCIO
+// ═══════════════════════════════════════
+async function cargarConfig(){
+  const {data}=await sb.from('workspaces').select('empresa,nombre_cobrador,direccion,clabe,cuenta_scotiabank,tarjeta_oxxo').eq('id',CW.id).single();
+  if(!data)return;
+  CW.cfg=data;
+  document.getElementById('cfg-empresa').value=data.empresa||'';
+  document.getElementById('cfg-cobrador').value=data.nombre_cobrador||'';
+  document.getElementById('cfg-dir').value=data.direccion||'';
+  document.getElementById('cfg-clabe').value=data.clabe||'';
+  document.getElementById('cfg-scott').value=data.cuenta_scotiabank||'';
+  document.getElementById('cfg-oxxo').value=data.tarjeta_oxxo||'';
+}
+async function guardarConfig(){
+  const d={empresa:document.getElementById('cfg-empresa').value||'InmoPagos',nombre_cobrador:document.getElementById('cfg-cobrador').value||'',direccion:document.getElementById('cfg-dir').value||'',clabe:document.getElementById('cfg-clabe').value||'',cuenta_scotiabank:document.getElementById('cfg-scott').value||'',tarjeta_oxxo:document.getElementById('cfg-oxxo').value||''};
+  await sb.from('workspaces').update(d).eq('id',CW.id);
+  CW.cfg=d;toast('Configuración guardada');
+}
+
+// ═══════════════════════════════════════
+//  GENERACIÓN DE PDF (Estado de Cuenta)
+// ═══════════════════════════════════════
+function generarPDF(inmId,download=true){
+  const {jsPDF}=window.jspdf;
+  const inm=getInm(inmId);if(!inm)return;
+  const cfg=CW.cfg||{};
+  const empresa=cfg.empresa||CW.nombre||'InmoPagos';
+  const cobrador=cfg.nombre_cobrador||'';
+  const dir=cfg.direccion||'';
+  const clabe=cfg.clabe||'';
+  const scott=cfg.cuenta_scotiabank||'';
+  const oxxo=cfg.tarjeta_oxxo||'';
+
+  // Datos del mes
+  const pagosMes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&p.inmueble_id===inmId});
+  const renta=pagosMes.find(p=>p.concepto==='renta');
+  const rentaMonto=renta?Number(renta.monto):Number(inm.renta);
+  const svcsDelMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
+  const svcItems=[];
+  svcsDelMes.forEach(s=>{
+    const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
+    if(d&&Number(d.monto)>0)svcItems.push({tipo:s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1),monto:Number(d.monto)});
+  });
+  const totalSvcs=svcItems.reduce((s,i)=>s+i.monto,0);
+  const totalEC=rentaMonto+totalSvcs;
+
+  // Fecha de vencimiento (día de pago del depto en el mes siguiente)
+  const fechaVenc=`${MESES[vM]} ${inm.dia||'18'}/${vY}`;
+
+  // Crear PDF
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,M=18;
+
+  // ── ENCABEZADO ──
+  doc.setFillColor(255,240,240);doc.rect(0,0,W,45,'F');
+  doc.setFontSize(22);doc.setFont('helvetica','bold');doc.setTextColor(220,50,50);
+  doc.text('ESTADO DE CUENTA',W/2,20,{align:'center'});
+  doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+  doc.text(`FECHA DE VENCIMIENTO: ${fechaVenc}`,W/2,29,{align:'center'});
+
+  // Logo placeholder (círculo con iniciales)
+  doc.setDrawColor(180,140,100);doc.setLineWidth(0.8);doc.circle(M+12,22,12);
+  doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(120,80,40);
+  const initials=empresa.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  doc.text(initials,M+12,22,{align:'center',baseline:'middle'});
+  doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(60,40,20);
+  doc.text(empresa,M+12,30,{align:'center'});
+
+  // ── DATOS DEL CLIENTE ──
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(30,30,30);
+  doc.text('Datos del cliente:',M,54);
+  doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+  doc.text('Arrendatario:',M,61);
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
+  doc.text(inm.inquilino.toUpperCase(),M,70);
+  doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+  let yc=78;
+  doc.text(`Departamento #${inm.num}`,M,yc);yc+=6;
+  if(dir){doc.text(dir,M,yc);yc+=6}
+  if(inm.notas){const notas=doc.splitTextToSize(inm.notas,80);doc.text(notas,M,yc);yc+=notas.length*5}
+
+  // ── TABLA DE CONCEPTOS ──
+  const ty=Math.max(yc+8,105);
+  // Encabezado tabla
+  doc.setFillColor(255,210,210);doc.rect(M,ty-6,W-2*M,9,'F');
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(30,30,30);
+  doc.text('Descripción',M+2,ty);
+  doc.text('Cantidad',W/2-10,ty,{align:'center'});
+  doc.text('Precio',W-M-30,ty,{align:'right'});
+  doc.text('Total',W-M-2,ty,{align:'right'});
+  doc.setDrawColor(200,160,160);doc.setLineWidth(0.3);doc.line(M,ty+2,W-M,ty+2);
+
+  // Fila renta
+  let tr=ty+11;
+  doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(50,50,50);
+  doc.text(`Renta Departamento #${inm.num}`,M+2,tr);
+  doc.text('1 Mensualidad',W/2-10,tr,{align:'center'});
+  doc.text(fmt(rentaMonto),W-M-30,tr,{align:'right'});
+  doc.text(fmt(rentaMonto),W-M-2,tr,{align:'right'});
+  doc.setDrawColor(220,220,220);doc.line(M,tr+3,W-M,tr+3);tr+=12;
+
+  // Servicios agrupados
+  if(svcItems.length>0){
+    svcItems.forEach(sv=>{
+      doc.text(`Servicio de ${sv.tipo} — ${MESES[vM]}`,M+2,tr);
+      doc.text('',W/2-10,tr,{align:'center'});
+      doc.text(fmt(sv.monto),W-M-30,tr,{align:'right'});
+      doc.text(fmt(sv.monto),W-M-2,tr,{align:'right'});
+      doc.setDrawColor(220,220,220);doc.line(M,tr+3,W-M,tr+3);tr+=12;
+    });
+  }
+
+  // ── TOTAL ──
+  const totY=tr+8;
+  doc.setFillColor(240,240,240);doc.rect(W-M-70,totY-7,72,12,'F');
+  doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
+  doc.text('TOTAL:',W-M-68,totY);
+  doc.setTextColor(30,100,60);
+  doc.text(fmt(totalEC),W-M-2,totY,{align:'right'});
+
+  // ── CÓMO PAGAR ──
+  const py=totY+20;
+  doc.setFillColor(255,240,240);doc.rect(M-2,py-8,W-2*(M-2),8,'F');
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(200,50,50);
+  doc.text('¿CÓMO PAGAR?',M,py-1);
+
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(60,60,60);
+  let py2=py+7;
+  doc.setFont('helvetica','bold');doc.text('LA FORMA DE PAGO PODRÁ SER ÚNICAMENTE EN CUALQUIERA DE LAS SIGUIENTES FORMAS:',M,py2,{maxWidth:W-2*M});py2+=7;
+
+  if(clabe){
+    const txt1=doc.splitTextToSize(`-VÍA TRANSFERENCIA ELECTRÓNICA DESDE CUALQUIER BANCO A LA CUENTA CLABE N° ${clabe} A NOMBRE DE LA SEÑORA ${cobrador.toUpperCase()}.`,W-2*M);
+    doc.setFont('helvetica','normal');doc.text(txt1,M,py2);py2+=txt1.length*5+3;
+  }
+  if(scott){
+    const txt2=doc.splitTextToSize(`-VÍA TRANSFERENCIA ELECTRÓNICA DESDE SCOTIABANK A LA CUENTA N° ${scott} DE SCOTIABANK A NOMBRE DE ${cobrador.toUpperCase()}.`,W-2*M);
+    doc.text(txt2,M,py2);py2+=txt2.length*5+3;
+  }
+  if(oxxo){
+    const txt3=doc.splitTextToSize(`-DEPOSITANDO EN CUALQUIER TIENDA OXXO EL VALOR IGUAL A LA RENTA, A LA TARJETA DE DÉBITO ${oxxo} DEL BANCO SCOTIABANK A NOMBRE DE ${cobrador.toUpperCase()}.`,W-2*M);
+    doc.text(txt3,M,py2);py2+=txt3.length*5+3;
+  }
+
+  // Footer
+  doc.setFontSize(9);doc.setTextColor(150,150,150);
+  doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')} · ${empresa}`,W/2,290,{align:'center'});
+
+  const filename=`Estado_de_Cuenta_${MESES[vM]}_${vY}_Depto_${inm.num}_${inm.inquilino.split(' ')[0]}.pdf`;
+  if(download)doc.save(filename);
+  else doc.output('dataurlnewwindow');
+}
+
+async function generarTodosPDF(){
+  if(!inmuebles.length){toast('Sin departamentos','ti-alert-triangle');return}
+  toast(`Generando ${inmuebles.length} PDFs...`,'ti-loader');
+  for(const inm of inmuebles){await new Promise(r=>setTimeout(r,300));generarPDF(inm.id,true)}
+}
+
+// ═══════════════════════════════════════
+//  CRUD PAGOS
+// ═══════════════════════════════════════
+function abrirPago(inmId){
+  editPagoId=null;
+  document.getElementById('mp-ttl').textContent='Registrar pago';
+  document.getElementById('btn-del-p').style.display='none';
+  const sel=document.getElementById('fp-dep');
+  sel.innerHTML='<option value="">Seleccionar...</option>'+inmuebles.map(i=>`<option value="${i.id}"${i.id===inmId?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
+  if(inmId){const i=getInm(inmId);if(i){document.getElementById('fp-mto').value=i.renta;document.getElementById('fp-con').value='renta'}}
+  else{document.getElementById('fp-mto').value='';document.getElementById('fp-con').value='renta'}
+  document.getElementById('fp-pag').value='';
+  document.getElementById('fp-venc').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fp-fpag').value='';document.getElementById('fp-not').value='';
+  openM('m-pago');
+}
+function abrirEditPago(id){
+  editPagoId=id;const p=pagos.find(x=>x.id===id);if(!p)return;
+  document.getElementById('mp-ttl').textContent='Editar pago';document.getElementById('btn-del-p').style.display='inline-flex';
+  const sel=document.getElementById('fp-dep');sel.innerHTML=inmuebles.map(i=>`<option value="${i.id}"${i.id===p.inmueble_id?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
+  document.getElementById('fp-con').value=p.concepto;document.getElementById('fp-mto').value=p.monto;document.getElementById('fp-pag').value=p.pagado;document.getElementById('fp-venc').value=p.vencimiento;document.getElementById('fp-fpag').value=p.fecha_pago||'';document.getElementById('fp-not').value=p.notas||'';
+  openM('m-pago');
+}
+async function guardarPago(){
+  const inmueble_id=document.getElementById('fp-dep').value,monto=parseFloat(document.getElementById('fp-mto').value)||0,pagado=Math.min(parseFloat(document.getElementById('fp-pag').value)||0,monto),vencimiento=document.getElementById('fp-venc').value;
+  if(!inmueble_id||!monto||!vencimiento){toast('Completa los campos requeridos','ti-alert-triangle');return}
+  const d={workspace_id:CW.id,inmueble_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null};
+  const {error}=editPagoId?await sb.from('pagos').update(d).eq('id',editPagoId):await sb.from('pagos').insert(d);
+  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  closeM('m-pago');toast(editPagoId?'Pago actualizado':'Pago registrado');
+}
+async function elimPago(){if(!confirm('¿Eliminar este pago?'))return;await sb.from('pagos').delete().eq('id',editPagoId);closeM('m-pago');toast('Pago eliminado','ti-trash')}
+
+// ═══════════════════════════════════════
+//  CRUD INMUEBLES
+// ═══════════════════════════════════════
+function abrirInm(id){
+  editInmId=id;document.getElementById('mi-ttl').textContent=id?'Editar departamento':'Agregar departamento';document.getElementById('btn-del-i').style.display=id?'inline-flex':'none';
+  if(id){const i=getInm(id);if(!i)return;document.getElementById('fi-num').value=i.num;document.getElementById('fi-pis').value=i.piso||'';document.getElementById('fi-inq').value=i.inquilino;document.getElementById('fi-tel').value=i.tel||'';document.getElementById('fi-em').value=i.email||'';document.getElementById('fi-ren').value=i.renta||'';document.getElementById('fi-dia').value=i.dia||'';document.getElementById('fi-per').value=i.personas||1;document.getElementById('fi-not').value=i.notas||''}
+  else['fi-num','fi-pis','fi-inq','fi-tel','fi-em','fi-ren','fi-dia','fi-not'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('fi-per').value=document.getElementById('fi-per').value||1;
+  openM('m-inm');
+}
+async function guardarInm(){
+  const num=document.getElementById('fi-num').value.trim(),inq=document.getElementById('fi-inq').value.trim();
+  if(!num||!inq){toast('Número e inquilino son obligatorios','ti-alert-triangle');return}
+  const d={workspace_id:CW.id,num,piso:document.getElementById('fi-pis').value||null,inquilino:inq,tel:document.getElementById('fi-tel').value||null,email:document.getElementById('fi-em').value||null,renta:parseFloat(document.getElementById('fi-ren').value)||0,dia:parseInt(document.getElementById('fi-dia').value)||1,personas:parseInt(document.getElementById('fi-per').value)||1,notas:document.getElementById('fi-not').value||null};
+  const {error}=editInmId?await sb.from('inmuebles').update(d).eq('id',editInmId):await sb.from('inmuebles').insert(d);
+  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  closeM('m-inm');toast(editInmId?'Departamento actualizado':'Departamento agregado');
+}
+async function elimInm(){if(!confirm('¿Eliminar este departamento y todos sus pagos?'))return;await sb.from('pagos').delete().eq('inmueble_id',editInmId);await sb.from('inmuebles').delete().eq('id',editInmId);closeM('m-inm');toast('Eliminado','ti-trash')}
+
+// ═══════════════════════════════════════
+//  MIEMBROS
+// ═══════════════════════════════════════
+async function renderMem(){
+  const {data}=await sb.from('memberships').select('*').eq('workspace_id',CW.id);
+  const mems=data||[];
+  document.getElementById('l-mem').innerHTML=`
+    <div style="margin-bottom:1.5rem"><div class="code-box"><div class="inv-code">${CW.invite_code}</div><p style="font-size:12px;color:var(--tx2);margin-top:4px">Código de acceso a "${CW.nombre}"</p></div><button class="btn" onclick="copiarCodigo()"><i class="ti ti-copy"></i>Copiar código</button></div>
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:.75rem">Personas con acceso (${mems.length})</h3>
+    ${mems.map(m=>`<div class="mem-item"><div class="mem-av">${(m.email||'?').slice(0,1).toUpperCase()}</div><div style="flex:1"><strong style="font-size:13px;font-weight:500;display:block">${m.email||'Usuario'}</strong><span style="font-size:12px;color:var(--tx2)">${m.user_id===CU.id?'Tú · ':''} ${m.role==='owner'?'Propietario':'Miembro'}</span></div><span class="mem-role ${m.role}">${m.role==='owner'?'Propietario':'Miembro'}</span>${CW.role==='owner'&&m.user_id!==CU.id?`<button class="btn sm danger" onclick="quitarMem('${m.id}')" style="margin-left:8px"><i class="ti ti-user-minus"></i></button>`:''}</div>`).join('')}`;
+}
+async function quitarMem(id){if(!confirm('¿Quitar acceso?'))return;await sb.from('memberships').delete().eq('id',id);toast('Miembro eliminado');renderMem()}
+async function invEmail(){
+  const em=document.getElementById('inv-em').value.trim(),err=document.getElementById('ie-err'),ok=document.getElementById('ie-ok');
+  err.style.display='none';ok.style.display='none';if(!em||!em.includes('@')){se(err,'Correo inválido');return}
+  ok.innerHTML=`Comparte este código con <strong>${em}</strong>: <strong style="font-family:'DM Mono',monospace;font-size:16px;letter-spacing:.1em">${CW.invite_code}</strong><br><span style="font-size:11px">La persona debe crear una cuenta y usar este código.</span>`;
+  ok.style.display='block';navigator.clipboard?.writeText(CW.invite_code).catch(()=>{});
+}
+
+// ═══════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════
+const TABS=['pagos','inmuebles','alertas','reporte','servicios','edocuenta','miembros','config'];
+function setTab(name,btn){
+  TABS.forEach(t=>document.getElementById('sec-'+t).style.display=t===name?'block':'none');
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  if(name==='inmuebles')renderInm();if(name==='alertas')renderAl();if(name==='reporte')renderRep();
+  if(name==='servicios')renderSvcList();if(name==='edocuenta')renderEC();if(name==='miembros')renderMem();
+}
+function setTabM(name,btn){document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');setTab(name,document.querySelector(`.ni[data-tab="${name}"]`))}
+
+// Wiring: botones del modal nuevo servicio
+document.querySelector('[onclick="openM(\'m-new-svc\')"]').addEventListener('click',()=>{abrirNuevoSvc()},true);
+document.getElementById('sv-ini').addEventListener('change',calcSvcRows);
+document.getElementById('sv-fin').addEventListener('change',calcSvcRows);
+
+function refresh(){renderStats();renderPagos();renderAl();renderEC();renderSvcList()}
+
+// ═══════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════
+(async()=>{
+  const url=localStorage.getItem('ib_url'),key=localStorage.getItem('ib_key');
+  if(!url||!key){show('s-setup');return}
+  sb=supabase.createClient(url,key);
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){CU=session.user;cargarWS()}else{show('s-auth')}
+})();
+</script>
+</body>
+</html>
