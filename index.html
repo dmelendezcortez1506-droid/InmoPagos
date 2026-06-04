@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="icon" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InmoPagos — MC Conecta Living</title>
@@ -224,11 +222,21 @@ tbody tr:hover td{background:#FAFAF8}
 .pill.gas{background:#FCEBEB;color:#791F1F}
 .rep-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:1.5rem}
 input[type=number]{-moz-appearance:textfield}
+
+/* ── RESPONSIVE ── */
+@media(max-width:760px){
+  .sidebar{display:none}.main{padding:1rem;max-height:unset;padding-bottom:80px}
+  .sg{grid-template-columns:1fr 1fr}.fg-grid{grid-template-columns:1fr}.fg.full{grid-column:1}
+  .mobile-nav{display:flex}
+}
+@media(min-width:761px){.mobile-nav{display:none}}
+.mobile-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--bd);z-index:100;justify-content:space-around;padding:6px 0}
+.mobile-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--tx3);font-family:inherit}
+.mobile-nav button.active{color:var(--tx);font-weight:600}
+.mobile-nav button i{font-size:20px}
 .dep-panel{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;box-shadow:var(--sh);margin-bottom:10px}
-.dep-panel.retenido{border-left:4px solid var(--red)}
-.dep-panel.devuelto{border-left:4px solid var(--teal);opacity:.7}
-.dep-panel.parcial{border-left:4px solid var(--amber)}
-.dep-panel.activo{border-left:4px solid var(--blue)}
+.dep-panel.retenido{border-left:4px solid var(--red)}.dep-panel.devuelto{border-left:4px solid var(--teal);opacity:.7}
+.dep-panel.parcial{border-left:4px solid var(--amber)}.dep-panel.activo{border-left:4px solid var(--blue)}
 .dep-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 .dep-av{width:38px;height:38px;border-radius:50%;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:"DM Mono",monospace;font-size:12px;flex-shrink:0}
 .dep-info{flex:1}.dep-info strong{font-size:14px;font-weight:600;display:block}.dep-info span{font-size:12px;color:var(--tx2);display:block}
@@ -248,18 +256,18 @@ input[type=number]{-moz-appearance:textfield}
 .rec-footer{font-size:12px;color:#0a4a7a;line-height:1.6}.rec-footer strong{font-weight:700}
 .ali.pagoven{border-left:3px solid var(--red)}.ali.pagopend{border-left:3px solid var(--amber)}
 .aic.pagoven{color:var(--red)}.aic.pagopend{color:var(--amber)}
-
-/* ── RESPONSIVE ── */
-@media(max-width:760px){
-  .sidebar{display:none}.main{padding:1rem;max-height:unset;padding-bottom:80px}
-  .sg{grid-template-columns:1fr 1fr}.fg-grid{grid-template-columns:1fr}.fg.full{grid-column:1}
-  .mobile-nav{display:flex}
-}
-@media(min-width:761px){.mobile-nav{display:none}}
-.mobile-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--bd);z-index:100;justify-content:space-around;padding:6px 0}
-.mobile-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--tx3);font-family:inherit}
-.mobile-nav button.active{color:var(--tx);font-weight:600}
-.mobile-nav button i{font-size:20px}
+/* ── SUSCRIPCIÓN VENCIDA ── */
+#s-bloqueado{align-items:center;justify-content:center;padding:1.5rem;background:var(--bg)}
+.blq-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);box-shadow:var(--shl);padding:2.5rem;width:100%;max-width:440px;text-align:center}
+.blq-icon{font-size:56px;color:var(--red);margin-bottom:1rem;display:block}
+.blq-card h2{font-size:22px;font-weight:700;color:var(--tx);margin-bottom:.5rem}
+.blq-card p{font-size:14px;color:var(--tx2);line-height:1.6;margin-bottom:1.5rem}
+.blq-box{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r);padding:1.25rem;margin-bottom:1.5rem;text-align:left}
+.blq-box h3{font-size:13px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem}
+.blq-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--bd)}
+.blq-row:last-child{border-bottom:none;padding-bottom:0}
+.blq-row strong{color:var(--tx);font-weight:500}
+.blq-row span{color:var(--tx2);font-family:"DM Mono",monospace;font-size:12px}
 </style>
 </head>
 <body>
@@ -364,6 +372,26 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div class="fg2"><label>Supabase Anon Key</label><input type="text" id="cfg-key" placeholder="eyJhbGciOiJI..."></div>
   <div class="err" id="setup-err"></div>
   <button class="btn primary" style="width:100%;justify-content:center;padding:11px" onclick="doSetup()"><i class="ti ti-plug"></i>Guardar y continuar</button>
+</div>
+</div>
+
+<!-- ════ SUSCRIPCIÓN VENCIDA ════ -->
+<div id="s-bloqueado" class="screen">
+<div class="blq-card">
+  <i class="ti ti-lock blq-icon"></i>
+  <h2>Tu suscripción ha vencido</h2>
+  <p>Para seguir usando InmoPagos y administrar tus inmuebles, realiza el pago de tu mensualidad. En cuanto lo hagamos efectivo, tu acceso se reactiva al instante.</p>
+  <div class="blq-box">
+    <h3>Datos para pago</h3>
+    <div class="blq-row"><strong>Beneficiario</strong><span id="blq-cobrador">—</span></div>
+    <div class="blq-row"><strong>CLABE</strong><span id="blq-clabe">—</span></div>
+    <div class="blq-row"><strong>Banco</strong><span id="blq-banco">Scotiabank</span></div>
+    <div class="blq-row"><strong>Cuenta Scotiabank</strong><span id="blq-scott">—</span></div>
+    <div class="blq-row"><strong>Tarjeta OXXO</strong><span id="blq-oxxo">—</span></div>
+  </div>
+  <p style="font-size:13px;color:var(--tx3);margin-bottom:1.25rem">Después de pagar, envía tu comprobante por WhatsApp o Instagram y activamos tu cuenta en minutos.</p>
+  <button class="btn primary" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px" onclick="contactarWhatsApp()"><i class="ti ti-brand-whatsapp"></i>Enviar comprobante por WhatsApp</button>
+  <button class="btn" style="width:100%;justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i>Cerrar sesión</button>
 </div>
 </div>
 
@@ -759,9 +787,39 @@ async function doReg(){
 async function doLogout(){await sb.auth.signOut();CU=null;CW=null;show('s-auth')}
 
 // ═══════════════════════════════════════
+//  SUSCRIPCIÓN — verificar antes de entrar
+// ═══════════════════════════════════════
+async function verificarSuscripcion(){
+  // Busca el registro del usuario en la tabla 'clientes' por su email
+  const {data,error}=await sb.from('clientes').select('suscripcion_activa,clabe,cuenta_scotiabank,tarjeta_oxxo,nombre_cobrador,whatsapp_admin').eq('email',CU.email).single();
+  // Si no existe el registro o hay error: bloquear por seguridad
+  if(error||!data){mostrarBloqueado({});return false;}
+  if(data.suscripcion_activa===true) return true;
+  mostrarBloqueado(data);return false;
+}
+function mostrarBloqueado(cfg){
+  document.getElementById('blq-cobrador').textContent=cfg.nombre_cobrador||'InmoPagos';
+  document.getElementById('blq-clabe').textContent=cfg.clabe||'Contacta al administrador';
+  document.getElementById('blq-scott').textContent=cfg.cuenta_scotiabank||'—';
+  document.getElementById('blq-oxxo').textContent=cfg.tarjeta_oxxo||'—';
+  // Guardar whatsapp admin para el botón
+  window._adminWA=cfg.whatsapp_admin||'';
+  show('s-bloqueado');
+}
+function contactarWhatsApp(){
+  const tel=(window._adminWA||'').replace(/[^0-9]/g,'');
+  if(!tel){toast('No hay número de WhatsApp configurado','ti-alert-triangle');return}
+  const msg=encodeURIComponent(`Hola, soy ${CU.email} y acabo de realizar el pago de mi mensualidad de InmoPagos. Adjunto mi comprobante. Por favor reactiva mi acceso. ¡Gracias!`);
+  window.open(`https://wa.me/52${tel}?text=${msg}`,'_blank');
+}
+
+// ═══════════════════════════════════════
 //  WORKSPACES
 // ═══════════════════════════════════════
 async function cargarWS(){
+  // Verificar suscripción ANTES de mostrar workspaces
+  const activa=await verificarSuscripcion();
+  if(!activa)return;
   show('s-workspace');
   const {data}=await sb.from('memberships').select('role,workspaces(id,nombre,invite_code)').eq('user_id',CU.id);
   const el=document.getElementById('ws-list');
@@ -911,15 +969,13 @@ function renderInm(){
 //  RENDER ALERTAS
 // ═══════════════════════════════════════
 function renderAl(){
-  const t=new Date();t.setHours(0,0,0,0);
-  const al=[];
+  const t=new Date();t.setHours(0,0,0,0);const al=[];
   pagos.forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),i=getInm(p.inmueble_id),est=getEstado(p),nm=i?.num||'?',d=dB(t,v);
     if(est==='vencido'){const dd=Math.abs(d);al.push({cls:'pagoven',icon:'ti-alert-triangle',title:`Depto. ${nm} — ${p.concepto}`,sub:`Vencido hace ${dd} día${dd!==1?'s':''}. Pendiente: ${fmt(Number(p.monto)-Number(p.pagado))}. <a href="#" onclick="abrirRecordatorio('${i?.id||''}');return false" style="color:var(--blue);text-decoration:underline">Enviar recordatorio</a>`,pri:0})}
     else if(est==='pendiente'&&d>=0&&d<=3)al.push({cls:'pagopend',icon:'ti-clock',title:`Depto. ${nm} — ${p.concepto}`,sub:`Vence ${d===0?'hoy':d===1?'mañana':`en ${d} días`} (${fd(p.vencimiento)}). Monto: ${fmt(p.monto)} — 3 días de tolerancia. <a href="#" onclick="abrirRecordatorio('${i?.id||''}');return false" style="color:var(--blue);text-decoration:underline">Enviar recordatorio</a>`,pri:1});
     else if(est==='parcial')al.push({cls:'pagopend',icon:'ti-percentage',title:`Depto. ${nm} — pago parcial`,sub:`Pendiente: ${fmt(Number(p.monto)-Number(p.pagado))} de ${fmt(p.monto)}`,pri:2});
   });
-  // Alerta por día de pago vencido (sin renta registrada, pasados 3 días de tolerancia)
   const mesAct=new Date();
   inmuebles.forEach(inm=>{
     const diaP=inm.dia||1;
@@ -938,14 +994,13 @@ function renderAl(){
 }
 
 // ═══════════════════════════════════════
-//  RENDER REPORTE — profit depósitos separado
+//  RENDER REPORTE
 // ═══════════════════════════════════════
 function renderRep(){
   const pagosOp=pagos.filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito');
   const tg=pagosOp.reduce((s,p)=>s+Number(p.monto),0),cg=pagosOp.reduce((s,p)=>s+Number(p.pagado),0),pct=tg>0?Math.round(cg/tg*100):0;
   const conDep=inmuebles.filter(i=>pagos.some(p=>p.inmueble_id===i.id&&p.concepto==='deposito'));
-  let profitDep=0;
-  conDep.forEach(inm=>{const r=calcDeposito(inm);if(r&&r.estado==='retenido')profitDep+=r.totalDep;});
+  let profitDep=0;conDep.forEach(inm=>{const r=calcDeposito(inm);if(r&&r.estado==='retenido')profitDep+=r.totalDep;});
   const rows=inmuebles.map(i=>{const mp=pagosOp.filter(p=>p.inmueble_id===i.id),e=mp.reduce((s,p)=>s+Number(p.monto),0),co=mp.reduce((s,p)=>s+Number(p.pagado),0),vc=mp.filter(p=>getEstado(p)==='vencido').length;return{i,e,co,p:e-co,vc}}).sort((a,b)=>b.p-a.p);
   document.getElementById('rep').innerHTML=`
     <div class="rep-sum">
@@ -959,7 +1014,7 @@ function renderRep(){
 }
 
 // ═══════════════════════════════════════
-//  RECORDATORIO DE PAGO
+//  RECORDATORIO
 // ═══════════════════════════════════════
 let recInmId=null;
 function renderRecList(){
@@ -977,8 +1032,7 @@ function renderRecList(){
 function abrirRecordatorio(inmId){
   recInmId=inmId;
   const inm=getInm(inmId);if(!inm)return;
-  const cfg=CW.cfg||{};
-  const clabe=cfg.clabe||'—',scott=cfg.cuenta_scotiabank||'—',cobrador=cfg.nombre_cobrador||CW.nombre||'',empresa=cfg.empresa||'InmoPagos';
+  const cfg=CW.cfg||{},clabe=cfg.clabe||'—',scott=cfg.cuenta_scotiabank||'—',cobrador=cfg.nombre_cobrador||CW.nombre||'',empresa=cfg.empresa||'InmoPagos';
   const mesAct=new Date();
   const pagosPend=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inmId&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)!=='pagado';});
   const totalPend=pagosPend.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
@@ -1058,25 +1112,13 @@ function calcDeposito(inm){
   const totalDep=deps.reduce((s,p)=>s+Number(p.monto),0);
   if(totalDep===0)return null;
   const fterStr=inm.fecha_termino_contrato,fsalStr=inm.fecha_salida;
-  const fter=fterStr?new Date(fterStr+'T00:00:00'):null;
-  const fsal=fsalStr?new Date(fsalStr+'T00:00:00'):null;
+  const fter=fterStr?new Date(fterStr+'T00:00:00'):null,fsal=fsalStr?new Date(fsalStr+'T00:00:00'):null;
   if(!fsal)return{totalDep,estado:'activo',devolver:0,retenido:0,msg:'Inquilino activo. Sin fecha de salida registrada.',serviciosPost:0};
-  const finiStr=inm.fecha_inicio_contrato;
-  const fini=finiStr?new Date(finiStr+'T00:00:00'):null;
-  // REGLA 1: salida antes del inicio del contrato → no se devuelve
+  const fini=inm.fecha_inicio_contrato?new Date(inm.fecha_inicio_contrato+'T00:00:00'):null;
   if(fini&&fsal<fini)return{totalDep,estado:'retenido',devolver:0,retenido:totalDep,msg:'Salida antes del inicio del contrato. No se devuelve depósito.',serviciosPost:0};
-  // PENALIZACIÓN: salida antes del término del contrato → incumplimiento
   if(fter&&fsal<fter)return{totalDep,estado:'retenido',devolver:0,retenido:totalDep,msg:`Salida anticipada (${fd(fsalStr)}). Contrato era hasta ${fd(fterStr)}. No se devuelve depósito por incumplimiento.`,serviciosPost:0};
-  // CUMPLIMIENTO: devolver depósito menos servicios posteriores al término del contrato
   let serviciosPost=0;
-  if(fter){
-    svcDet.forEach(d=>{
-      if(d.inmueble_id!==inm.id)return;
-      const svc=servicios.find(s=>s.id===d.servicio_id);if(!svc)return;
-      const svcIni=new Date(svc.periodo_ini+'T00:00:00');
-      if(svcIni>fter)serviciosPost+=Number(d.monto);
-    });
-  }
+  if(fter){svcDet.forEach(d=>{if(d.inmueble_id!==inm.id)return;const svc=servicios.find(s=>s.id===d.servicio_id);if(!svc)return;const svcIni=new Date(svc.periodo_ini+'T00:00:00');if(svcIni>fter)serviciosPost+=Number(d.monto);});}
   const devolver=Math.max(0,totalDep-serviciosPost);
   return{totalDep,estado:devolver>0?'parcial':'retenido',devolver,retenido:serviciosPost,msg:`Contrato cumplido. Depósito: ${fmt(totalDep)} − Servicios post-contrato: ${fmt(serviciosPost)} = A devolver: ${fmt(devolver)}`,serviciosPost};
 }
@@ -1084,16 +1126,11 @@ function renderDepositos(){
   const el=document.getElementById('dep-list'),stats=document.getElementById('dep-stats');
   if(!el||!stats)return;
   const conDep=inmuebles.filter(i=>pagos.some(p=>p.inmueble_id===i.id&&p.concepto==='deposito'));
-  if(!conDep.length){
-    stats.innerHTML='';
-    el.innerHTML=`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos registrados.<br>Registra un pago con concepto "Depósito".</p></div>`;return;
-  }
+  if(!conDep.length){stats.innerHTML='';el.innerHTML=`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos registrados.<br>Registra un pago con concepto "Depósito".</p></div>`;return;}
   let totalDeps=0,totalRet=0,totalDev=0;
   const panels=conDep.map(inm=>{
     const r=calcDeposito(inm);if(!r)return'';
-    totalDeps+=r.totalDep;
-    if(r.estado==='retenido')totalRet+=r.totalDep;
-    if(r.estado==='parcial')totalDev+=r.devolver;
+    totalDeps+=r.totalDep;if(r.estado==='retenido')totalRet+=r.totalDep;if(r.estado==='parcial')totalDev+=r.devolver;
     const devuelto=pagos.some(p=>p.inmueble_id===inm.id&&p.concepto==='devolucion_deposito');
     const clsPanel=devuelto?'devuelto':r.estado;
     const iconoEstado=r.estado==='retenido'?'ti-alert-triangle':r.estado==='parcial'?'ti-check':'ti-clock';
@@ -1117,13 +1154,12 @@ function renderDepositos(){
   }).join('');
   stats.innerHTML=`
     <div class="sc hl"><div class="sl">Total depósitos</div><div class="sv">${fmt(totalDeps)}</div><div class="ss">en custodia</div></div>
-    <div class="sc"><div class="sl" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:12px"></i>Profit depósitos retenidos</div><div class="sv" style="color:var(--red)">${fmt(totalRet)}</div><div class="ss">por penalización / incumplimiento</div></div>
+    <div class="sc"><div class="sl" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:12px"></i>Profit depósitos retenidos</div><div class="sv" style="color:var(--red)">${fmt(totalRet)}</div><div class="ss">por penalización</div></div>
     <div class="sc"><div class="sl" style="color:var(--teal-tx)"><i class="ti ti-corner-down-left" style="color:var(--teal);font-size:12px"></i>Por devolver</div><div class="sv" style="color:var(--teal)">${fmt(totalDev)}</div><div class="ss">a reembolsar</div></div>`;
   el.innerHTML=panels||`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos con salida registrada.</p></div>`;
 }
 function abrirDevolucion(inmId){
-  devDepInmId=inmId;
-  const inm=getInm(inmId),r=calcDeposito(inm);if(!r)return;
+  devDepInmId=inmId;const inm=getInm(inmId),r=calcDeposito(inm);if(!r)return;
   document.getElementById('m-dev-dep-body').innerHTML=`
     <strong>Depto. ${inm.num} — ${inm.inquilino}</strong><br><br>
     Depósito total: <strong>${fmt(r.totalDep)}</strong><br>
@@ -1137,8 +1173,7 @@ async function confirmarDevolucion(){
   const d={workspace_id:CW.id,inmueble_id:devDepInmId,concepto:'devolucion_deposito',monto:r.devolver,pagado:r.devolver,vencimiento:new Date().toISOString().split('T')[0],fecha_pago:new Date().toISOString().split('T')[0],notas:`Devolución de depósito. Retenido por servicios post-contrato: ${fmt(r.serviciosPost)}`};
   const {data:savedPago,error}=await sb.from('pagos').insert(d).select().single();
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
-  pagos.unshift(savedPago);
-  closeM('m-dev-dep');toast('Devolución registrada correctamente');
+  pagos.unshift(savedPago);closeM('m-dev-dep');toast('Devolución registrada correctamente');
   renderDepositos();refresh();
 }
 
@@ -1203,15 +1238,12 @@ function calcSvcRows(){
 function recalcSvc(){recalcAllSvc()}
 function recalcAllSvc(){
   const total=parseFloat(document.getElementById('sv-total').value)||0;
-  const iniStr=document.getElementById('sv-ini').value;
-  const finStr=document.getElementById('sv-fin').value;
+  const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
   if(!iniStr||!finStr)return;
-  const periodoIni=new Date(iniStr+'T00:00:00');
-  const periodoFin=new Date(finStr+'T00:00:00');
+  const periodoIni=new Date(iniStr+'T00:00:00'),periodoFin=new Date(finStr+'T00:00:00');
   let sumPond=0;const filas=[];
   inmuebles.forEach((inm,idx)=>{
-    const aplicaCheck=document.getElementById(`sv-aplica-${idx}`);
-    if(!aplicaCheck)return;
+    const aplicaCheck=document.getElementById(`sv-aplica-${idx}`);if(!aplicaCheck)return;
     const finiStr=inm.fecha_inicio_contrato,fterStr=inm.fecha_termino_contrato,fsalStr=inm.fecha_salida;
     if(!finiStr){
       const aplica=aplicaCheck.checked;
@@ -1224,20 +1256,15 @@ function recalcAllSvc(){
     const fechaSalida=fsalStr?new Date(fsalStr+'T00:00:00'):null;
     // REGLA 3: contrato empieza después del fin del período → no corresponde cobro
     if(contratoIni>periodoFin){const di=document.getElementById(`sv-dias-${idx}`);if(di)di.value=0;filas.push({idx,pond:0});return;}
-    // Contrato terminó antes del inicio del período → no corresponde
     if(contratoFin&&contratoFin<periodoIni){const di=document.getElementById(`sv-dias-${idx}`);if(di)di.value=0;filas.push({idx,pond:0});return;}
     if(!aplicaCheck.checked){filas.push({idx,pond:0});return;}
-    // REGLAS 1 y 2: el contador siempre arranca en el inicio del período (MAX de ambas fechas)
+    // REGLAS 1 y 2: contador arranca en inicio del período
     const desde=new Date(Math.max(periodoIni.getTime(),contratoIni.getTime()));
     let hasta=new Date(periodoFin.getTime());
-    // REGLA 4: fecha de salida intermedia → el contador termina en la fecha de salida
-    if(fechaSalida&&fechaSalida>=periodoIni&&fechaSalida<=periodoFin){
-      hasta=new Date(fechaSalida.getTime());
-    } else if(contratoFin&&contratoFin<periodoFin){
-      hasta=new Date(contratoFin.getTime());
-    }
-    let diasUso=Math.round((hasta-desde)/86400000)+1;
-    diasUso=Math.max(0,diasUso);
+    // REGLA 4: fecha de salida intermedia → contador termina en fecha de salida
+    if(fechaSalida&&fechaSalida>=periodoIni&&fechaSalida<=periodoFin){hasta=new Date(fechaSalida.getTime());}
+    else if(contratoFin&&contratoFin<periodoFin){hasta=new Date(contratoFin.getTime());}
+    let diasUso=Math.round((hasta-desde)/86400000)+1;diasUso=Math.max(0,diasUso);
     const di=document.getElementById(`sv-dias-${idx}`);if(di)di.value=diasUso;
     const pers=parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||(inm.personas||1);
     const pond=diasUso*pers;sumPond+=pond;filas.push({idx,pond});
