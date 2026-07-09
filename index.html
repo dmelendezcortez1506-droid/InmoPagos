@@ -316,6 +316,129 @@ input[type=number]{-moz-appearance:textfield}
 .confetti-wrap{position:fixed;z-index:9999;pointer-events:none;top:0;left:0}
 .confetti{position:absolute;width:9px;height:9px;border-radius:2px;animation:confF 1s ease-out forwards}
 @media(max-width:760px){.dash-top,.dash-bot{grid-template-columns:1fr}}
+
+/* ══════════════════════════════════════════════════════════
+   CAPA DE DISEÑO — aplica el lenguaje visual de design-export
+   (solo sobreescribe estilos; no altera ninguna lógica)
+   ══════════════════════════════════════════════════════════ */
+:root{--bd-soft:#EEECE4;--hover:#FAFAF7;--sh2:0 1px 3px rgba(0,0,0,.05);--sh-lift:0 10px 30px rgba(26,25,23,.10);}
+html{scroll-behavior:smooth}
+::selection{background:rgba(29,158,117,.18)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#D8D6CE;border-radius:6px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#c5c2b8}
+@keyframes growBar{from{transform:scaleX(0)}}
+@keyframes dashIn{from{stroke-dasharray:0 339.29}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+@keyframes modalUp{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* ── FOCUS teal (marca) ── */
+.fg input:focus,.fg select:focus,.fg textarea:focus,.auth-card input:focus,.fg2 input:focus,.fg2 select:focus,.toolbar input:focus,.toolbar select:focus{border-color:var(--teal)!important;box-shadow:0 0 0 3px rgba(29,158,117,.14)!important}
+
+/* ── SHELL / SECCIONES ── */
+.main{padding:26px 30px 52px}
+main.main>div[id^="sec-"]{max-width:1180px;margin:0 auto;animation:fadeUp .26s cubic-bezier(.16,1,.3,1) both}
+.ph{margin-bottom:24px}
+.ph h2{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.ph p{font-size:13px;color:var(--tx2)}
+
+/* ── SIDEBAR estilo pill ── */
+.sidebar{width:238px}
+.sb-logo{padding:16px 18px 15px;border-bottom:1px solid var(--bd-soft)}
+.sb-logo h1{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.ns{padding:14px 0 6px 22px;font-size:10.5px;letter-spacing:.09em;color:var(--tx3)}
+.ni{margin:0 12px 2px;width:calc(100% - 24px);padding:8px 12px;border-radius:8px;font-size:13.5px;font-weight:500;transition:background .15s,color .15s}
+.ni i{font-size:17px}
+.ni:hover{background:var(--hover);color:var(--tx)}
+.ni.active{background:var(--sf2);color:var(--tx);font-weight:600}
+.ni.active::before{display:none}
+.nb{font-family:'DM Mono',monospace;font-weight:700}
+.sb-foot{border-top:1px solid var(--bd-soft)}
+
+/* ── BOTONES ── */
+.btn{border-radius:8px;font-weight:600;transition:background .15s,border-color .15s,color .15s,transform .1s,box-shadow .15s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 1px 2px rgba(8,80,65,.22)}
+.btn.primary:hover{background:#17845F;border-color:#17845F;opacity:1}
+.btn.teal{box-shadow:0 1px 2px rgba(8,80,65,.22)}.btn.teal:hover{background:#17845F;border-color:#17845F;opacity:1}
+.btn:not(.primary):not(.teal):not(.danger):hover{background:var(--sf2)}
+.btn.danger:hover{background:var(--red-bg)}
+
+/* ── CARDS / TABLA ── */
+.card{border-radius:var(--rl);box-shadow:var(--sh2);border-color:var(--bd)}
+thead tr{background:transparent}
+th{color:var(--tx3);letter-spacing:.06em;border-bottom:1px solid var(--bd-soft);background:var(--surface)}
+td{border-bottom:1px solid var(--bd-soft)}
+tbody tr{transition:background .12s}
+tbody tr:hover td{background:var(--hover)}
+
+/* ── STATS ── */
+.sg,.rep-sum{gap:14px}
+.sc{border-radius:var(--rl);padding:20px 22px;box-shadow:var(--sh2);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s}
+.sc:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(26,25,23,.07)}
+.sc .sl{font-size:11px;font-weight:600;letter-spacing:.07em;margin-bottom:10px}
+.sc .sv{font-size:25px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em}
+.sc .ss{font-size:11.5px}
+.sc.hl{background:radial-gradient(120% 140% at 100% 0,#2a2825 0,#1A1917 55%)}
+.sc.hl:hover{box-shadow:0 10px 26px rgba(26,25,23,.28)}
+
+/* ── INMUEBLE CARDS ── */
+.ic{border-radius:var(--rl);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s,border-color .18s}
+.ic:hover{transform:translateY(-3px);box-shadow:var(--sh-lift);border-color:var(--bd2)}
+.iav{border-radius:11px}
+.iren strong{font-family:'DM Mono',monospace}
+.iact{border-top:1px solid var(--bd-soft)}
+
+/* ── ALERTAS ── */
+.ali{border-radius:12px;transition:transform .16s,box-shadow .16s}
+.ali:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(26,25,23,.06)}
+.ali.vencido,.ali.pagoven{animation:pulseVenc 2.6s ease-in-out 1s infinite}
+
+/* ── SERVICIOS ── */
+.svc-card{border-radius:var(--rl);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s}
+.svc-card:hover{transform:translateY(-3px);box-shadow:var(--sh-lift)}
+.svc-card .svc-total{font-family:'DM Mono',monospace;letter-spacing:-.02em}
+.svc-row{border-bottom:1px solid var(--bd-soft)}
+.svc-donut{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);box-shadow:var(--sh2);padding:22px 26px}
+
+/* ── DEPÓSITOS ── */
+.dep-panel{border-radius:var(--rl);transition:transform .18s,box-shadow .18s}
+.dep-panel:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(26,25,23,.07)}
+.dep-monto strong{font-family:'DM Mono',monospace}
+
+/* ── ESTADO DE CUENTA ── */
+.ec-item{border-radius:12px;box-shadow:var(--sh2);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s}
+.ec-item:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(26,25,23,.07)}
+.ec-num{border-radius:11px;font-weight:500}
+.ec-total strong{font-family:'DM Mono',monospace}
+
+/* ── MIEMBROS ── */
+.mem-item{border-radius:12px}
+.inv-code{font-family:'DM Mono',monospace}
+.code-box{border-radius:12px}
+
+/* ── MONTH NAV ── */
+.mn{border-radius:8px}
+.mn button{border-radius:6px;transition:background .15s}
+
+/* ── MODALS ── */
+.overlay{backdrop-filter:blur(3px);background:rgba(26,25,23,.42)}
+.modal{border-radius:16px;box-shadow:0 24px 60px rgba(26,25,23,.22);animation:modalUp .24s cubic-bezier(.16,1,.3,1)}
+.mc{border-radius:7px;transition:background .15s,color .15s}
+.mf{border-top:1px solid var(--bd-soft)}
+
+/* ── TARJETAS DE PANTALLA (auth/setup/ws/bloqueado) ── */
+.auth-card,.setup-card,.ws-card,.blq-card{border-radius:16px;box-shadow:0 20px 50px rgba(26,25,23,.12)}
+.atab.active{background:var(--teal)}
+.ws-item{border-radius:12px;transition:transform .15s,box-shadow .15s,border-color .15s}
+.ws-item:hover{transform:translateY(-1px);box-shadow:var(--sh2);border-color:var(--bd2)}
+
+/* ── TOAST ── */
+.toast{border-radius:10px;animation:toastIn .28s cubic-bezier(.34,1.56,.64,1);box-shadow:0 12px 30px rgba(26,25,23,.28)}
+
+/* ── PILLS ── */
+.pill{font-weight:600}
 </style>
 </head>
 <body>
@@ -601,6 +724,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
       <div><h2>Distribución de Servicios</h2><p>Agua, Luz y Gas — prorrateo por días de uso y personas</p></div>
       <button class="btn primary" onclick="openM('m-new-svc')"><i class="ti ti-plus"></i>Registrar servicio</button>
     </div>
+    <div id="svc-donut" style="margin-bottom:18px;display:none"></div>
     <div id="svc-list"></div>
   </div>
 
@@ -1269,6 +1393,7 @@ async function confirmarDevolucion(){
 //  SERVICIOS — DISTRIBUCIÓN
 // ═══════════════════════════════════════
 function renderSvcList(){
+  renderSvcDonut();
   const el=document.getElementById('svc-list');
   if(!servicios.length){el.innerHTML=`<div class="empty"><i class="ti ti-bolt"></i><p>Sin servicios registrados.<br>Registra el primer servicio de Agua, Luz o Gas.</p></div>`;return}
   // Group by mes/anio
@@ -1714,6 +1839,8 @@ const TABS=['inicio','pagos','inmuebles','alertas','reporte','servicios','edocue
 function setTab(name,btn){
   TABS.forEach(t=>document.getElementById('sec-'+t).style.display=t===name?'block':'none');
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  // re-dispara la animación de entrada de la sección
+  const sec=document.getElementById('sec-'+name);if(sec){sec.style.animation='none';void sec.offsetHeight;sec.style.animation='';}
   if(name==='inicio')renderDashboard();
   if(name==='inmuebles')renderInm();if(name==='alertas')renderAl();if(name==='reporte')renderRep();
   if(name==='servicios')renderSvcList();if(name==='edocuenta')renderEC();if(name==='miembros')renderMem();
@@ -1754,6 +1881,39 @@ function tiempoRel(iso){
   if(!iso)return '';
   const d=Math.floor((Date.now()-new Date(iso).getTime())/86400000);
   if(d<=0)return 'hoy';if(d===1)return 'ayer';if(d<7)return `hace ${d}d`;if(d<30)return `hace ${Math.floor(d/7)}sem`;return `hace ${Math.floor(d/30)}m`;
+}
+// Donut de servicios del mes visible (multi-segmento agua/luz/gas) — solo lectura
+function renderSvcDonut(){
+  const cont=document.getElementById('svc-donut');if(!cont)return;
+  const svcMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
+  if(!svcMes.length){cont.style.display='none';return;}
+  const acc={agua:0,luz:0,gas:0};
+  svcMes.forEach(s=>{if(acc[s.tipo]!==undefined)acc[s.tipo]+=Number(s.total);else acc[s.tipo]=(acc[s.tipo]||0)+Number(s.total);});
+  const total=Object.values(acc).reduce((a,b)=>a+b,0);
+  const C=339.29,cols={agua:'var(--blue)',luz:'var(--amber)',gas:'var(--red)'},ico={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'},nom={agua:'Agua',luz:'Luz',gas:'Gas'};
+  let off=0,segs='',leg='',delay=.1;
+  ['agua','luz','gas'].forEach(t=>{
+    const v=acc[t]||0;if(v<=0)return;
+    const frac=total>0?v/total:0,len=frac*C;
+    segs+=`<circle cx="70" cy="70" r="54" fill="none" stroke="${cols[t]}" stroke-width="19" transform="rotate(-90 70 70)" stroke-dashoffset="${-off}" style="stroke-dasharray:${len} ${C};animation:dashIn .9s cubic-bezier(.16,1,.3,1) ${delay}s both"></circle>`;
+    leg+=`<div style="display:flex;align-items:center;gap:9px;font-size:13px"><span style="width:10px;height:10px;border-radius:3px;background:${cols[t]};flex-shrink:0"></span><i class="ti ${ico[t]}" style="color:${cols[t]};font-size:15px"></i><span style="flex:1">${nom[t]}</span><strong style="font-family:'DM Mono',monospace">${fmt(v)}</strong><span style="color:var(--tx3);font-size:11px;width:38px;text-align:right">${Math.round(frac*100)}%</span></div>`;
+    off+=len;delay+=.2;
+  });
+  cont.style.display='block';
+  cont.className='svc-donut';
+  cont.innerHTML=`<div style="display:flex;align-items:center;gap:34px;flex-wrap:wrap">
+    <div style="position:relative;width:150px;height:150px;flex-shrink:0">
+      <svg width="150" height="150" viewBox="0 0 140 140"><circle cx="70" cy="70" r="54" fill="none" stroke="var(--sf2)" stroke-width="19"></circle>${segs}</svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+        <div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em">${fmt(total)}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">total ${MESES[vM].toLowerCase()}</div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:200px;display:grid;gap:11px">
+      <div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Reparto por servicio · ${MESES[vM]} ${vY}</div>
+      ${leg||'<span style="color:var(--tx3);font-size:13px">Sin servicios este mes</span>'}
+    </div>
+  </div>`;
 }
 function renderDashboard(){
   if(!document.getElementById('sec-inicio'))return;
