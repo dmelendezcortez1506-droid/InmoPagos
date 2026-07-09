@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InmoPagos — MC Conecta Living</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -703,112 +703,127 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
 <!-- ════ APP ════ -->
 <div id="s-app" class="screen">
-<aside class="sidebar">
-  <div class="sb-logo" style="display:flex;align-items:center;gap:10px">
-    <img src="logoinmopagos.png" alt="InmoPagos" style="width:34px;height:34px;object-fit:contain;border-radius:8px;flex-shrink:0" onerror="this.style.display='none'">
+<aside style="width:236px;background:#FFFFFF;border-right:1px solid #E2E0D8;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto">
+  <div style="padding:18px 20px 16px;border-bottom:1px solid #EEECE4;display:flex;align-items:center;gap:10px">
+    <img src="logoinmopagos.png" alt="InmoPagos" style="width:36px;height:27px;object-fit:contain" onerror="this.style.display='none'">
     <div style="min-width:0;flex:1">
-      <h1 style="display:flex;align-items:center;gap:6px"><span id="sb-wsn">InmoPagos</span><span class="dot on" id="sb-dot"></span></h1>
-      <p id="sb-fecha" style="font-size:11px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></p>
+      <div style="font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.2;display:flex;align-items:center;gap:6px">InmoPagos<span id="sb-dot" style="width:6px;height:6px;border-radius:50%;background:#9D9B96;display:inline-block" title="Conexión en tiempo real"></span></div>
+      <div style="font-size:11px;color:#9D9B96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-wsn">InmoPagos</div>
     </div>
   </div>
-  <nav style="flex:1;padding:12px 0">
-    <div class="ns">Principal</div>
-    <button class="ni active" onclick="setTab('inicio',this)" data-tab="inicio"><i class="ti ti-layout-dashboard"></i>Resumen</button>
-    <button class="ni" onclick="setTab('pagos',this)" data-tab="pagos"><i class="ti ti-receipt"></i>Pagos</button>
-    <button class="ni" onclick="setTab('inmuebles',this)" data-tab="inmuebles"><i class="ti ti-building"></i>Departamentos</button>
-    <button class="ni" onclick="setTab('alertas',this)" data-tab="alertas"><i class="ti ti-bell"></i>Alertas<span class="nb" id="nb-al" style="display:none"></span></button>
-    <div class="ns">Operación</div>
-    <button class="ni" onclick="setTab('servicios',this)" data-tab="servicios"><i class="ti ti-bolt"></i>Servicios</button>
-    <button class="ni" onclick="setTab('edocuenta',this)" data-tab="edocuenta"><i class="ti ti-file-invoice"></i>Estado de Cuenta</button>
-    <button class="ni" onclick="setTab('depositos',this)" data-tab="depositos"><i class="ti ti-safe"></i>Depósitos</button>
-    <button class="ni" onclick="setTab('recordatorio',this)" data-tab="recordatorio"><i class="ti ti-send"></i>Recordatorios</button>
-    <div class="ns">Análisis</div>
-    <button class="ni" onclick="setTab('reporte',this)" data-tab="reporte"><i class="ti ti-chart-bar"></i>Reporte</button>
-    <div class="ns">Cuenta</div>
-    <button class="ni" onclick="setTab('miembros',this)" data-tab="miembros"><i class="ti ti-users"></i>Equipo</button>
-    <button class="ni" onclick="setTab('config',this)" data-tab="config"><i class="ti ti-settings"></i>Configuración</button>
+  <nav style="padding:12px 0;flex:1">
+    <div style="padding:4px 24px 6px;font-size:10.5px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.09em">Principal</div>
+    <button class="dni" data-tab="inicio" onclick="setTab('inicio',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-layout-dashboard" style="font-size:17px;width:18px;text-align:center"></i>Resumen</button>
+    <button class="dni" data-tab="pagos" onclick="setTab('pagos',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-receipt" style="font-size:17px;width:18px;text-align:center"></i>Pagos</button>
+    <button class="dni" data-tab="inmuebles" onclick="setTab('inmuebles',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-building" style="font-size:17px;width:18px;text-align:center"></i>Departamentos</button>
+    <button class="dni" data-tab="alertas" onclick="setTab('alertas',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-bell" style="font-size:17px;width:18px;text-align:center"></i>Alertas<span id="nb-al" style="margin-left:auto;background:#E24B4A;color:#fff;border-radius:10px;padding:1px 7px;font-size:10.5px;font-weight:700;font-family:'DM Mono',monospace;display:none"></span></button>
+    <div style="padding:16px 24px 6px;font-size:10.5px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.09em">Operación</div>
+    <button class="dni" data-tab="servicios" onclick="setTab('servicios',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-bolt" style="font-size:17px;width:18px;text-align:center"></i>Servicios</button>
+    <button class="dni" data-tab="depositos" onclick="setTab('depositos',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-shield-lock" style="font-size:17px;width:18px;text-align:center"></i>Depósitos</button>
+    <button class="dni" data-tab="recordatorio" onclick="setTab('recordatorio',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-send" style="font-size:17px;width:18px;text-align:center"></i>Recordatorios</button>
+    <div style="padding:16px 24px 6px;font-size:10.5px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.09em">Cuenta</div>
+    <button class="dni" data-tab="edocuenta" onclick="setTab('edocuenta',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-file-invoice" style="font-size:17px;width:18px;text-align:center"></i>Estado de cuenta</button>
+    <button class="dni" data-tab="reporte" onclick="setTab('reporte',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-chart-bar" style="font-size:17px;width:18px;text-align:center"></i>Reporte</button>
+    <button class="dni" data-tab="miembros" onclick="setTab('miembros',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-users" style="font-size:17px;width:18px;text-align:center"></i>Equipo</button>
+    <button class="dni" data-tab="config" onclick="setTab('config',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-settings" style="font-size:17px;width:18px;text-align:center"></i>Configuración</button>
   </nav>
-  <div class="sb-foot">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <div class="sb-ua" id="sb-av"></div>
-      <div class="sb-ui"><strong id="sb-uname"></strong><span id="sb-uemail"></span></div>
+  <div style="padding:14px 20px;border-top:1px solid #EEECE4;display:flex;align-items:center;gap:10px">
+    <div id="sb-av" style="width:32px;height:32px;border-radius:50%;background:#E1F5EE;color:#085041;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0"></div>
+    <div style="min-width:0;flex:1">
+      <div id="sb-uname" style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div id="sb-uemail" style="font-size:11px;color:#9D9B96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn sm" onclick="goWS()" style="font-size:11px;padding:5px 10px;gap:5px"><i class="ti ti-layout-grid" style="font-size:13px"></i>Mis negocios</button>
-      <button class="sb-btn" onclick="doLogout()">Salir</button>
-    </div>
+    <button onclick="goWS()" title="Mis negocios" data-hs="background:#F1EFE8;color:#1A1917" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit"><i class="ti ti-layout-grid" style="font-size:15px"></i></button>
+    <button onclick="doLogout()" title="Cerrar sesión" data-hs="background:#FCEBEB;color:#791F1F;border-color:#F3D2D2" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit"><i class="ti ti-logout" style="font-size:15px"></i></button>
   </div>
-</aside>
+</aside><span id="sb-fecha" style="display:none"></span>
 
 <main class="main">
   <!-- INICIO / RESUMEN -->
   <div id="sec-inicio">
-    <div class="dash">
-      <div class="dash-greet"><h2 id="dash-hi">Hola</h2><p id="dash-sub"></p></div>
-      <div class="dash-top">
-        <div class="dash-ring">
-          <div class="rw">
-            <svg width="160" height="160" viewBox="0 0 150 150">
-              <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="13"></circle>
-              <circle id="dash-ring-c" cx="75" cy="75" r="62" fill="none" stroke="var(--teal)" stroke-width="13" stroke-linecap="round" transform="rotate(-90 75 75)" style="stroke-dasharray:0 389.56;transition:stroke-dasharray 1s cubic-bezier(.16,1,.3,1)"></circle>
-            </svg>
-            <div class="rc"><div class="rp" id="dash-ring-pct">0%</div><div style="font-size:11px;color:rgba(255,255,255,.5)">cobrado</div></div>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px" id="dash-ring-lbl">Cobranza</div>
-            <div style="font-size:25px;font-weight:500;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.02em" id="dash-cob">$0</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px" id="dash-esp">de $0 esperados</div>
-            <button class="btn teal" style="margin-top:16px" onclick="setTab('pagos',document.querySelector('.ni[data-tab=pagos]'))"><i class="ti ti-arrow-right"></i>Ver pagos</button>
+    <div style="margin-bottom:24px">
+      <h2 id="dash-hi" style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Hola</h2>
+      <p id="dash-sub" style="margin:2px 0 0;font-size:13px;color:#6B6963"></p>
+    </div>
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin-bottom:16px" class="dash-top">
+      <div style="background:#1A1917;border-radius:16px;padding:26px 30px;display:flex;align-items:center;gap:32px;overflow:hidden;position:relative">
+        <div style="position:relative;width:170px;height:170px;flex-shrink:0;animation:floatY 5s ease-in-out infinite">
+          <svg width="170" height="170" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="13"></circle>
+            <circle id="dash-ring-c" cx="75" cy="75" r="62" fill="none" stroke="#1D9E75" stroke-width="13" stroke-linecap="round" transform="rotate(-90 75 75)" style="stroke-dasharray:0 389.56;transition:stroke-dasharray 1s cubic-bezier(.16,1,.3,1)"></circle>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div id="dash-ring-pct" style="font-size:34px;font-weight:500;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.02em">0%</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.5)">cobrado</div>
           </div>
         </div>
-        <div class="dash-tiles" id="dash-tiles"></div>
+        <div>
+          <div id="dash-ring-lbl" style="font-size:11px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Cobranza</div>
+          <div id="dash-cob" style="font-size:26px;font-weight:500;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.02em">$0</div>
+          <div id="dash-esp" style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">de $0 esperados</div>
+          <button onclick="setTab('pagos')" data-hs="background:#25B587" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;margin-top:18px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s">Ver pagos<i class="ti ti-arrow-right" style="font-size:13px"></i></button>
+        </div>
       </div>
-      <div class="dash-bot">
-        <div class="dash-panel">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px">
-            <h4 style="margin:0">Cobranza últimos 6 meses</h4>
-            <div style="font-size:11px;color:var(--tx3)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--teal);margin-right:5px"></span>cerrado<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--amber);margin:0 5px 0 12px"></span>en curso</div>
-          </div>
-          <div class="bars" id="dash-bars"></div>
+      <div id="dash-tiles" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:16px" class="dash-top">
+      <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:22px 26px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
+          <div style="font-size:14px;font-weight:700">Cobranza últimos 6 meses</div>
+          <div style="font-size:11.5px;color:#9D9B96"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1D9E75;margin-right:5px"></span>cerrado<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#BA7517;margin:0 5px 0 14px"></span>en curso</div>
         </div>
-        <div class="dash-panel">
-          <h4>Actividad reciente</h4>
-          <div style="display:grid;gap:13px" id="dash-act"></div>
-        </div>
+        <div id="dash-bars" style="display:flex;align-items:flex-end;gap:18px;height:160px"></div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:22px 26px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:16px">Actividad reciente</div>
+        <div id="dash-act" style="display:grid;gap:13px"></div>
       </div>
     </div>
   </div>
 
   <!-- PAGOS -->
   <div id="sec-pagos" style="display:none">
-    <div class="dhead">
-      <div><h2>Pagos</h2><p id="pagos-sub"></p></div>
-      <div class="dtools">
-        <div class="seg"><button id="seg-air" class="on" onclick="setDens('aireada')">Aireada</button><button id="seg-den" onclick="setDens('densa')">Densa</button></div>
-        <div class="mnav"><button onclick="chM(-1)"><i class="ti ti-chevron-left"></i></button><span id="mes-lbl"></span><button onclick="chM(1)"><i class="ti ti-chevron-right"></i></button></div>
-        <button class="btn primary" onclick="abrirPago('')"><i class="ti ti-plus"></i>Nuevo pago</button>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <div>
+        <h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Pagos</h2>
+        <p style="margin:2px 0 0;font-size:13px;color:#6B6963" id="pagos-sub"></p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;background:#F1EFE8;border-radius:8px;padding:3px;gap:2px">
+          <button id="seg-air" onclick="setDens('aireada')" style="border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;color:#1A1917;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.08)">Aireada</button>
+          <button id="seg-den" onclick="setDens('densa')" style="border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;color:#9D9B96;background:transparent;box-shadow:none">Densa</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;background:#FFFFFF;border:1px solid #E2E0D8;border-radius:8px;padding:4px 6px">
+          <button onclick="chM(-1)" data-hs="background:#F1EFE8" style="border:none;background:none;cursor:pointer;color:#6B6963;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .15s"><i class="ti ti-chevron-left" style="font-size:15px"></i></button>
+          <span id="mes-lbl" style="font-size:13px;font-weight:600;min-width:110px;text-align:center"></span>
+          <button onclick="chM(1)" data-hs="background:#F1EFE8" style="border:none;background:none;cursor:pointer;color:#6B6963;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .15s"><i class="ti ti-chevron-right" style="font-size:15px"></i></button>
+        </div>
+        <button onclick="abrirPago('')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s;box-shadow:0 1px 2px rgba(8,80,65,.2)"><i class="ti ti-plus" style="font-size:15px"></i>Nuevo pago</button>
       </div>
     </div>
-    <div class="mgrid c4" id="stats-grid"></div>
+    <div id="stats-grid" style="margin-bottom:26px"></div>
     <div class="toolbar">
       <input type="text" id="sp" placeholder="Buscar depto, inquilino..." oninput="renderPagos()">
       <select id="fe" onchange="renderPagos()"><option value="">Todos los estados</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option><option value="vencido">Vencido</option><option value="parcial">Parcial</option></select>
       <select id="fc" onchange="renderPagos()"><option value="">Todos los conceptos</option><option value="renta">Renta</option><option value="mantenimiento">Mant.</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="servicios">Servicios</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select>
     </div>
-    <div class="plist" id="pagos-list"><div style="text-align:center;padding:2rem"><span class="spinner"></span></div></div>
+    <div id="pagos-list" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden"><div style="text-align:center;padding:2rem"><span class="spinner"></span></div></div>
   </div>
 
   <!-- INMUEBLES -->
   <div id="sec-inmuebles" style="display:none">
-    <div class="dhead"><div><h2>Departamentos</h2><p id="inm-sub">Directorio de unidades e inquilinos</p></div><button class="btn primary" onclick="abrirInm(null)"><i class="ti ti-home-plus"></i>Agregar</button></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <div><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Departamentos</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963" id="inm-sub">Directorio de unidades e inquilinos</p></div>
+      <button onclick="abrirInm(null)" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s;box-shadow:0 1px 2px rgba(8,80,65,.2)"><i class="ti ti-home-plus" style="font-size:15px"></i>Agregar</button>
+    </div>
     <div class="toolbar"><input type="text" id="si" placeholder="Buscar depto o inquilino..." oninput="renderInm()"></div>
     <div id="l-inm"></div>
   </div>
 
   <!-- ALERTAS -->
-  <div id="sec-alertas" style="display:none">
-    <div class="ph"><div><h2>Alertas</h2><p>Pagos vencidos y próximos a vencer</p></div></div>
-    <div class="al" id="l-al"></div>
+  <div id="sec-alertas" style="display:none;max-width:860px;margin:0 auto">
+    <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Alertas</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Pagos vencidos y próximos a vencer · tolerancia de 3 días</p></div>
+    <div id="l-al" style="display:grid;gap:10px"></div>
   </div>
 
   <!-- REPORTE -->
@@ -819,31 +834,35 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
   <!-- SERVICIOS -->
   <div id="sec-servicios" style="display:none">
-    <div class="ph">
-      <div><h2>Distribución de Servicios</h2><p>Agua, Luz y Gas — prorrateo por días de uso y personas</p></div>
-      <button class="btn primary" onclick="openM('m-new-svc')"><i class="ti ti-plus"></i>Registrar servicio</button>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <div><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Distribución de servicios</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Agua, luz y gas prorrateados por días de uso × personas</p></div>
+      <button onclick="openM('m-new-svc')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s;box-shadow:0 1px 2px rgba(8,80,65,.2)"><i class="ti ti-plus" style="font-size:15px"></i>Registrar servicio</button>
     </div>
     <div id="svc-donut" style="margin-bottom:18px;display:none"></div>
     <div id="svc-list"></div>
   </div>
 
   <!-- ESTADO DE CUENTA -->
-  <div id="sec-edocuenta" style="display:none">
-    <div class="ph">
-      <div><h2>Estado de Cuenta</h2><p>Genera y descarga el estado de cuenta mensual por departamento</p></div>
-      <div class="btn-group">
-        <div class="mn"><button onclick="chM(-1)"><i class="ti ti-chevron-left"></i></button><span id="ec-mes-lbl"></span><button onclick="chM(1)"><i class="ti ti-chevron-right"></i></button></div>
-        <button class="btn teal" onclick="generarTodosPDF()"><i class="ti ti-download"></i>Descargar todos</button>
+  <div id="sec-edocuenta" style="display:none;max-width:920px;margin:0 auto">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <div><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Estado de cuenta</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Renta + servicios prorrateados, listos para PDF · <span id="ec-mes-lbl"></span></p></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:4px;background:#FFFFFF;border:1px solid #E2E0D8;border-radius:8px;padding:4px 6px">
+          <button onclick="chM(-1)" data-hs="background:#F1EFE8" style="border:none;background:none;cursor:pointer;color:#6B6963;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .15s"><i class="ti ti-chevron-left" style="font-size:15px"></i></button>
+          <span id="ec-mes-lbl2" style="font-size:13px;font-weight:600;min-width:110px;text-align:center"></span>
+          <button onclick="chM(1)" data-hs="background:#F1EFE8" style="border:none;background:none;cursor:pointer;color:#6B6963;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .15s"><i class="ti ti-chevron-right" style="font-size:15px"></i></button>
+        </div>
+        <button onclick="generarTodosPDF()" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s;box-shadow:0 1px 2px rgba(8,80,65,.2)"><i class="ti ti-download" style="font-size:15px"></i>Descargar todos</button>
       </div>
     </div>
-    <div class="ec-list" id="l-ec"></div>
+    <div id="l-ec" style="display:grid;gap:10px"></div>
   </div>
 
   <!-- DEPÓSITOS -->
-  <div id="sec-depositos" style="display:none">
-    <div class="ph"><div><h2>Depósitos</h2><p>Control de depósitos y devoluciones por departamento</p></div></div>
-    <div class="rep-sum" id="dep-stats"></div>
-    <div id="dep-list"></div>
+  <div id="sec-depositos" style="display:none;max-width:1020px;margin:0 auto">
+    <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Depósitos en garantía</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Devolución automática según cumplimiento de contrato</p></div>
+    <div id="dep-stats" style="margin-bottom:26px"></div>
+    <div id="dep-list" style="display:grid;gap:12px"></div>
   </div>
   <!-- RECORDATORIO -->
   <div id="sec-recordatorio" style="display:none">
@@ -851,29 +870,24 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div id="rec-list"></div>
   </div>
   <!-- MIEMBROS -->
-  <div id="sec-miembros" style="display:none">
-    <div class="ph"><div><h2>Miembros del equipo</h2><p>Personas con acceso a este negocio</p></div>
-      <div class="btn-group">
-        <button class="btn" onclick="openM('m-inv-code')"><i class="ti ti-copy"></i>Compartir código</button>
-        <button class="btn primary" onclick="openM('m-inv-email')"><i class="ti ti-mail"></i>Invitar por correo</button>
-      </div>
-    </div>
+  <div id="sec-miembros" style="display:none;max-width:680px;margin:0 auto">
+    <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Equipo</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Personas con acceso a <span id="eq-wsn"></span></p></div>
     <div id="l-mem"></div>
   </div>
 
   <!-- CONFIG -->
-  <div id="sec-config" style="display:none">
-    <div class="ph"><div><h2>Configuración del negocio</h2><p>Datos que aparecen en el estado de cuenta PDF</p></div></div>
-    <div class="card" style="padding:1.75rem;max-width:600px">
-      <div class="fg-grid">
-        <div class="fg full"><label>Nombre de la empresa / negocio</label><input type="text" id="cfg-empresa" placeholder="MC Conecta Living"></div>
-        <div class="fg full"><label>Nombre del cobrador / propietario</label><input type="text" id="cfg-cobrador" placeholder="Brenda Verenice Cortez Suarez"></div>
-        <div class="fg full"><label>Dirección del inmueble</label><input type="text" id="cfg-dir" placeholder="Girasol $7012, Col. Santa María, Guadalupe, N.L."></div>
-        <div class="fg full"><label>CLABE interbancaria</label><input type="text" id="cfg-clabe" placeholder="044420038023331555"></div>
-        <div class="fg"><label>Cuenta Scotiabank</label><input type="text" id="cfg-scott" placeholder="0248687525"></div>
-        <div class="fg"><label>Tarjeta OXXO (Scotiabank)</label><input type="text" id="cfg-oxxo" placeholder="4421 7700 3018 5061"></div>
+  <div id="sec-config" style="display:none;max-width:680px;margin:0 auto">
+    <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Configuración del negocio</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Estos datos aparecen en los estados de cuenta y recordatorios</p></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:26px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Nombre del negocio</label><input type="text" id="cfg-empresa" placeholder="MC Conecta Living" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Nombre del cobrador / propietario</label><input type="text" id="cfg-cobrador" placeholder="Brenda Verenice Cortez Suárez" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Dirección del inmueble</label><input type="text" id="cfg-dir" placeholder="Girasol 7012, Col. Santa María, Guadalupe, N.L." style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">CLABE interbancaria</label><input type="text" id="cfg-clabe" placeholder="044420038023331555" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
+        <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Cuenta Scotiabank</label><input type="text" id="cfg-scott" placeholder="0248687525" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
+        <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Tarjeta OXXO</label><input type="text" id="cfg-oxxo" placeholder="4421 7700 3018 5061" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
       </div>
-      <div style="margin-top:1.25rem"><button class="btn primary" onclick="guardarConfig()"><i class="ti ti-check"></i>Guardar configuración</button></div>
+      <div style="margin-top:22px;padding-top:18px;border-top:1px solid #EEECE4;display:flex;justify-content:flex-end"><button onclick="guardarConfig()" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-check" style="font-size:14px"></i>Guardar configuración</button></div>
     </div>
   </div>
 </main>
@@ -1049,10 +1063,18 @@ function openM(id){document.getElementById(id).classList.add('open')}
 function closeM(id){document.getElementById(id).classList.remove('open')}
 document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(m=>m.classList.remove('open'))});
+// ── Hover/active inline-style helper (reproduce el style-hover/style-active del diseño con markup inline) ──
+document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('[data-hs]');if(!el||el.dataset.hoverLock)return;if(el._hbase===undefined)el._hbase=el.getAttribute('style')||'';el.setAttribute('style',el._hbase+';'+el.dataset.hs);});
+document.addEventListener('mouseout',e=>{const el=e.target.closest&&e.target.closest('[data-hs]');if(!el)return;if(el._hbase!==undefined){el.setAttribute('style',el._hbase);}});
+document.addEventListener('mousedown',e=>{const el=e.target.closest&&e.target.closest('[data-as]');if(!el)return;el._abase=el.getAttribute('style')||'';el.setAttribute('style',el._abase+';'+el.dataset.as);});
+function _releaseActive(e){const el=e.target.closest&&e.target.closest('[data-as]');if(!el)return;if(el._abase!==undefined)el.setAttribute('style',el._abase);}
+document.addEventListener('mouseup',_releaseActive);
 function se(el,msg){el.textContent=msg;el.style.display='block'}
 function toast(msg,icon='ti-check'){const el=document.createElement('div');el.className='toast';el.innerHTML=`<i class="ti ${icon}"></i>${msg}`;document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),3000)}
 function fmt(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n||0)}
+function fmt0(n){return '$'+Math.round(Number(n)||0).toLocaleString('es-MX')}
 function fd(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}
+function fdS(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short'})}
 function getInm(id){return inmuebles.find(x=>x.id===id)||null}
 function dB(a,b){return Math.round((b-a)/86400000)}
 
@@ -1075,9 +1097,12 @@ function countUp(el,to,fmtFn){
 let densMode=(typeof localStorage!=='undefined'&&localStorage.getItem('ib_dens'))||'aireada';
 function setDens(m){
   densMode=m;try{localStorage.setItem('ib_dens',m);}catch(e){}
-  const a=document.getElementById('seg-air'),d=document.getElementById('seg-den'),c=document.getElementById('pagos-list');
-  if(a)a.classList.toggle('on',m==='aireada');if(d)d.classList.toggle('on',m==='densa');
-  if(c)c.className='plist'+(m==='densa'?' densa':'');
+  const a=document.getElementById('seg-air'),d=document.getElementById('seg-den');
+  const on='color:#1A1917;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.08)',off='color:#9D9B96;background:transparent;box-shadow:none';
+  const base='border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;';
+  if(a)a.setAttribute('style',base+(m==='aireada'?on:off));
+  if(d)d.setAttribute('style',base+(m==='densa'?on:off));
+  renderStats();renderPagos();
 }
 // ── Marcar un pago como cobrado (acción "Cobrar" en línea) ──
 async function marcarPagado(id){
@@ -1259,14 +1284,26 @@ function renderStats(){
   const mes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY});
   const esp=mes.reduce((s,p)=>s+Number(p.monto),0),cob=mes.reduce((s,p)=>s+Number(p.pagado),0);
   const venc=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v<t&&Number(p.pagado)<Number(p.monto)});
-  const pend=mes.filter(p=>getEstado(p)==='pendiente').length,pct=esp>0?Math.round(cob/esp*100):0;
-  const g=document.getElementById('stats-grid');g.className='mgrid c4';
-  g.innerHTML=`
-    <div class="mcard dark"><div class="ml">Esperado del mes</div><div class="mv">${fmt(esp)}</div><div class="ms">${MESES[vM]} ${vY} · ${mes.length} cargos</div></div>
-    <div class="mcard"><div class="ml" style="color:var(--teal-tx)"><i class="ti ti-circle-check" style="color:var(--teal);font-size:13px"></i>Cobrado</div><div class="mv" style="color:var(--teal)">${fmt(cob)}</div><div class="mbar"><i style="width:${pct}%"></i></div></div>
-    <div class="mcard"><div class="ml"><i class="ti ti-clock" style="color:var(--amber);font-size:13px"></i>Pendientes</div><div class="mv">${pend}</div><div class="ms">este mes · ${pct}% cobrado</div></div>
-    <div class="mcard"><div class="ml"><i class="ti ti-alert-triangle" style="color:var(--red);font-size:13px"></i>Vencidos</div><div class="mv" style="color:var(--red)">${venc.length}</div><div class="ms">sin pagar</div></div>`;
-  mo(g);
+  const pendArr=mes.filter(p=>getEstado(p)==='pendiente'),pend=pendArr.length,pct=esp>0?Math.round(cob/esp*100):0;
+  const pendMonto=pendArr.reduce((s,p)=>s+Number(p.monto),0);
+  const vencMonto=venc.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
+  const g=document.getElementById('stats-grid');g.className='';
+  if(densMode==='densa'){
+    g.innerHTML=`<div style="display:flex;background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden">
+      <div style="flex:1.4;padding:14px 20px;background:#1A1917"><div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em">Esperado</div><div style="font-size:19px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt0(esp)}</div></div>
+      <div style="flex:1.4;padding:14px 20px;border-right:1px solid #EEECE4"><div style="font-size:10.5px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em">Cobrado · ${pct}%</div><div style="font-size:19px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;display:inline-block;animation:breathe 3.4s ease-in-out 1s infinite;transform-origin:left center">${fmt0(cob)}</div></div>
+      <div style="flex:1;padding:14px 20px;border-right:1px solid #EEECE4"><div style="font-size:10.5px;font-weight:600;color:#633806;text-transform:uppercase;letter-spacing:.07em">Pendientes</div><div style="font-size:19px;font-weight:500;font-family:'DM Mono',monospace">${pend} <span style="font-size:11.5px;color:#9D9B96;font-family:'DM Sans',sans-serif;font-weight:400">${fmt0(pendMonto)}</span></div></div>
+      <div style="flex:1;padding:14px 20px"><div style="font-size:10.5px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>Vencidos</div><div style="font-size:19px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${venc.length} <span style="font-size:11.5px;color:#9D9B96;font-family:'DM Sans',sans-serif;font-weight:400">${fmt0(vencMonto)}</span></div></div>
+    </div>`;
+    return;
+  }
+  g.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+    <div style="background:#1A1917;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.06)"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Esperado del mes</div><div style="font-size:28px;font-weight:500;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.02em">${fmt0(esp)}</div><div style="font-size:11.5px;color:rgba(255,255,255,.45);margin-top:6px">${MESES[vM]} ${vY} · ${mes.length} cargos</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><i class="ti ti-circle-check" style="color:#1D9E75;font-size:13px"></i>Cobrado</div><div style="font-size:28px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;letter-spacing:-.02em;display:inline-block;animation:breathe 3.4s ease-in-out 1s infinite;transform-origin:left center">${fmt0(cob)}</div><div style="height:4px;background:#F1EFE8;border-radius:3px;overflow:hidden;margin-top:10px"><div style="height:100%;background:#1D9E75;border-radius:3px;width:${pct}%;transform-origin:left;animation:growBar .9s cubic-bezier(.16,1,.3,1) .25s both"></div></div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${pct}% del esperado</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#633806;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><i class="ti ti-clock" style="color:#BA7517;font-size:13px"></i>Pendientes</div><div style="font-size:28px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em">${pend}</div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${fmt0(pendMonto)} por vencer</div></div>
+    <div style="background:#FFFFFF;border:1px solid #F3D2D2;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>Vencidos</div><div style="font-size:28px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace;letter-spacing:-.02em">${venc.length}</div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${fmt0(vencMonto)} sin cobrar</div></div>
+  </div>`;
+  mo(g.firstElementChild);
 }
 
 // ═══════════════════════════════════════
@@ -1285,32 +1322,37 @@ function renderPagos(){
     return true;
   }).sort((a,b)=>{const o={vencido:0,parcial:1,pendiente:2,pagado:3},ea=getEstado(a),eb=getEstado(b);return o[ea]!==o[eb]?o[ea]-o[eb]:new Date(a.vencimiento)-new Date(b.vencimiento)});
   const cont=document.getElementById('pagos-list');
-  cont.className='plist'+(densMode==='densa'?' densa':'');
-  if(!list.length){cont.innerHTML=`<div style="text-align:center;padding:56px 20px;color:var(--tx3)"><i class="ti ti-inbox" style="font-size:34px;opacity:.35;display:block;margin-bottom:10px"></i><div style="font-size:13.5px">Sin pagos programados para ${MESES[vM]} ${vY}</div></div>`;return}
-  const ic={pagado:'ti-check',pendiente:'ti-clock',vencido:'ti-alert-triangle',parcial:'ti-percentage'},lb={pagado:'Pagado',pendiente:'Pendiente',vencido:'Vencido',parcial:'Parcial'};
-  const head=`<div class="phead"><span>Depto.</span><span>Inquilino</span><span>Concepto</span><span style="text-align:right">Monto</span><span style="text-align:right">Pagado</span><span>Vencimiento</span><span>Estado</span><span></span></div>`;
+  if(!list.length){cont.innerHTML=`<div style="text-align:center;padding:56px 20px;color:#9D9B96"><i class="ti ti-inbox" style="font-size:34px;opacity:.35;display:block;margin-bottom:10px"></i><div style="font-size:13.5px">Sin pagos programados para ${MESES[vM]} ${vY}</div></div>`;return}
+  const den=densMode==='densa';
+  const fs=den?'12.5px':'13.5px',padTh=den?'8px 14px':'11px 16px',padTd=den?'7px 14px':'12px 16px';
+  const GT='display:grid;grid-template-columns:76px minmax(150px,1.5fr) minmax(90px,1fr) 105px 105px 145px 135px 100px;align-items:center;column-gap:12px';
+  const BADGE={pagado:{bg:'#EAF3DE',c:'#3B6D11',ico:'ti-check',lbl:'Pagado',anim:'none'},pendiente:{bg:'#FAEEDA',c:'#633806',ico:'ti-clock',lbl:'Pendiente',anim:'none'},vencido:{bg:'#FCEBEB',c:'#791F1F',ico:'ti-alert-triangle',lbl:'Vencido',anim:'pulseVenc 2.2s ease-in-out infinite'},parcial:{bg:'#E6F1FB',c:'#0C447C',ico:'ti-percentage',lbl:'Parcial',anim:'none'}};
+  const th='font-size:11px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.06em';
+  const head=`<div style="${GT};background:#FAF9F5;border-bottom:1px solid #E2E0D8;padding:${padTh}"><span style="${th}">Depto.</span><span style="${th}">Inquilino</span><span style="${th}">Concepto</span><span style="${th};text-align:right">Monto</span><span style="${th};text-align:right">Pagado</span><span style="${th}">Vencimiento</span><span style="${th}">Estado</span><span></span></div>`;
   const rows=list.map((p,idx)=>{
-    const i=getInm(p.inmueble_id),est=getEstado(p);
-    const v=new Date(p.vencimiento+'T00:00:00'),dv=est==='vencido'?Math.abs(dB(t,v)):null,dp=est==='pendiente'?dB(t,v):null;
-    let ex='';if(dv!==null)ex=` (${dv}d)`;if(est==='parcial')ex=` (${fmt(p.pagado)})`;
-    const pagC=Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0?'var(--teal)':Number(p.pagado)>0?'var(--amber)':'var(--tx3)';
-    const venC=est==='vencido'?'var(--red)':(est==='pendiente'&&dp<=3?'var(--amber)':'var(--tx2)');
+    const i=getInm(p.inmueble_id),est=getEstado(p),b=BADGE[est];
+    const v=new Date(p.vencimiento+'T00:00:00'),dv=Math.round((v-t)/86400000);
+    let vencF=fdS(p.vencimiento),vencC='#6B6963';
+    if(est==='vencido'){vencF+=' · hace '+Math.abs(dv)+'d';vencC='#E24B4A';}
+    else if(est==='pendiente'&&dv<=3){vencC='#BA7517';}
+    const pagC=Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0?'#1D9E75':Number(p.pagado)>0?'#BA7517':'#9D9B96';
+    const con=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'';
     const cobrable=est!=='pagado';
     const accion=cobrable
-      ? `<button class="btn-cobrar" onclick="marcarPagado('${p.id}')" title="Marcar como cobrado"><i class="ti ti-check"></i>Cobrar</button>`
-      : `<button class="ibtn" onclick="abrirEditPago('${p.id}')" title="Editar"><i class="ti ti-pencil"></i></button>`;
-    return `<div class="prow" style="animation-delay:${Math.min(idx*.03,.4)}s">
-      <span class="mono" style="font-size:12px;font-weight:500">${i?.num||'?'}</span>
+      ? `<button onclick="marcarPagado('${p.id}')" title="Marcar como cobrado" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;font-size:11.5px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:7px;cursor:pointer;transition:all .15s"><i class="ti ti-check" style="font-size:12px"></i>Cobrar</button>`
+      : `<button onclick="abrirEditPago('${p.id}')" title="Editar" data-hs="background:#F1EFE8;color:#1A1917" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit"><i class="ti ti-pencil" style="font-size:15px"></i></button>`;
+    return `<div data-hs="background:#FAFAF7" style="${GT};border-bottom:1px solid #EEECE4;padding:${padTd};transition:background .12s;animation:slideIn .32s cubic-bezier(.16,1,.3,1) ${Math.min(idx*.03,.4)}s both">
+      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500">${i?.num||'?'}</span>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i?.inquilino||'—'}</span>
-      <span style="color:var(--tx2);text-transform:capitalize">${p.concepto}</span>
-      <span class="mono" style="text-align:right;font-size:12.5px;font-weight:500">${fmt(p.monto)}</span>
-      <span class="mono" style="text-align:right;font-size:12.5px;color:${pagC}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</span>
-      <span style="color:${venC};font-size:12.5px">${fd(p.vencimiento)}</span>
-      <span><span class="badge ${est}"><i class="ti ${ic[est]}" style="font-size:11px"></i>${lb[est]}${ex}</span></span>
-      <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end">${accion}${cobrable?`<button class="ibtn" onclick="abrirEditPago('${p.id}')" title="Editar"><i class="ti ti-pencil"></i></button>`:''}</span>
+      <span style="color:#6B6963">${con}</span>
+      <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12.5px;font-weight:500">${fmt(p.monto)}</span>
+      <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12.5px;color:${pagC}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</span>
+      <span style="color:${vencC};font-size:12.5px">${vencF}</span>
+      <span><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;background:${b.bg};color:${b.c};animation:${b.anim}"><i class="ti ${b.ico}" style="font-size:11px"></i>${b.lbl}</span></span>
+      <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end">${accion}</span>
     </div>`;
   }).join('');
-  cont.innerHTML=head+rows;
+  cont.innerHTML=`<div style="overflow-x:auto"><div style="min-width:950px;font-size:${fs}">${head}${rows}</div></div>`;
 }
 function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}renderStats();renderPagos();renderEC()}
 
@@ -1320,31 +1362,34 @@ function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}renderStats();rend
 function renderInm(){
   const q=(document.getElementById('si').value||'').toLowerCase(),list=inmuebles.filter(i=>!q||(i.num+i.inquilino).toLowerCase().includes(q)),el=document.getElementById('l-inm');
   const sub=document.getElementById('inm-sub');if(sub)sub.textContent=`${inmuebles.length} unidad${inmuebles.length===1?'':'es'} · avance de cobranza de ${MESES[vM]}`;
-  if(!list.length){el.style.cssText='';el.innerHTML=`<div class="estate"><div class="estate-ic"><i class="ti ti-building" style="font-size:28px;color:var(--tx3)"></i></div><div style="font-size:15px;font-weight:600;margin-bottom:4px">Aún no hay departamentos</div><div style="font-size:13px;color:var(--tx3);margin-bottom:20px">Agrega tu primera unidad para empezar a cobrar con orden.</div><button class="btn primary" onclick="abrirInm(null)"><i class="ti ti-plus"></i>Agregar departamento</button></div>`;return}
+  if(!list.length){el.style.cssText='';el.innerHTML=`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:64px 32px;text-align:center"><div style="width:64px;height:64px;border-radius:50%;background:#F1EFE8;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><i class="ti ti-building" style="font-size:28px;color:#9D9B96"></i></div><div style="font-size:15px;font-weight:600;margin-bottom:4px">Aún no hay departamentos</div><div style="font-size:13px;color:#9D9B96;margin-bottom:20px">Agrega tu primera unidad para empezar a cobrar con orden.</div><button onclick="abrirInm(null)" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer"><i class="ti ti-plus" style="font-size:14px"></i>Agregar departamento</button></div>`;return}
   el.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px';
+  const IB='display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s';
   el.innerHTML=list.map((i,idx)=>{
     const mp=pagos.filter(p=>p.inmueble_id===i.id),pm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&getEstado(p)==='pagado'}).length,tm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY}).length;
     const tv=mp.some(p=>getEstado(p)==='vencido'),pct=tm?Math.round(pm/tm*100):0;
-    const barC=pct===100?'var(--teal)':pct>=50?'var(--amber)':'var(--red)';
-    let chipBg,chipC,chipIco,chipLbl,chipAnim='';
-    if(tv){chipBg='var(--red-bg)';chipC='var(--red-tx)';chipIco='ti-alert-triangle';chipLbl='Vencido';chipAnim='pulseVenc 2.6s ease-in-out infinite';}
-    else if(tm>0&&pct===100){chipBg='var(--teal-bg)';chipC='var(--teal-tx)';chipIco='ti-circle-check';chipLbl='Al día';}
-    else if(tm>0){chipBg='var(--amber-bg)';chipC='var(--amber-tx)';chipIco='ti-clock';chipLbl='En proceso';}
-    else{chipBg='var(--sf2)';chipC='var(--tx2)';chipIco='ti-minus';chipLbl='Sin cargos';}
-    return`<div class="dcard">
+    const barC=pct===100?'#1D9E75':pct>=50?'#BA7517':'#E24B4A';
+    const pctC=pct===100?'#1D9E75':tv?'#E24B4A':'#6B6963';
+    let chipBg,chipC,chipIco,chipLbl,chipAnim='none';
+    if(tv){chipBg='#FCEBEB';chipC='#791F1F';chipIco='ti-alert-triangle';chipLbl='Vencido';chipAnim='pulseVenc 2.6s ease-in-out infinite';}
+    else if(tm>0&&pct===100){chipBg='#E1F5EE';chipC='#085041';chipIco='ti-circle-check';chipLbl='Al día';}
+    else if(tm>0){chipBg='#FAEEDA';chipC='#633806';chipIco='ti-clock';chipLbl='En proceso';}
+    else{chipBg='#F1EFE8';chipC='#6B6963';chipIco='ti-minus';chipLbl='Sin cargos';}
+    const delay=(0.08+idx*0.06).toFixed(2)+'s';
+    return`<div data-hs="transform:translateY(-3px);box-shadow:0 10px 30px rgba(26,25,23,.09),0 2px 8px rgba(26,25,23,.05);border-color:#CBC9C0" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s,border-color .18s">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-        <div class="dav">${i.num.slice(0,4).toUpperCase()}</div>
-        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.inquilino}</div><div style="font-size:12px;color:var(--tx3)">Depto. ${i.num}${i.piso?` · Piso ${i.piso}`:''} · ${i.personas||1} pers · día ${i.dia||'—'}</div></div>
-        <div style="text-align:right;flex-shrink:0"><div class="mono" style="font-size:15px;font-weight:500">${fmt(i.renta)}</div><div style="font-size:11px;color:var(--tx3)">/ mes</div></div>
+        <div style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0;color:#1A1917">${i.num}</div>
+        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.inquilino}</div><div style="font-size:12px;color:#9D9B96">Depto. ${i.num}${i.piso?` · Piso ${i.piso}`:''} · ${i.personas||1} personas · paga el día ${i.dia||'—'}</div></div>
+        <div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(i.renta)}</div><div style="font-size:11px;color:#9D9B96">/ mes</div></div>
       </div>
-      ${tm>0?`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--tx3);margin-bottom:5px"><span>Cobranza ${MESES[vM].slice(0,3).toLowerCase()}</span><span class="mono" style="color:${barC}">${pct}%</span></div><div class="dbar"><i style="width:${pct}%;background:${barC};animation-delay:${Math.min(idx*.05,.4)}s"></i></div>`:'<div style="height:2px;margin-bottom:12px"></div>'}
-      <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid var(--bd-soft)">
-        <span class="chip" style="background:${chipBg};color:${chipC};${chipAnim?`animation:${chipAnim}`:''}"><i class="ti ${chipIco}" style="font-size:11px"></i>${chipLbl}</span>
+      ${tm>0?`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#9D9B96;margin-bottom:5px"><span>Cobranza ${MESES[vM].slice(0,3).toLowerCase()}</span><span style="font-family:'DM Mono',monospace;color:${pctC}">${pct}%</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden;margin-bottom:14px"><div style="height:100%;border-radius:4px;background:${barC};width:${pct}%;transform-origin:left;animation:growBar .8s cubic-bezier(.16,1,.3,1) ${delay} both"></div></div>`:'<div style="height:2px;margin-bottom:12px"></div>'}
+      <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #EEECE4">
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${chipBg};color:${chipC};animation:${chipAnim}"><i class="ti ${chipIco}" style="font-size:11px"></i>${chipLbl}</span>
         <div style="margin-left:auto;display:flex;gap:6px">
-          <button class="ibtn wa" title="Recordatorio" onclick="abrirRecordatorio('${i.id}')"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>
-          <button class="ibtn" title="Nuevo pago" onclick="abrirPago('${i.id}')"><i class="ti ti-plus" style="font-size:15px"></i></button>
-          <button class="ibtn" title="Editar" onclick="abrirInm('${i.id}')"><i class="ti ti-pencil" style="font-size:15px"></i></button>
-          <button class="ibtn" title="Estado de cuenta PDF" onclick="generarPDF('${i.id}')"><i class="ti ti-file-type-pdf" style="font-size:15px"></i></button>
+          <button title="Enviar recordatorio" onclick="abrirRecordatorio('${i.id}')" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>
+          <button title="Nuevo pago" onclick="abrirPago('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-plus" style="font-size:15px"></i></button>
+          <button title="Editar" onclick="abrirInm('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-pencil" style="font-size:15px"></i></button>
+          <button title="Estado de cuenta PDF" onclick="generarPDF('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-file-type-pdf" style="font-size:15px"></i></button>
         </div>
       </div>
     </div>`;
@@ -1376,26 +1421,26 @@ function renderAl(){
   al.sort((a,b)=>a.pri-b.pri);
   const nb=document.getElementById('nb-al');if(al.length){nb.style.display='inline';nb.textContent=al.length}else nb.style.display='none';
   const el=document.getElementById('l-al');
-  const paleta={venc:{bg:'var(--red-bg)',c:'var(--red)',mc:'var(--red)'},prox:{bg:'var(--amber-bg)',c:'var(--amber)',mc:'var(--amber-tx)'},parc:{bg:'var(--blue-bg)',c:'var(--blue)',mc:'var(--blue-tx)'}};
+  const paleta={venc:{bg:'#FCEBEB',c:'#E24B4A',mc:'#E24B4A',anim:'pulseVenc 2.2s ease-in-out infinite'},prox:{bg:'#FAEEDA',c:'#BA7517',mc:'#633806',anim:'none'},parc:{bg:'#E6F1FB',c:'#378ADD',mc:'#0C447C',anim:'none'}};
   if(!al.length){
-    el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh2);padding:72px 32px;text-align:center">
+    el.innerHTML=`<div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:72px 32px;text-align:center">
       <div style="position:relative;width:88px;height:88px;margin:0 auto 22px">
-        <div style="position:absolute;inset:0;border-radius:50%;background:var(--teal-bg);animation:popIn .45s cubic-bezier(.34,1.56,.64,1) both"></div>
-        <svg width="88" height="88" viewBox="0 0 52 52" style="position:relative"><path d="M15 27 L23.5 35.5 L38 18" fill="none" stroke="var(--teal)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:48;stroke-dashoffset:48;animation:drawCheck .55s cubic-bezier(.16,1,.3,1) .3s forwards"></path></svg>
-        <span style="position:absolute;top:44px;left:44px;width:7px;height:7px;border-radius:2px;background:var(--teal);animation:cf1 1.5s ease-out .55s both"></span>
-        <span style="position:absolute;top:44px;left:44px;width:6px;height:6px;border-radius:50%;background:var(--amber);animation:cf2 1.5s ease-out .6s both"></span>
-        <span style="position:absolute;top:44px;left:44px;width:7px;height:7px;border-radius:2px;background:var(--blue);animation:cf3 1.5s ease-out .65s both"></span>
-        <span style="position:absolute;top:44px;left:44px;width:6px;height:6px;border-radius:50%;background:var(--teal);animation:cf4 1.5s ease-out .7s both"></span>
+        <div style="position:absolute;inset:0;border-radius:50%;background:#E1F5EE;animation:popIn .45s cubic-bezier(.34,1.56,.64,1) both"></div>
+        <svg width="88" height="88" viewBox="0 0 52 52" style="position:relative"><path d="M15 27 L23.5 35.5 L38 18" fill="none" stroke="#1D9E75" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:48;stroke-dashoffset:48;animation:drawCheck .55s cubic-bezier(.16,1,.3,1) .3s forwards"></path></svg>
+        <span style="position:absolute;top:44px;left:44px;width:7px;height:7px;border-radius:2px;background:#1D9E75;animation:cf1 1.5s ease-out .55s both"></span>
+        <span style="position:absolute;top:44px;left:44px;width:6px;height:6px;border-radius:50%;background:#BA7517;animation:cf2 1.5s ease-out .6s both"></span>
+        <span style="position:absolute;top:44px;left:44px;width:7px;height:7px;border-radius:2px;background:#378ADD;animation:cf3 1.5s ease-out .65s both"></span>
+        <span style="position:absolute;top:44px;left:44px;width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:cf4 1.5s ease-out .7s both"></span>
       </div>
       <h3 style="margin:0 0 6px;font-size:19px;font-weight:700">Todo al corriente</h3>
-      <p style="margin:0 auto;font-size:13.5px;color:var(--tx2);max-width:380px">No hay pagos vencidos ni próximos a vencer. Tus ${inmuebles.length} departamentos están al día — buen trabajo.</p>
+      <p style="margin:0 auto;font-size:13.5px;color:#6B6963;max-width:380px">No hay pagos vencidos ni próximos a vencer. Tus ${inmuebles.length} departamentos están al día — buen trabajo.</p>
     </div>`;return;
   }
-  el.innerHTML=al.map(a=>{const pal=paleta[a.type]||paleta.prox;return`<div class="alrow"${a.type==='venc'?' style="border-left:3px solid var(--red)"':''}>
-    <div class="al-ic" style="background:${pal.bg}${a.type==='venc'?';animation:pulseVenc 2.6s ease-in-out infinite':''}"><i class="ti ${a.icon}" style="font-size:18px;color:${pal.c}"></i></div>
-    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${a.titulo}</div><div style="font-size:12.5px;color:var(--tx2)">${a.sub}</div></div>
-    <div style="text-align:right;flex-shrink:0;margin-right:4px"><div class="mono" style="font-size:14.5px;font-weight:500;color:${pal.mc}">${fmt(a.monto)}</div><div style="font-size:11px;color:var(--tx3)">${a.montoSub}</div></div>
-    <button class="btn-cobrar" onclick="abrirRecordatorio('${a.inmId}')"><i class="ti ti-brand-whatsapp" style="font-size:14px"></i>Recordar</button>
+  el.innerHTML=al.map(a=>{const pal=paleta[a.type]||paleta.prox;return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:14px;transition:box-shadow .18s,transform .18s cubic-bezier(.16,1,.3,1)">
+    <div style="width:38px;height:38px;border-radius:10px;background:${pal.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:${pal.anim}"><i class="ti ${a.icon}" style="font-size:18px;color:${pal.c}"></i></div>
+    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${a.titulo}</div><div style="font-size:12.5px;color:#6B6963">${a.sub}</div></div>
+    <div style="text-align:right;flex-shrink:0;margin-right:4px"><div style="font-size:14.5px;font-weight:500;font-family:'DM Mono',monospace;color:${pal.mc}">${fmt(a.monto)}</div><div style="font-size:11px;color:#9D9B96">${a.montoSub}</div></div>
+    <button onclick="abrirRecordatorio('${a.inmId}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;flex-shrink:0;transition:all .15s"><i class="ti ti-brand-whatsapp" style="font-size:14px"></i>Recordar</button>
   </div>`;}).join('');
   mo(el);
 }
@@ -1535,37 +1580,40 @@ function renderDepositos(){
   const conDep=inmuebles.filter(i=>pagos.some(p=>p.inmueble_id===i.id&&p.concepto==='deposito'));
   if(!conDep.length){stats.innerHTML='';el.innerHTML=`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos registrados.<br>Registra un pago con concepto "Depósito".</p></div>`;return;}
   let totalDeps=0,totalRet=0,totalDev=0;
+  const CH={
+    parcial:{accent:'#BA7517',chipBg:'#FAEEDA',chipC:'#633806',chipIco:'ti-corner-down-left',chipLbl:'Por devolver',msgBg:'#FAEEDA',msgC:'#633806',msgIco:'ti-info-circle'},
+    retenido:{accent:'#E24B4A',chipBg:'#FCEBEB',chipC:'#791F1F',chipIco:'ti-lock',chipLbl:'Retenido',msgBg:'#FCEBEB',msgC:'#791F1F',msgIco:'ti-alert-triangle'},
+    activo:{accent:'#378ADD',chipBg:'#E6F1FB',chipC:'#0C447C',chipIco:'ti-clock',chipLbl:'Activo',msgBg:'#E6F1FB',msgC:'#0C447C',msgIco:'ti-info-circle'},
+    devuelto:{accent:'#1D9E75',chipBg:'#E1F5EE',chipC:'#085041',chipIco:'ti-check',chipLbl:'Devuelto',msgBg:'#E1F5EE',msgC:'#085041',msgIco:'ti-check'}
+  };
   const panels=conDep.map(inm=>{
     const r=calcDeposito(inm);if(!r)return'';
     totalDeps+=r.totalDep;if(r.estado==='retenido')totalRet+=r.totalDep;if(r.estado==='parcial')totalDev+=r.devolver;
     const devuelto=pagos.some(p=>p.inmueble_id===inm.id&&p.concepto==='devolucion_deposito');
-    const clsPanel=devuelto?'devuelto':r.estado;
-    const iconoEstado=r.estado==='retenido'?'ti-alert-triangle':r.estado==='parcial'?'ti-check':'ti-clock';
-    return`<div class="dep-panel ${clsPanel}">
-      <div class="dep-header">
-        <div class="dep-av">${inm.num.slice(0,3)}</div>
-        <div class="dep-info"><strong>Depto. ${inm.num} — ${inm.inquilino}</strong>
-          <span>${inm.fecha_inicio_contrato?`Contrato: ${fd(inm.fecha_inicio_contrato)} al ${fd(inm.fecha_termino_contrato)||'—'}`:'Sin fechas de contrato'}</span>
-          ${inm.fecha_salida?`<span style="color:var(--red)">Salida: ${fd(inm.fecha_salida)}</span>`:''}
-        </div>
-        <div class="dep-monto"><strong>${fmt(r.totalDep)}</strong><span>Depósito</span></div>
+    const est=devuelto?'devuelto':r.estado;const ch=CH[est]||CH.activo;
+    const contrato=inm.fecha_inicio_contrato?`Contrato ${fd(inm.fecha_inicio_contrato)} — ${inm.fecha_termino_contrato?fd(inm.fecha_termino_contrato):'—'}${inm.fecha_salida?` · salida ${fd(inm.fecha_salida)}`:''}`:'Sin fechas de contrato';
+    const msg=devuelto?`Depósito devuelto: ${fmt(r.devolver)} registrados en el historial de pagos.`:r.msg;
+    const accionable=r.estado==='parcial'&&r.devolver>0&&!devuelto;
+    return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-left:4px solid ${ch.accent};border-radius:12px;padding:18px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05);opacity:${est==='devuelto'?'.72':'1'};transition:box-shadow .18s">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="width:40px;height:40px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${inm.num}</div>
+        <div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:600">${inm.inquilino}</div><div style="font-size:12px;color:#9D9B96">${contrato}</div></div>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:${ch.chipBg};color:${ch.chipC}"><i class="ti ${ch.chipIco}" style="font-size:11px"></i>${ch.chipLbl}</span>
+        <div style="text-align:right;min-width:90px"><div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(r.totalDep)}</div><div style="font-size:10.5px;color:#9D9B96">depósito</div></div>
       </div>
-      <div class="dep-alerta ${r.estado==='retenido'?'warn':r.estado==='parcial'?'ok':'info'}"><i class="ti ${iconoEstado}"></i>${r.msg}</div>
-      ${r.devolver>0&&!devuelto?`<div class="dep-body">A devolver: <strong style="color:var(--teal)">${fmt(r.devolver)}</strong></div>`:''}
-      ${devuelto?`<div class="dep-alerta ok"><i class="ti ti-check"></i>Depósito ya marcado como devuelto</div>`:''}
-      <div class="dep-actions">
-        ${r.devolver>0&&!devuelto?`<button class="btn teal sm" onclick="abrirDevolucion('${inm.id}')"><i class="ti ti-check"></i>Marcar como devuelto</button>`:''}
-        <button class="btn sm" onclick="abrirRecordatorio('${inm.id}')"><i class="ti ti-send"></i>Recordatorio</button>
-      </div>
+      <div style="background:${ch.msgBg};color:${ch.msgC};border-radius:9px;padding:10px 14px;font-size:12.5px;display:flex;align-items:flex-start;gap:8px;line-height:1.5"><i class="ti ${ch.msgIco}" style="font-size:15px;margin-top:1px;flex-shrink:0"></i><span>${msg}</span></div>
+      ${accionable?`<div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="abrirDevolucion('${inm.id}')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-check" style="font-size:14px"></i>Confirmar devolución de ${fmt(r.devolver)}</button>
+        <button onclick="abrirRecordatorio('${inm.id}')" data-hs="background:#F1EFE8;color:#1A1917" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-send" style="font-size:14px"></i>Recordatorio</button>
+      </div>`:''}
     </div>`;
   }).join('');
-  stats.className='mgrid c3';
-  stats.innerHTML=`
-    <div class="mcard dark"><div class="ml">En custodia</div><div class="mv">${fmt(totalDeps)}</div><div class="ms">${conDep.length} contrato${conDep.length===1?'':'s'} con depósito</div></div>
-    <div class="mcard"><div class="ml" style="color:var(--teal-tx)"><i class="ti ti-corner-down-left" style="color:var(--teal);font-size:13px"></i>Por devolver</div><div class="mv" style="color:var(--teal)">${fmt(totalDev)}</div><div class="ms">contrato cumplido</div></div>
-    <div class="mcard"><div class="ml" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:13px"></i>Retenido</div><div class="mv" style="color:var(--red)">${fmt(totalRet)}</div><div class="ms">penalización por salida anticipada</div></div>`;
-  mo(stats);
-  el.innerHTML=panels||`<div class="estate"><div class="estate-ic"><i class="ti ti-safe" style="font-size:28px;color:var(--tx3)"></i></div><div style="font-size:15px;font-weight:600;margin-bottom:4px">Sin depósitos con salida registrada</div><div style="font-size:13px;color:var(--tx3)">Cuando un inquilino registre fecha de salida aparecerá aquí su liquidación.</div></div>`;
+  stats.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+    <div style="background:#1A1917;border-radius:12px;padding:16px 20px"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">En custodia</div><div style="font-size:22px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt0(totalDeps)}</div><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">${conDep.length} contrato${conDep.length===1?'':'s'} con depósito</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-corner-down-left" style="color:#1D9E75;font-size:13px"></i>Por devolver</div><div style="font-size:22px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace">${fmt0(totalDev)}</div><div style="font-size:11px;color:#9D9B96;margin-top:2px">contrato cumplido</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-lock" style="color:#E24B4A;font-size:13px"></i>Retenido</div><div style="font-size:22px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${fmt0(totalRet)}</div><div style="font-size:11px;color:#9D9B96">penalización por salida anticipada</div></div>
+  </div>`;
+  el.innerHTML=panels||`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:56px 32px;text-align:center;color:#9D9B96"><i class="ti ti-shield-lock" style="font-size:30px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:15px;font-weight:600;color:#1A1917;margin-bottom:4px">Sin depósitos con salida registrada</div><div style="font-size:13px">Cuando un inquilino registre fecha de salida aparecerá aquí su liquidación.</div></div>`;
   mo(el);
 }
 function abrirDevolucion(inmId){
@@ -1597,17 +1645,24 @@ function renderSvcList(){
   // Group by mes/anio
   const groups={};
   servicios.forEach(s=>{const k=`${s.anio||'?'}-${(s.mes||0)+1}`;if(!groups[k])groups[k]={label:MESES[s.mes||0]+' '+(s.anio||''),svcs:[]};groups[k].svcs.push(s)});
+  const CO={agua:{c:'#378ADD',bg:'#E6F1FB',ico:'ti-droplet'},luz:{c:'#BA7517',bg:'#FAEEDA',ico:'ti-bolt'},gas:{c:'#E24B4A',bg:'#FCEBEB',ico:'ti-flame'}};
   el.innerHTML=Object.entries(groups).map(([k,g])=>`
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:.75rem;margin-top:1.25rem;color:var(--tx2)">${g.label}</h3>
-    <div class="svc-grid">${g.svcs.map(s=>{
-      const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion);
-      const colores={agua:'var(--blue)',luz:'var(--amber)',gas:'var(--red)'};
-      const iconos={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'};
-      return`<div class="svc-card"><h3><i class="ti ${iconos[s.tipo]}" style="color:${colores[s.tipo]}"></i>${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)} <span class="pill ${s.tipo}" style="font-size:11px">${fd(s.periodo_ini)} — ${fd(s.periodo_fin)}</span></h3>
-        <div class="svc-total">${fmt(s.total)}</div>
-        ${det.slice(0,4).map(d=>{const i=getInm(d.inmueble_id);return`<div class="svc-row"><span class="svc-depto">Depto. ${i?.num||'?'}</span><span>${fmt(d.monto)}</span></div>`}).join('')}
-        ${det.length>4?`<div style="font-size:12px;color:var(--tx3);padding:4px 0">+${det.length-4} departamentos más</div>`:''}
-        <div class="svc-actions"><button class="btn sm" onclick="verServicio('${s.id}')"><i class="ti ti-eye"></i>Ver detalle</button></div>
+    <h3 style="font-size:13px;font-weight:700;color:#6B6963;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 12px">${g.label}</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">${g.svcs.map(s=>{
+      const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
+      const co=CO[s.tipo]||CO.agua;const maxP=Math.max(1,...det.map(d=>Number(d.ponderacion)||0));const pondTotal=det.reduce((x,d)=>x+(Number(d.ponderacion)||0),0);
+      const filas=det.map((d,fi)=>{const i=getInm(d.inmueble_id);const pct=Math.round((Number(d.ponderacion)||0)/maxP*100);return`<div><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:3px"><span style="font-family:'DM Mono',monospace;font-weight:500">${i?.num||'?'} <span style="font-family:'DM Sans',sans-serif;color:#9D9B96;font-weight:400">· ${d.dias_uso} días × ${d.personas} pers.</span></span><span style="font-family:'DM Mono',monospace;color:#1A1917">${fmt(d.monto)}</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${co.c};opacity:.85;width:${pct}%;transform-origin:left;animation:growBar .75s cubic-bezier(.16,1,.3,1) ${(0.1+fi*0.07).toFixed(2)}s both"></div></div></div>`}).join('');
+      return`<div data-hs="transform:translateY(-2px);box-shadow:0 8px 26px rgba(26,25,23,.08)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:20px 22px;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
+          <div style="width:34px;height:34px;border-radius:9px;background:${co.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${co.ico}" style="font-size:17px;color:${co.c}"></i></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)}</div><div style="font-size:11.5px;color:#9D9B96">${fdS(s.periodo_ini)} — ${fdS(s.periodo_fin)} · ${s.dias_servicio||''} días</div></div>
+          <div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(s.total)}</div>
+        </div>
+        <div style="display:grid;gap:9px;margin-top:16px">${filas}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid #EEECE4;font-size:11.5px;color:#9D9B96">
+          <span>Ponderación total: <span style="font-family:'DM Mono',monospace">${pondTotal}</span></span>
+          <button onclick="verServicio('${s.id}')" data-hs="color:#085041" style="border:none;background:none;color:#1D9E75;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;padding:0">Ver detalle →</button>
+        </div>
       </div>`;
     }).join('')}</div>`).join('');
 }
@@ -1752,20 +1807,23 @@ async function elimServicio(){
 //  ESTADO DE CUENTA
 // ═══════════════════════════════════════
 function renderEC(){
-  document.getElementById('ec-mes-lbl').textContent=MESES[vM]+' '+vY;
+  const lbl=MESES[vM]+' '+vY;
+  const l1=document.getElementById('ec-mes-lbl');if(l1)l1.textContent=lbl;
+  const l2=document.getElementById('ec-mes-lbl2');if(l2)l2.textContent=lbl;
   const el=document.getElementById('l-ec');
-  if(!inmuebles.length){el.innerHTML=`<div class="empty"><i class="ti ti-file-invoice"></i><p>Sin departamentos registrados.</p></div>`;return}
+  if(!inmuebles.length){el.innerHTML=`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:64px 32px;text-align:center;color:#9D9B96"><i class="ti ti-file-invoice" style="font-size:34px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:13.5px">Sin departamentos registrados.</div></div>`;return}
+  const mc=MESES[vM].slice(0,3).toLowerCase();
   el.innerHTML=inmuebles.map(inm=>{
     const pagosMes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&p.inmueble_id===inm.id});
     const renta=pagosMes.filter(p=>p.concepto==='renta').reduce((s,p)=>s+Number(p.monto),0);
     const svcs=getSvcMonto(inm.id,vM,vY);
     const totalEC=renta+svcs;
-    return`<div class="ecrow">
-      <div class="dav">${inm.num.slice(0,4)}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${inm.inquilino}</div><div style="font-size:12px;color:var(--tx3)">Renta ${fmt(renta)} · Servicios ${fmt(svcs)}</div></div>
-      <div style="text-align:right;margin-right:6px"><div class="mono" style="font-size:16px;font-weight:500">${fmt(totalEC)}</div><div style="font-size:10.5px;color:var(--tx3)">total ${MESES[vM].slice(0,3).toLowerCase()}</div></div>
-      <button class="btn sm" onclick="verEC('${inm.id}')"><i class="ti ti-eye"></i>Ver</button>
-      <button class="btn-cobrar" onclick="generarPDF('${inm.id}')"><i class="ti ti-file-type-pdf"></i>PDF</button>
+    return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:14px;transition:box-shadow .18s,transform .18s cubic-bezier(.16,1,.3,1)">
+      <div style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${inm.num}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${inm.inquilino}</div><div style="font-size:12px;color:#9D9B96">Renta ${fmt(renta)} · Servicios ${fmt(svcs)}</div></div>
+      <div style="text-align:right;margin-right:6px"><div style="font-size:16px;font-weight:500;font-family:'DM Mono',monospace">${fmt(totalEC)}</div><div style="font-size:10.5px;color:#9D9B96">total ${mc}</div></div>
+      <button onclick="verEC('${inm.id}')" data-hs="background:#F1EFE8" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-eye" style="font-size:13px"></i>Ver</button>
+      <button onclick="generarPDF('${inm.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-file-type-pdf" style="font-size:13px"></i>PDF</button>
     </div>`;
   }).join('');
   mo(el);
@@ -2014,25 +2072,26 @@ async function elimInm(){if(!confirm('¿Eliminar este departamento y todos sus p
 //  MIEMBROS
 // ═══════════════════════════════════════
 async function renderMem(){
+  const eq=document.getElementById('eq-wsn');if(eq)eq.textContent=CW.nombre||'este negocio';
   const {data}=await sb.from('memberships').select('*').eq('workspace_id',CW.id);
   const mems=data||[];
   document.getElementById('l-mem').innerHTML=`
-    <div class="card2" style="padding:24px;margin-bottom:16px;text-align:center">
-      <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:12px">Código de invitación a "${CW.nombre}"</div>
-      <div style="background:#FAF9F5;border:2px dashed var(--bd2);border-radius:10px;padding:18px;margin-bottom:14px"><span class="mono" style="font-size:28px;font-weight:500;letter-spacing:.18em">${CW.invite_code}</span></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:24px;margin-bottom:16px;text-align:center">
+      <div style="font-size:12px;font-weight:600;color:#6B6963;margin-bottom:12px">Código de invitación al negocio</div>
+      <div style="background:#FAF9F5;border:2px dashed #CBC9C0;border-radius:10px;padding:18px;margin-bottom:14px"><span style="font-family:'DM Mono',monospace;font-size:28px;font-weight:500;letter-spacing:.18em">${CW.invite_code}</span></div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn" onclick="copiarCodigo()"><i class="ti ti-copy"></i>Copiar código</button>
-        <button class="btn primary" onclick="openM('m-inv-email')"><i class="ti ti-mail"></i>Invitar por correo</button>
+        <button onclick="copiarCodigo()" data-hs="background:#F1EFE8" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-copy" style="font-size:14px"></i>Copiar código</button>
+        <button onclick="openM('m-inv-email')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-mail" style="font-size:14px"></i>Invitar por correo</button>
       </div>
     </div>
-    <div class="card2" style="overflow:hidden">
-      <div style="padding:16px 22px;border-bottom:1px solid var(--bd-soft);font-size:13px;font-weight:700">Miembros (${mems.length})</div>
-      ${mems.map((m,idx)=>`<div class="memrow" style="animation-delay:${idx*.05}s">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--sf2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${(m.email||'?').slice(0,1).toUpperCase()}</div>
-        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis">${m.email||'Usuario'}</div><div style="font-size:12px;color:var(--tx3)">${m.user_id===CU.id?'Tú · ':''}${m.role==='owner'?'Propietario':'Miembro'}</div></div>
-        <span class="chip" style="background:${m.role==='owner'?'var(--teal-bg)':'var(--blue-bg)'};color:${m.role==='owner'?'var(--teal-tx)':'var(--blue-tx)'}">${m.role==='owner'?'Propietario':'Miembro'}</span>
-        ${CW.role==='owner'&&m.user_id!==CU.id?`<button class="ibtn rm" onclick="quitarMem('${m.id}')" title="Quitar acceso"><i class="ti ti-user-minus"></i></button>`:''}
-      </div>`).join('')}
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden">
+      <div style="padding:16px 22px;border-bottom:1px solid #EEECE4;font-size:13px;font-weight:700">Miembros (${mems.length})</div>
+      ${mems.map((m,idx)=>{const owner=m.role==='owner';const avBg=owner?'#E1F5EE':'#E6F1FB',avC=owner?'#085041':'#0C447C';return`<div style="padding:14px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #EEECE4;animation:slideIn .4s cubic-bezier(.16,1,.3,1) ${(0.08+idx*0.08).toFixed(2)}s both">
+        <div style="width:36px;height:36px;border-radius:50%;background:${avBg};color:${avC};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${(m.email||'?').slice(0,1).toUpperCase()}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis">${m.email||'Usuario'}</div><div style="font-size:12px;color:#9D9B96">${m.user_id===CU.id?'Tú · ':''}${owner?'Propietario':'Miembro'}</div></div>
+        <span style="display:inline-flex;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;background:${avBg};color:${avC}">${owner?'Propietario':'Miembro'}</span>
+        ${CW.role==='owner'&&m.user_id!==CU.id?`<button onclick="quitarMem('${m.id}')" title="Quitar acceso" data-hs="background:#FCEBEB;color:#791F1F;border-color:#F3D2D2" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#9D9B96;border-radius:7px;cursor:pointer;transition:all .15s"><i class="ti ti-user-minus" style="font-size:14px"></i></button>`:''}
+      </div>`}).join('')}
     </div>`;
 }
 async function quitarMem(id){if(!confirm('¿Quitar acceso?'))return;await sb.from('memberships').delete().eq('id',id);toast('Miembro eliminado');renderMem()}
@@ -2049,7 +2108,9 @@ async function invEmail(){
 const TABS=['inicio','pagos','inmuebles','alertas','reporte','servicios','edocuenta','miembros','config','depositos','recordatorio'];
 function setTab(name,btn){
   TABS.forEach(t=>document.getElementById('sec-'+t).style.display=t===name?'block':'none');
-  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  document.querySelectorAll('.dni').forEach(b=>{b.style.color='#6B6963';b.style.background='transparent';b._hbase=b.getAttribute('style');});
+  const navBtn=document.querySelector('.dni[data-tab="'+name+'"]');
+  if(navBtn){navBtn.style.color='#1A1917';navBtn.style.background='#F1EFE8';navBtn._hbase=navBtn.getAttribute('style');}
   // re-dispara la animación de entrada de la sección
   const sec=document.getElementById('sec-'+name);if(sec){sec.style.animation='none';void sec.offsetHeight;sec.style.animation='';}
   if(name==='inicio')renderDashboard();
@@ -2057,7 +2118,7 @@ function setTab(name,btn){
   if(name==='servicios')renderSvcList();if(name==='edocuenta')renderEC();if(name==='miembros')renderMem();
   if(name==='depositos')renderDepositos();if(name==='recordatorio')renderRecList();
 }
-function setTabM(name,btn){document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');setTab(name,document.querySelector(`.ni[data-tab="${name}"]`))}
+function setTabM(name,btn){document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');setTab(name)}
 
 // Wiring: botones del modal nuevo servicio
 document.querySelector('[onclick="openM(\'m-new-svc\')"]').addEventListener('click',()=>{abrirNuevoSvc()},true);
@@ -2159,19 +2220,20 @@ function renderDashboard(){
   // Ocupación: inquilinos sin salida o con salida futura
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const activos=inmuebles.filter(i=>!i.fecha_salida||new Date(i.fecha_salida+'T00:00:00')>=hoy).length;
+  const TILE=(bg,delay)=>`border:none;text-align:left;background:${bg};border-radius:14px;padding:16px 18px;cursor:pointer;font-family:inherit;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) ${delay} both`;
   document.getElementById('dash-tiles').innerHTML=`
-    <button class="dtile red" style="animation-delay:.1s" onclick="setTab('alertas',document.querySelector('.ni[data-tab=alertas]'))">
-      <div class="dl">${nAl>0?'<span class="dot-pulse"></span>':'<i class="ti ti-bell" style="font-size:12px"></i>'}Alertas</div>
-      <div class="dv">${nAl}</div><div class="dsub">${nAl===1?'requiere':'requieren'} tu atención</div></button>
-    <button class="dtile amber" style="animation-delay:.2s" onclick="setTab('depositos',document.querySelector('.ni[data-tab=depositos]'))">
-      <div class="dl"><i class="ti ti-corner-down-left" style="font-size:12px"></i>Por devolver</div>
-      <div class="dv">${fmtK(porDevolver)}</div><div class="dsub">${nDev} depósito${nDev===1?'':'s'} con contrato cumplido</div></button>
-    <button class="dtile blue" style="animation-delay:.3s" onclick="setTab('servicios',document.querySelector('.ni[data-tab=servicios]'))">
-      <div class="dl"><i class="ti ti-bolt" style="font-size:12px"></i>Servicios ${MESES[vM].slice(0,3).toLowerCase()}</div>
-      <div class="dv">${fmtK(totalSvcMes)}</div><div class="dsub">${deptosSvc.size?'distribuidos entre '+deptosSvc.size+' deptos':'sin servicios este mes'}</div></button>
-    <button class="dtile teal" style="animation-delay:.4s" onclick="setTab('inmuebles',document.querySelector('.ni[data-tab=inmuebles]'))">
-      <div class="dl"><i class="ti ti-building" style="font-size:12px"></i>Ocupación</div>
-      <div class="dv">${activos}/${inmuebles.length}</div><div class="dsub">unidades rentadas</div></button>`;
+    <button onclick="setTab('alertas')" data-hs="transform:translateY(-3px);box-shadow:0 10px 26px rgba(226,75,74,.18)" data-as="transform:scale(.97)" style="${TILE('#FCEBEB','.1s')}">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#791F1F;text-transform:uppercase;letter-spacing:.06em">${nAl>0?'<span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>':'<i class="ti ti-bell" style="font-size:12px;color:#E24B4A"></i>'}Alertas</div>
+      <div style="font-size:26px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace;margin-top:8px">${nAl}</div><div style="font-size:11.5px;color:#A8524F">${nAl===1?'requiere':'requieren'} tu atención</div></button>
+    <button onclick="setTab('depositos')" data-hs="transform:translateY(-3px);box-shadow:0 10px 26px rgba(186,117,23,.18)" data-as="transform:scale(.97)" style="${TILE('#FAEEDA','.2s')}">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#633806;text-transform:uppercase;letter-spacing:.06em"><i class="ti ti-corner-down-left" style="font-size:12px;color:#BA7517"></i>Por devolver</div>
+      <div style="font-size:26px;font-weight:500;color:#BA7517;font-family:'DM Mono',monospace;margin-top:8px">${fmtK(porDevolver)}</div><div style="font-size:11.5px;color:#96702F">${nDev} depósito${nDev===1?'':'s'} con contrato cumplido</div></button>
+    <button onclick="setTab('servicios')" data-hs="transform:translateY(-3px);box-shadow:0 10px 26px rgba(55,138,221,.18)" data-as="transform:scale(.97)" style="${TILE('#E6F1FB','.3s')}">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#0C447C;text-transform:uppercase;letter-spacing:.06em"><i class="ti ti-bolt" style="font-size:12px;color:#378ADD"></i>Servicios ${MESES[vM].slice(0,3).toLowerCase()}</div>
+      <div style="font-size:26px;font-weight:500;color:#378ADD;font-family:'DM Mono',monospace;margin-top:8px">${fmtK(totalSvcMes)}</div><div style="font-size:11.5px;color:#4A6E93">${deptosSvc.size?'distribuidos entre '+deptosSvc.size+' deptos':'sin servicios este mes'}</div></button>
+    <button onclick="setTab('inmuebles')" data-hs="transform:translateY(-3px);box-shadow:0 10px 26px rgba(29,158,117,.18)" data-as="transform:scale(.97)" style="${TILE('#E1F5EE','.4s')}">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#085041;text-transform:uppercase;letter-spacing:.06em"><i class="ti ti-building" style="font-size:12px;color:#1D9E75"></i>Ocupación</div>
+      <div style="font-size:26px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;margin-top:8px">${activos}/${inmuebles.length}</div><div style="font-size:11.5px;color:#3D7A66">unidades rentadas</div></button>`;
   // Barras: últimos 6 meses terminando en el mes visible
   const barras=[];let maxCob=0;
   for(let k=5;k>=0;k--){
@@ -2183,25 +2245,26 @@ function renderDashboard(){
     if(c>maxCob)maxCob=c;
   }
   document.getElementById('dash-bars').innerHTML=barras.map((b,i)=>{
-    const h=maxCob>0?Math.max(3,Math.round(b.cob/maxCob*100)):3;
-    const color=b.curso?'var(--amber)':'var(--teal)';
-    return `<div class="bar-col"><div class="bv">${b.cob>0?fmtK(b.cob):''}</div>
-      <div class="bb" style="height:${h}%;background:${color};animation-delay:${.05*i}s"></div>
-      <div class="bm" style="color:${b.curso?'var(--amber-tx)':'var(--tx3)'}">${b.mes}</div></div>`;
+    const h=maxCob>0?Math.max(4,Math.round(b.cob/maxCob*100)):4;
+    const color=b.curso?'#BA7517':'#1D9E75';
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+      <div style="font-size:10.5px;font-family:'DM Mono',monospace;color:#6B6963">${b.cob>0?fmtK(b.cob):''}</div>
+      <div data-hs="opacity:.8" style="width:100%;max-width:46px;border-radius:7px 7px 3px 3px;background:${color};height:${h}%;transform-origin:bottom;animation:barUp .7s cubic-bezier(.16,1,.3,1) ${(0.1+i*0.09).toFixed(2)}s both;transition:opacity .15s"></div>
+      <div style="font-size:11px;font-weight:600;color:${b.curso?'#633806':'#6B6963'}">${b.mes}</div></div>`;
   }).join('');
   // Actividad reciente: últimos 5 pagos por created_at
   const recientes=[...pagos].filter(p=>p.created_at).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
   const actEl=document.getElementById('dash-act');
-  if(!recientes.length){actEl.innerHTML=`<div style="font-size:12.5px;color:var(--tx3);padding:.5rem 0">Aún no hay movimientos registrados.</div>`;}
+  if(!recientes.length){actEl.innerHTML=`<div style="font-size:12.5px;color:#9D9B96;padding:.5rem 0">Aún no hay movimientos registrados.</div>`;}
   else actEl.innerHTML=recientes.map((p,i)=>{
     const inm=getInm(p.inmueble_id),est=getEstado(p);
     let bg,c,icon,txt;
-    if(p.concepto==='devolucion_deposito'){bg='var(--teal-bg)';c='var(--teal)';icon='ti-corner-down-left';txt=`Devolución de depósito · Depto. ${inm?.num||'?'} · <strong>${fmt(p.monto)}</strong>`;}
-    else if(est==='pagado'){bg='var(--teal-bg)';c='var(--teal)';icon='ti-check';txt=`Pago recibido · Depto. ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.pagado)}</strong>`;}
-    else if(est==='vencido'){bg='var(--red-bg)';c='var(--red)';icon='ti-alert-triangle';txt=`Pago vencido · Depto. ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.monto)}</strong>`;}
-    else if(est==='parcial'){bg='var(--blue-bg)';c='var(--blue)';icon='ti-percentage';txt=`Pago parcial · Depto. ${inm?.num||'?'} · <strong>${fmt(p.pagado)}</strong> de ${fmt(p.monto)}`;}
-    else{bg='var(--amber-bg)';c='var(--amber)';icon='ti-clock';txt=`Pago registrado · Depto. ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.monto)}</strong>`;}
-    return `<div class="act-row" style="animation-delay:${.05*i}s"><div class="act-ic" style="background:${bg}"><i class="ti ${icon}" style="font-size:15px;color:${c}"></i></div><div class="act-tx">${txt}</div><div class="act-tm">${tiempoRel(p.created_at)}</div></div>`;
+    if(p.concepto==='devolucion_deposito'){bg='#E1F5EE';c='#1D9E75';icon='ti-corner-down-left';txt=`Devolución de depósito · Depto. ${inm?.num||'?'} · <strong>${fmt(p.monto)}</strong>`;}
+    else if(est==='pagado'){bg='#E1F5EE';c='#1D9E75';icon='ti-check';txt=`Pago recibido · Depto. ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.pagado)}</strong>`;}
+    else if(est==='vencido'){bg='#FCEBEB';c='#E24B4A';icon='ti-alert-triangle';txt=`Pago vencido · Depto. ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.monto)}</strong>`;}
+    else if(est==='parcial'){bg='#E6F1FB';c='#378ADD';icon='ti-percentage';txt=`Pago parcial · Depto. ${inm?.num||'?'} · <strong>${fmt(p.pagado)}</strong> de ${fmt(p.monto)}`;}
+    else{bg='#FAEEDA';c='#BA7517';icon='ti-clock';txt=`Pago registrado · Depto. ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.monto)}</strong>`;}
+    return `<div style="display:flex;align-items:center;gap:11px;animation:slideIn .4s cubic-bezier(.16,1,.3,1) ${(0.12+i*0.08).toFixed(2)}s both"><div style="width:30px;height:30px;border-radius:9px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${icon}" style="font-size:15px;color:${c}"></i></div><div style="flex:1;font-size:12.5px;line-height:1.4">${txt}</div><div style="font-size:11px;color:#9D9B96;flex-shrink:0">${tiempoRel(p.created_at)}</div></div>`;
   }).join('');
 }
 // Confetti (micro-interacción al registrar un pago liquidado) — puramente visual
