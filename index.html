@@ -439,6 +439,101 @@ tbody tr:hover td{background:var(--hover)}
 
 /* ── PILLS ── */
 .pill{font-weight:600}
+
+/* ══════════════════════════════════════════════════════════
+   COMPONENTES EXACTOS DEL DISEÑO (design-export)
+   ══════════════════════════════════════════════════════════ */
+@keyframes drawCheck{from{stroke-dashoffset:48}to{stroke-dashoffset:0}}
+@keyframes cf1{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.3)}12%{opacity:1}100%{opacity:0;transform:translate(-52px,-66px) rotate(240deg) scale(1)}}
+@keyframes cf2{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.3)}12%{opacity:1}100%{opacity:0;transform:translate(46px,-72px) rotate(-200deg) scale(1)}}
+@keyframes cf3{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.3)}12%{opacity:1}100%{opacity:0;transform:translate(-68px,-14px) rotate(180deg) scale(1)}}
+@keyframes cf4{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.3)}12%{opacity:1}100%{opacity:0;transform:translate(64px,-22px) rotate(-160deg) scale(1)}}
+
+/* — encabezado de pantalla estándar del diseño — */
+.dhead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.dhead h2{font-size:21px;font-weight:700;letter-spacing:-.01em;margin:0}
+.dhead p{font-size:13px;color:var(--tx2);margin:2px 0 0}
+.dtools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* — métricas con barra — */
+.mgrid{display:grid;gap:14px;margin-bottom:24px}
+.mgrid.c4{grid-template-columns:repeat(4,1fr)}
+.mgrid.c3{grid-template-columns:repeat(3,1fr)}
+.mcard{background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:20px 22px;box-shadow:var(--sh2);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s}
+.mcard:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(26,25,23,.07)}
+.mcard.dark{background:radial-gradient(120% 140% at 100% 0,#2a2825 0,#1A1917 55%);border-color:#1A1917}
+.mcard.dark:hover{box-shadow:0 10px 26px rgba(26,25,23,.28)}
+.mcard .ml{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px;color:var(--tx2)}
+.mcard .mv{font-size:27px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em}
+.mcard .ms{font-size:11.5px;margin-top:6px;color:var(--tx3)}
+.mbar{height:4px;background:var(--sf2);border-radius:3px;overflow:hidden;margin-top:10px}
+.mbar>i{display:block;height:100%;border-radius:3px;background:var(--teal);transform-origin:left;animation:growBar .9s cubic-bezier(.16,1,.3,1) .2s both}
+.mcard.dark .ml{color:rgba(255,255,255,.55)}.mcard.dark .mv{color:#fff}.mcard.dark .ms{color:rgba(255,255,255,.45)}
+
+/* — botones de icono — */
+.ibtn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--bd);background:#fff;color:var(--tx2);border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit;flex-shrink:0}
+.ibtn:hover{background:var(--sf2);color:var(--tx)}
+.ibtn.wa:hover{background:var(--teal-bg);color:var(--teal-tx);border-color:#BFE8D8}
+.ibtn.rm:hover{background:var(--red-bg);color:var(--red-tx);border-color:#F3D2D2}
+.ibtn:active{transform:scale(.94)}
+
+/* — control segmentado (densidad) — */
+.seg{display:flex;background:var(--sf2);border-radius:8px;padding:3px;gap:2px}
+.seg button{border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--tx2);background:none;transition:all .15s}
+.seg button.on{background:#fff;color:var(--tx);box-shadow:var(--sh2)}
+.mnav{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--bd);border-radius:8px;padding:4px 6px}
+.mnav button{border:none;background:none;cursor:pointer;color:var(--tx2);width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.mnav button:hover{background:var(--sf2)}
+.mnav span{font-size:13px;font-weight:600;min-width:110px;text-align:center}
+
+/* — lista de pagos (grid rows) — */
+.plist{background:var(--surface);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh2);overflow:hidden}
+.phead,.prow{display:grid;grid-template-columns:74px minmax(130px,1.5fr) minmax(74px,.9fr) 100px 100px 122px 116px 90px;align-items:center;column-gap:12px}
+.phead{padding:12px 20px;border-bottom:1px solid var(--bd-soft)}
+.phead span{font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em}
+.prow{padding:13px 20px;border-bottom:1px solid var(--bd-soft);transition:background .12s;animation:slideIn .32s cubic-bezier(.16,1,.3,1) both}
+.prow:last-child{border-bottom:none}
+.prow:hover{background:var(--hover)}
+.plist.densa .prow{padding:7px 20px}
+.mono{font-family:'DM Mono',monospace}
+.btn-cobrar{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;font-size:11.5px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:var(--teal-bg);color:var(--teal-tx);border-radius:7px;cursor:pointer;transition:all .15s}
+.btn-cobrar:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn-cobrar:active{transform:scale(.96)}
+
+/* — filas de alerta — */
+.alrow{background:var(--surface);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;box-shadow:var(--sh2);display:flex;align-items:center;gap:14px;transition:box-shadow .18s,transform .18s}
+.alrow:hover{box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)}
+.al-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* — tarjetas de departamento — */
+.dcard{background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:20px 22px;box-shadow:var(--sh2);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s,border-color .18s}
+.dcard:hover{transform:translateY(-3px);box-shadow:var(--sh-lift);border-color:var(--bd2)}
+.dav{width:42px;height:42px;border-radius:10px;background:var(--sf2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.dbar{height:6px;background:var(--sf2);border-radius:4px;overflow:hidden;margin-bottom:14px}
+.dbar>i{display:block;height:100%;border-radius:4px;transform-origin:left;animation:growBar .8s cubic-bezier(.16,1,.3,1) both}
+
+/* — EC filas — */
+.ecrow{background:var(--surface);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;box-shadow:var(--sh2);display:flex;align-items:center;gap:14px;transition:box-shadow .18s,transform .18s cubic-bezier(.16,1,.3,1)}
+.ecrow:hover{box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)}
+
+/* — equipo — */
+.card2{background:var(--surface);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh2)}
+.memrow{padding:14px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bd-soft);animation:slideIn .4s cubic-bezier(.16,1,.3,1) both}
+.memrow:last-child{border-bottom:none}
+
+/* — estados vacíos — */
+.estate{background:var(--surface);border:1px dashed var(--bd2);border-radius:14px;padding:64px 32px;text-align:center}
+.estate-ic{width:64px;height:64px;border-radius:50%;background:var(--sf2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+
+/* — chips de header de modal — */
+.mchip{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* grids responsivos */
+@media(max-width:820px){.mgrid.c4{grid-template-columns:repeat(2,1fr)}.mgrid.c3{grid-template-columns:1fr}
+  .phead{display:none}
+  .prow{grid-template-columns:1fr auto;grid-auto-rows:auto;row-gap:4px;column-gap:10px;padding:14px 16px}
+}
 </style>
 </head>
 <body>
@@ -609,26 +704,29 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <!-- ════ APP ════ -->
 <div id="s-app" class="screen">
 <aside class="sidebar">
-  <div class="sb-logo">
-    <h1><i class="ti ti-building" style="color:var(--teal)"></i><span id="sb-wsn">Workspace</span><span class="dot on" id="sb-dot"></span></h1>
-    <p id="sb-fecha"></p>
+  <div class="sb-logo" style="display:flex;align-items:center;gap:10px">
+    <img src="logoinmopagos.png" alt="InmoPagos" style="width:34px;height:34px;object-fit:contain;border-radius:8px;flex-shrink:0" onerror="this.style.display='none'">
+    <div style="min-width:0;flex:1">
+      <h1 style="display:flex;align-items:center;gap:6px"><span id="sb-wsn">InmoPagos</span><span class="dot on" id="sb-dot"></span></h1>
+      <p id="sb-fecha" style="font-size:11px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></p>
+    </div>
   </div>
-  <nav>
+  <nav style="flex:1;padding:12px 0">
     <div class="ns">Principal</div>
-    <button class="ni active" onclick="setTab('inicio',this)" data-tab="inicio"><i class="ti ti-layout-dashboard"></i>Inicio</button>
+    <button class="ni active" onclick="setTab('inicio',this)" data-tab="inicio"><i class="ti ti-layout-dashboard"></i>Resumen</button>
     <button class="ni" onclick="setTab('pagos',this)" data-tab="pagos"><i class="ti ti-receipt"></i>Pagos</button>
     <button class="ni" onclick="setTab('inmuebles',this)" data-tab="inmuebles"><i class="ti ti-building"></i>Departamentos</button>
     <button class="ni" onclick="setTab('alertas',this)" data-tab="alertas"><i class="ti ti-bell"></i>Alertas<span class="nb" id="nb-al" style="display:none"></span></button>
-    <button class="ni" onclick="setTab('reporte',this)" data-tab="reporte"><i class="ti ti-chart-bar"></i>Reporte</button>
-    <div class="ns">Servicios</div>
-    <button class="ni" onclick="setTab('servicios',this)" data-tab="servicios"><i class="ti ti-bolt"></i>Agua / Luz / Gas</button>
+    <div class="ns">Operación</div>
+    <button class="ni" onclick="setTab('servicios',this)" data-tab="servicios"><i class="ti ti-bolt"></i>Servicios</button>
     <button class="ni" onclick="setTab('edocuenta',this)" data-tab="edocuenta"><i class="ti ti-file-invoice"></i>Estado de Cuenta</button>
-    <div class="ns">Equipo</div>
-    <button class="ni" onclick="setTab('miembros',this)" data-tab="miembros"><i class="ti ti-users"></i>Miembros</button>
-    <button class="ni" onclick="setTab('config',this)" data-tab="config"><i class="ti ti-settings"></i>Configuración</button>
-    <div class="ns">Finanzas</div>
     <button class="ni" onclick="setTab('depositos',this)" data-tab="depositos"><i class="ti ti-safe"></i>Depósitos</button>
     <button class="ni" onclick="setTab('recordatorio',this)" data-tab="recordatorio"><i class="ti ti-send"></i>Recordatorios</button>
+    <div class="ns">Análisis</div>
+    <button class="ni" onclick="setTab('reporte',this)" data-tab="reporte"><i class="ti ti-chart-bar"></i>Reporte</button>
+    <div class="ns">Cuenta</div>
+    <button class="ni" onclick="setTab('miembros',this)" data-tab="miembros"><i class="ti ti-users"></i>Equipo</button>
+    <button class="ni" onclick="setTab('config',this)" data-tab="config"><i class="ti ti-settings"></i>Configuración</button>
   </nav>
   <div class="sb-foot">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -683,27 +781,28 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
   <!-- PAGOS -->
   <div id="sec-pagos" style="display:none">
-    <div class="ph">
-      <div><h2>Pagos mensuales</h2><p id="pagos-sub"></p></div>
-      <div class="btn-group">
-        <div class="mn"><button onclick="chM(-1)"><i class="ti ti-chevron-left"></i></button><span id="mes-lbl"></span><button onclick="chM(1)"><i class="ti ti-chevron-right"></i></button></div>
+    <div class="dhead">
+      <div><h2>Pagos</h2><p id="pagos-sub"></p></div>
+      <div class="dtools">
+        <div class="seg"><button id="seg-air" class="on" onclick="setDens('aireada')">Aireada</button><button id="seg-den" onclick="setDens('densa')">Densa</button></div>
+        <div class="mnav"><button onclick="chM(-1)"><i class="ti ti-chevron-left"></i></button><span id="mes-lbl"></span><button onclick="chM(1)"><i class="ti ti-chevron-right"></i></button></div>
         <button class="btn primary" onclick="abrirPago('')"><i class="ti ti-plus"></i>Nuevo pago</button>
       </div>
     </div>
-    <div class="sg" id="stats-grid"></div>
+    <div class="mgrid c4" id="stats-grid"></div>
     <div class="toolbar">
       <input type="text" id="sp" placeholder="Buscar depto, inquilino..." oninput="renderPagos()">
       <select id="fe" onchange="renderPagos()"><option value="">Todos los estados</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option><option value="vencido">Vencido</option><option value="parcial">Parcial</option></select>
       <select id="fc" onchange="renderPagos()"><option value="">Todos los conceptos</option><option value="renta">Renta</option><option value="mantenimiento">Mant.</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="servicios">Servicios</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select>
     </div>
-    <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Concepto</th><th>Monto</th><th>Pagado</th><th>Vencimiento</th><th>Fecha pago</th><th>Estado</th><th></th></tr></thead><tbody id="t-pagos"><tr><td colspan="9" style="text-align:center;padding:2rem"><span class="spinner"></span></td></tr></tbody></table></div></div>
+    <div class="plist" id="pagos-list"><div style="text-align:center;padding:2rem"><span class="spinner"></span></div></div>
   </div>
 
   <!-- INMUEBLES -->
   <div id="sec-inmuebles" style="display:none">
-    <div class="ph"><div><h2>Departamentos</h2><p>Directorio de unidades e inquilinos</p></div><button class="btn primary" onclick="abrirInm(null)"><i class="ti ti-home-plus"></i>Agregar</button></div>
-    <div class="toolbar"><input type="text" id="si" placeholder="Buscar..." oninput="renderInm()"></div>
-    <div class="ig" id="l-inm"></div>
+    <div class="dhead"><div><h2>Departamentos</h2><p id="inm-sub">Directorio de unidades e inquilinos</p></div><button class="btn primary" onclick="abrirInm(null)"><i class="ti ti-home-plus"></i>Agregar</button></div>
+    <div class="toolbar"><input type="text" id="si" placeholder="Buscar depto o inquilino..." oninput="renderInm()"></div>
+    <div id="l-inm"></div>
   </div>
 
   <!-- ALERTAS -->
@@ -931,6 +1030,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@10.18.0/dist/motion.min.js"></script>
 <script>
 // ═══════════════════════════════════════
 //  GLOBALS
@@ -955,6 +1055,40 @@ function fmt(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:
 function fd(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}
 function getInm(id){return inmuebles.find(x=>x.id===id)||null}
 function dB(a,b){return Math.round((b-a)/86400000)}
+
+// ── MOTION (animaciones; si el CDN no cargó, degrada a CSS sin romper nada) ──
+function mo(container){
+  if(!container||!window.Motion||!window.Motion.animate)return;
+  const kids=[...container.children];if(!kids.length)return;
+  try{
+    const a=window.Motion.animate(kids,{opacity:[0,1],transform:['translateY(12px)','translateY(0)']},
+      {delay:window.Motion.stagger?window.Motion.stagger(0.045):0,duration:.5,easing:[.16,1,.3,1]});
+    if(a&&a.finished)a.finished.then(()=>kids.forEach(k=>{k.style.transform='';k.style.opacity='';})).catch(()=>{});
+  }catch(e){}
+}
+function countUp(el,to,fmtFn){
+  if(!el)return;to=Number(to)||0;const dur=850,t0=performance.now(),ease=x=>1-Math.pow(1-x,3);
+  function step(t){const p=Math.min(1,(t-t0)/dur),v=to*ease(p);el.textContent=fmtFn?fmtFn(v):Math.round(v).toString();if(p<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
+}
+// ── Densidad de la tabla de pagos ──
+let densMode=(typeof localStorage!=='undefined'&&localStorage.getItem('ib_dens'))||'aireada';
+function setDens(m){
+  densMode=m;try{localStorage.setItem('ib_dens',m);}catch(e){}
+  const a=document.getElementById('seg-air'),d=document.getElementById('seg-den'),c=document.getElementById('pagos-list');
+  if(a)a.classList.toggle('on',m==='aireada');if(d)d.classList.toggle('on',m==='densa');
+  if(c)c.className='plist'+(m==='densa'?' densa':'');
+}
+// ── Marcar un pago como cobrado (acción "Cobrar" en línea) ──
+async function marcarPagado(id){
+  const p=pagos.find(x=>x.id===id);if(!p)return;
+  const d={pagado:Number(p.monto),fecha_pago:new Date().toISOString().split('T')[0]};
+  const {data:saved,error}=await sb.from('pagos').update(d).eq('id',id).select().single();
+  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  const idx=pagos.findIndex(x=>x.id===id);if(idx!==-1)pagos[idx]=saved;
+  toast('Pago marcado como cobrado');lanzarConfetti(window.innerWidth/2,window.innerHeight*0.4);
+  refresh();
+}
 
 // ═══════════════════════════════════════
 //  SETUP
@@ -1126,12 +1260,13 @@ function renderStats(){
   const esp=mes.reduce((s,p)=>s+Number(p.monto),0),cob=mes.reduce((s,p)=>s+Number(p.pagado),0);
   const venc=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v<t&&Number(p.pagado)<Number(p.monto)});
   const pend=mes.filter(p=>getEstado(p)==='pendiente').length,pct=esp>0?Math.round(cob/esp*100):0;
-  document.getElementById('stats-grid').innerHTML=`
-    <div class="sc hl"><div class="sl"><i class="ti ti-calendar-month" style="font-size:12px"></i>Esperado</div><div class="sv">${fmt(esp)}</div><div class="ss">${MESES[vM]} ${vY}</div></div>
-    <div class="sc"><div class="sl" style="color:var(--teal-tx)"><i class="ti ti-check" style="color:var(--teal);font-size:12px"></i>Cobrado</div><div class="sv" style="color:var(--teal)">${fmt(cob)}</div><div class="ss">${pct}% del total</div></div>
-    <div class="sc"><div class="sl"><i class="ti ti-clock" style="color:var(--amber);font-size:12px"></i>Pendientes</div><div class="sv">${pend}</div><div class="ss">este mes</div></div>
-    <div class="sc"><div class="sl"><i class="ti ti-alert-triangle" style="color:var(--red);font-size:12px"></i>Vencidos</div><div class="sv" style="color:var(--red)">${venc.length}</div><div class="ss">sin pagar</div></div>
-    <div class="sc"><div class="sl"><i class="ti ti-building" style="font-size:12px"></i>Departamentos</div><div class="sv">${inmuebles.length}</div><div class="ss">registrados</div></div>`;
+  const g=document.getElementById('stats-grid');g.className='mgrid c4';
+  g.innerHTML=`
+    <div class="mcard dark"><div class="ml">Esperado del mes</div><div class="mv">${fmt(esp)}</div><div class="ms">${MESES[vM]} ${vY} · ${mes.length} cargos</div></div>
+    <div class="mcard"><div class="ml" style="color:var(--teal-tx)"><i class="ti ti-circle-check" style="color:var(--teal);font-size:13px"></i>Cobrado</div><div class="mv" style="color:var(--teal)">${fmt(cob)}</div><div class="mbar"><i style="width:${pct}%"></i></div></div>
+    <div class="mcard"><div class="ml"><i class="ti ti-clock" style="color:var(--amber);font-size:13px"></i>Pendientes</div><div class="mv">${pend}</div><div class="ms">este mes · ${pct}% cobrado</div></div>
+    <div class="mcard"><div class="ml"><i class="ti ti-alert-triangle" style="color:var(--red);font-size:13px"></i>Vencidos</div><div class="mv" style="color:var(--red)">${venc.length}</div><div class="ms">sin pagar</div></div>`;
+  mo(g);
 }
 
 // ═══════════════════════════════════════
@@ -1139,7 +1274,7 @@ function renderStats(){
 // ═══════════════════════════════════════
 function renderPagos(){
   document.getElementById('mes-lbl').textContent=MESES[vM]+' '+vY;
-  document.getElementById('pagos-sub').textContent=`Pagos de ${MESES[vM]} ${vY}`;
+  document.getElementById('pagos-sub').textContent=`Cobranza de ${MESES[vM]} ${vY}`;
   const q=(document.getElementById('sp').value||'').toLowerCase(),fe=document.getElementById('fe').value,fc=document.getElementById('fc').value;
   const t=new Date();t.setHours(0,0,0,0);
   let list=pagos.filter(p=>{
@@ -1149,15 +1284,33 @@ function renderPagos(){
     if(q){const i=getInm(p.inmueble_id);if(!((i?.num||'')+(i?.inquilino||'')+(p.concepto||'')).toLowerCase().includes(q))return false}
     return true;
   }).sort((a,b)=>{const o={vencido:0,parcial:1,pendiente:2,pagado:3},ea=getEstado(a),eb=getEstado(b);return o[ea]!==o[eb]?o[ea]-o[eb]:new Date(a.vencimiento)-new Date(b.vencimiento)});
-  const tb=document.getElementById('t-pagos');
-  if(!list.length){tb.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--tx3)"><i class="ti ti-inbox" style="font-size:28px;display:block;margin-bottom:8px;opacity:.35"></i>Sin pagos para este mes</td></tr>`;return}
+  const cont=document.getElementById('pagos-list');
+  cont.className='plist'+(densMode==='densa'?' densa':'');
+  if(!list.length){cont.innerHTML=`<div style="text-align:center;padding:56px 20px;color:var(--tx3)"><i class="ti ti-inbox" style="font-size:34px;opacity:.35;display:block;margin-bottom:10px"></i><div style="font-size:13.5px">Sin pagos programados para ${MESES[vM]} ${vY}</div></div>`;return}
   const ic={pagado:'ti-check',pendiente:'ti-clock',vencido:'ti-alert-triangle',parcial:'ti-percentage'},lb={pagado:'Pagado',pendiente:'Pendiente',vencido:'Vencido',parcial:'Parcial'};
-  tb.innerHTML=list.map(p=>{
+  const head=`<div class="phead"><span>Depto.</span><span>Inquilino</span><span>Concepto</span><span style="text-align:right">Monto</span><span style="text-align:right">Pagado</span><span>Vencimiento</span><span>Estado</span><span></span></div>`;
+  const rows=list.map((p,idx)=>{
     const i=getInm(p.inmueble_id),est=getEstado(p);
     const v=new Date(p.vencimiento+'T00:00:00'),dv=est==='vencido'?Math.abs(dB(t,v)):null,dp=est==='pendiente'?dB(t,v):null;
-    let ex='';if(dv!==null)ex=` <span style="font-size:10px;opacity:.7">(${dv}d)</span>`;if(est==='parcial')ex=` <span style="font-size:10px;opacity:.7">(${fmt(p.pagado)})</span>`;
-    return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong>${i?.piso?`<br><span style="font-size:11px;color:var(--tx3)">P${i.piso}</span>`:''}</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i?.inquilino||'—'}</td><td style="text-transform:capitalize;color:var(--tx2)">${p.concepto}</td><td style="font-weight:500">${fmt(p.monto)}</td><td style="color:${Number(p.pagado)>=Number(p.monto)?'var(--teal)':Number(p.pagado)>0?'var(--amber)':'var(--tx3)'}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</td><td style="color:${est==='vencido'?'var(--red)':est==='pendiente'&&dp<=3?'var(--amber)':'var(--tx2)'}">${fd(p.vencimiento)}</td><td>${p.fecha_pago?fd(p.fecha_pago):`<span style="color:var(--tx3)">—</span>`}</td><td><span class="badge ${est}"><i class="ti ${ic[est]}" style="font-size:11px"></i>${lb[est]}${ex}</span></td><td><button class="btn sm" onclick="abrirEditPago('${p.id}')"><i class="ti ti-edit"></i></button></td></tr>`;
+    let ex='';if(dv!==null)ex=` (${dv}d)`;if(est==='parcial')ex=` (${fmt(p.pagado)})`;
+    const pagC=Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0?'var(--teal)':Number(p.pagado)>0?'var(--amber)':'var(--tx3)';
+    const venC=est==='vencido'?'var(--red)':(est==='pendiente'&&dp<=3?'var(--amber)':'var(--tx2)');
+    const cobrable=est!=='pagado';
+    const accion=cobrable
+      ? `<button class="btn-cobrar" onclick="marcarPagado('${p.id}')" title="Marcar como cobrado"><i class="ti ti-check"></i>Cobrar</button>`
+      : `<button class="ibtn" onclick="abrirEditPago('${p.id}')" title="Editar"><i class="ti ti-pencil"></i></button>`;
+    return `<div class="prow" style="animation-delay:${Math.min(idx*.03,.4)}s">
+      <span class="mono" style="font-size:12px;font-weight:500">${i?.num||'?'}</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i?.inquilino||'—'}</span>
+      <span style="color:var(--tx2);text-transform:capitalize">${p.concepto}</span>
+      <span class="mono" style="text-align:right;font-size:12.5px;font-weight:500">${fmt(p.monto)}</span>
+      <span class="mono" style="text-align:right;font-size:12.5px;color:${pagC}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</span>
+      <span style="color:${venC};font-size:12.5px">${fd(p.vencimiento)}</span>
+      <span><span class="badge ${est}"><i class="ti ${ic[est]}" style="font-size:11px"></i>${lb[est]}${ex}</span></span>
+      <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end">${accion}${cobrable?`<button class="ibtn" onclick="abrirEditPago('${p.id}')" title="Editar"><i class="ti ti-pencil"></i></button>`:''}</span>
+    </div>`;
   }).join('');
+  cont.innerHTML=head+rows;
 }
 function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}renderStats();renderPagos();renderEC()}
 
@@ -1166,15 +1319,37 @@ function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}renderStats();rend
 // ═══════════════════════════════════════
 function renderInm(){
   const q=(document.getElementById('si').value||'').toLowerCase(),list=inmuebles.filter(i=>!q||(i.num+i.inquilino).toLowerCase().includes(q)),el=document.getElementById('l-inm');
-  if(!list.length){el.innerHTML=`<div class="empty"><i class="ti ti-building"></i><p>Sin departamentos registrados.</p></div>`;return}
-  el.innerHTML=list.map(i=>{
+  const sub=document.getElementById('inm-sub');if(sub)sub.textContent=`${inmuebles.length} unidad${inmuebles.length===1?'':'es'} · avance de cobranza de ${MESES[vM]}`;
+  if(!list.length){el.style.cssText='';el.innerHTML=`<div class="estate"><div class="estate-ic"><i class="ti ti-building" style="font-size:28px;color:var(--tx3)"></i></div><div style="font-size:15px;font-weight:600;margin-bottom:4px">Aún no hay departamentos</div><div style="font-size:13px;color:var(--tx3);margin-bottom:20px">Agrega tu primera unidad para empezar a cobrar con orden.</div><button class="btn primary" onclick="abrirInm(null)"><i class="ti ti-plus"></i>Agregar departamento</button></div>`;return}
+  el.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px';
+  el.innerHTML=list.map((i,idx)=>{
     const mp=pagos.filter(p=>p.inmueble_id===i.id),pm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&getEstado(p)==='pagado'}).length,tm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY}).length;
-    const tv=mp.some(p=>getEstado(p)==='vencido'),pct=tm?Math.round(pm/tm*100):0,cls=pct===100?'g':pct>=50?'w':'b';
-    return`<div class="ic"><div class="ict"><div class="iav">${i.num.slice(0,3).toUpperCase()}</div><div class="imet"><strong>Depto. ${i.num}</strong><span>${i.inquilino}</span></div><div class="iren"><strong>${fmt(i.renta)}</strong><span>/mes · día ${i.dia||'—'}</span></div></div>
-    <div class="idet">${i.piso?`<span><i class="ti ti-stairs" style="font-size:12px"></i>Piso ${i.piso}</span>`:''}<span><i class="ti ti-users" style="font-size:12px"></i>${i.personas||1} personas</span>${i.tel?`<span><i class="ti ti-phone" style="font-size:12px"></i>${i.tel}</span>`:''} ${tv?`<span style="color:var(--red)"><i class="ti ti-alert-triangle" style="font-size:12px"></i>Vencidos</span>`:''}</div>
-    ${tm>0?`<div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx3);margin-bottom:3px"><span>Pagos ${MESES[vM].slice(0,3)}</span><span>${pm}/${tm} (${pct}%)</span></div><div class="pb"><div class="pf ${cls}" style="width:${pct}%"></div></div></div>`:''}
-    <div class="iact"><button class="btn sm" onclick="abrirInm('${i.id}')"><i class="ti ti-edit"></i>Editar</button><button class="btn sm" onclick="abrirPago('${i.id}')"><i class="ti ti-plus"></i>Pago</button><button class="btn sm teal" onclick="generarPDF('${i.id}')"><i class="ti ti-file-invoice"></i>PDF</button></div></div>`;
+    const tv=mp.some(p=>getEstado(p)==='vencido'),pct=tm?Math.round(pm/tm*100):0;
+    const barC=pct===100?'var(--teal)':pct>=50?'var(--amber)':'var(--red)';
+    let chipBg,chipC,chipIco,chipLbl,chipAnim='';
+    if(tv){chipBg='var(--red-bg)';chipC='var(--red-tx)';chipIco='ti-alert-triangle';chipLbl='Vencido';chipAnim='pulseVenc 2.6s ease-in-out infinite';}
+    else if(tm>0&&pct===100){chipBg='var(--teal-bg)';chipC='var(--teal-tx)';chipIco='ti-circle-check';chipLbl='Al día';}
+    else if(tm>0){chipBg='var(--amber-bg)';chipC='var(--amber-tx)';chipIco='ti-clock';chipLbl='En proceso';}
+    else{chipBg='var(--sf2)';chipC='var(--tx2)';chipIco='ti-minus';chipLbl='Sin cargos';}
+    return`<div class="dcard">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="dav">${i.num.slice(0,4).toUpperCase()}</div>
+        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.inquilino}</div><div style="font-size:12px;color:var(--tx3)">Depto. ${i.num}${i.piso?` · Piso ${i.piso}`:''} · ${i.personas||1} pers · día ${i.dia||'—'}</div></div>
+        <div style="text-align:right;flex-shrink:0"><div class="mono" style="font-size:15px;font-weight:500">${fmt(i.renta)}</div><div style="font-size:11px;color:var(--tx3)">/ mes</div></div>
+      </div>
+      ${tm>0?`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--tx3);margin-bottom:5px"><span>Cobranza ${MESES[vM].slice(0,3).toLowerCase()}</span><span class="mono" style="color:${barC}">${pct}%</span></div><div class="dbar"><i style="width:${pct}%;background:${barC};animation-delay:${Math.min(idx*.05,.4)}s"></i></div>`:'<div style="height:2px;margin-bottom:12px"></div>'}
+      <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid var(--bd-soft)">
+        <span class="chip" style="background:${chipBg};color:${chipC};${chipAnim?`animation:${chipAnim}`:''}"><i class="ti ${chipIco}" style="font-size:11px"></i>${chipLbl}</span>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="ibtn wa" title="Recordatorio" onclick="abrirRecordatorio('${i.id}')"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>
+          <button class="ibtn" title="Nuevo pago" onclick="abrirPago('${i.id}')"><i class="ti ti-plus" style="font-size:15px"></i></button>
+          <button class="ibtn" title="Editar" onclick="abrirInm('${i.id}')"><i class="ti ti-pencil" style="font-size:15px"></i></button>
+          <button class="ibtn" title="Estado de cuenta PDF" onclick="generarPDF('${i.id}')"><i class="ti ti-file-type-pdf" style="font-size:15px"></i></button>
+        </div>
+      </div>
+    </div>`;
   }).join('');
+  mo(el);
 }
 
 // ═══════════════════════════════════════
@@ -1184,9 +1359,9 @@ function renderAl(){
   const t=new Date();t.setHours(0,0,0,0);const al=[];
   pagos.forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),i=getInm(p.inmueble_id),est=getEstado(p),nm=i?.num||'?',d=dB(t,v);
-    if(est==='vencido'){const dd=Math.abs(d);al.push({cls:'pagoven',icon:'ti-alert-triangle',title:`Depto. ${nm} — ${p.concepto}`,sub:`Vencido hace ${dd} día${dd!==1?'s':''}. Pendiente: ${fmt(Number(p.monto)-Number(p.pagado))}. <a href="#" onclick="abrirRecordatorio('${i?.id||''}');return false" style="color:var(--blue);text-decoration:underline">Enviar recordatorio</a>`,pri:0})}
-    else if(est==='pendiente'&&d>=0&&d<=3)al.push({cls:'pagopend',icon:'ti-clock',title:`Depto. ${nm} — ${p.concepto}`,sub:`Vence ${d===0?'hoy':d===1?'mañana':`en ${d} días`} (${fd(p.vencimiento)}). Monto: ${fmt(p.monto)} — 3 días de tolerancia. <a href="#" onclick="abrirRecordatorio('${i?.id||''}');return false" style="color:var(--blue);text-decoration:underline">Enviar recordatorio</a>`,pri:1});
-    else if(est==='parcial')al.push({cls:'pagopend',icon:'ti-percentage',title:`Depto. ${nm} — pago parcial`,sub:`Pendiente: ${fmt(Number(p.monto)-Number(p.pagado))} de ${fmt(p.monto)}`,pri:2});
+    if(est==='vencido'){const dd=Math.abs(d);al.push({type:'venc',icon:'ti-alert-triangle',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vencido hace ${dd} día${dd!==1?'s':''} · vencía ${fd(p.vencimiento)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'pendiente',pri:0})}
+    else if(est==='pendiente'&&d>=0&&d<=3)al.push({type:'prox',icon:'ti-clock',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vence ${d===0?'hoy':d===1?'mañana':`en ${d} días`} · tolerancia de 3 días`,monto:Number(p.monto),montoSub:'por cobrar',pri:1});
+    else if(est==='parcial')al.push({type:'parc',icon:'ti-percentage',inmId:i?.id||'',titulo:`Depto. ${nm} — pago parcial`,sub:`Abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'restante',pri:2});
   });
   const mesAct=new Date();
   inmuebles.forEach(inm=>{
@@ -1195,14 +1370,34 @@ function renderAl(){
     const diasDespues=dB(fechaDia,t);
     if(diasDespues>3){
       const tieneRenta=pagos.some(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inm.id&&p.concepto==='renta'&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)==='pagado';});
-      if(!tieneRenta)al.push({cls:'pagoven',icon:'ti-coin',title:`Depto. ${inm.num} — Renta sin registrar`,sub:`Día de pago fue el ${diaP} (hace ${diasDespues} días, pasados los 3 de tolerancia). <a href="#" onclick="abrirRecordatorio('${inm.id}');return false" style="color:var(--blue);text-decoration:underline">Enviar recordatorio</a>`,pri:0});
+      if(!tieneRenta)al.push({type:'venc',icon:'ti-coin',inmId:inm.id,titulo:`Depto. ${inm.num} — Renta sin registrar`,sub:`Día de pago fue el ${diaP} · hace ${diasDespues} días (pasada la tolerancia)`,monto:Number(inm.renta),montoSub:'renta',pri:0});
     }
   });
   al.sort((a,b)=>a.pri-b.pri);
   const nb=document.getElementById('nb-al');if(al.length){nb.style.display='inline';nb.textContent=al.length}else nb.style.display='none';
   const el=document.getElementById('l-al');
-  if(!al.length){el.innerHTML=`<div class="empty"><i class="ti ti-circle-check" style="color:var(--teal);opacity:1"></i><p>Sin alertas activas. Todo al corriente.</p></div>`;return}
-  el.innerHTML=al.map(a=>`<div class="ali ${a.cls}"><i class="ti ${a.icon} aic ${a.cls}"></i><div class="aib"><strong>${a.title}</strong><span>${a.sub}</span></div></div>`).join('');
+  const paleta={venc:{bg:'var(--red-bg)',c:'var(--red)',mc:'var(--red)'},prox:{bg:'var(--amber-bg)',c:'var(--amber)',mc:'var(--amber-tx)'},parc:{bg:'var(--blue-bg)',c:'var(--blue)',mc:'var(--blue-tx)'}};
+  if(!al.length){
+    el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh2);padding:72px 32px;text-align:center">
+      <div style="position:relative;width:88px;height:88px;margin:0 auto 22px">
+        <div style="position:absolute;inset:0;border-radius:50%;background:var(--teal-bg);animation:popIn .45s cubic-bezier(.34,1.56,.64,1) both"></div>
+        <svg width="88" height="88" viewBox="0 0 52 52" style="position:relative"><path d="M15 27 L23.5 35.5 L38 18" fill="none" stroke="var(--teal)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:48;stroke-dashoffset:48;animation:drawCheck .55s cubic-bezier(.16,1,.3,1) .3s forwards"></path></svg>
+        <span style="position:absolute;top:44px;left:44px;width:7px;height:7px;border-radius:2px;background:var(--teal);animation:cf1 1.5s ease-out .55s both"></span>
+        <span style="position:absolute;top:44px;left:44px;width:6px;height:6px;border-radius:50%;background:var(--amber);animation:cf2 1.5s ease-out .6s both"></span>
+        <span style="position:absolute;top:44px;left:44px;width:7px;height:7px;border-radius:2px;background:var(--blue);animation:cf3 1.5s ease-out .65s both"></span>
+        <span style="position:absolute;top:44px;left:44px;width:6px;height:6px;border-radius:50%;background:var(--teal);animation:cf4 1.5s ease-out .7s both"></span>
+      </div>
+      <h3 style="margin:0 0 6px;font-size:19px;font-weight:700">Todo al corriente</h3>
+      <p style="margin:0 auto;font-size:13.5px;color:var(--tx2);max-width:380px">No hay pagos vencidos ni próximos a vencer. Tus ${inmuebles.length} departamentos están al día — buen trabajo.</p>
+    </div>`;return;
+  }
+  el.innerHTML=al.map(a=>{const pal=paleta[a.type]||paleta.prox;return`<div class="alrow"${a.type==='venc'?' style="border-left:3px solid var(--red)"':''}>
+    <div class="al-ic" style="background:${pal.bg}${a.type==='venc'?';animation:pulseVenc 2.6s ease-in-out infinite':''}"><i class="ti ${a.icon}" style="font-size:18px;color:${pal.c}"></i></div>
+    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${a.titulo}</div><div style="font-size:12.5px;color:var(--tx2)">${a.sub}</div></div>
+    <div style="text-align:right;flex-shrink:0;margin-right:4px"><div class="mono" style="font-size:14.5px;font-weight:500;color:${pal.mc}">${fmt(a.monto)}</div><div style="font-size:11px;color:var(--tx3)">${a.montoSub}</div></div>
+    <button class="btn-cobrar" onclick="abrirRecordatorio('${a.inmId}')"><i class="ti ti-brand-whatsapp" style="font-size:14px"></i>Recordar</button>
+  </div>`;}).join('');
+  mo(el);
 }
 
 // ═══════════════════════════════════════
@@ -1364,11 +1559,14 @@ function renderDepositos(){
       </div>
     </div>`;
   }).join('');
+  stats.className='mgrid c3';
   stats.innerHTML=`
-    <div class="sc hl"><div class="sl">Total depósitos</div><div class="sv">${fmt(totalDeps)}</div><div class="ss">en custodia</div></div>
-    <div class="sc"><div class="sl" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:12px"></i>Profit depósitos retenidos</div><div class="sv" style="color:var(--red)">${fmt(totalRet)}</div><div class="ss">por penalización</div></div>
-    <div class="sc"><div class="sl" style="color:var(--teal-tx)"><i class="ti ti-corner-down-left" style="color:var(--teal);font-size:12px"></i>Por devolver</div><div class="sv" style="color:var(--teal)">${fmt(totalDev)}</div><div class="ss">a reembolsar</div></div>`;
-  el.innerHTML=panels||`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos con salida registrada.</p></div>`;
+    <div class="mcard dark"><div class="ml">En custodia</div><div class="mv">${fmt(totalDeps)}</div><div class="ms">${conDep.length} contrato${conDep.length===1?'':'s'} con depósito</div></div>
+    <div class="mcard"><div class="ml" style="color:var(--teal-tx)"><i class="ti ti-corner-down-left" style="color:var(--teal);font-size:13px"></i>Por devolver</div><div class="mv" style="color:var(--teal)">${fmt(totalDev)}</div><div class="ms">contrato cumplido</div></div>
+    <div class="mcard"><div class="ml" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:13px"></i>Retenido</div><div class="mv" style="color:var(--red)">${fmt(totalRet)}</div><div class="ms">penalización por salida anticipada</div></div>`;
+  mo(stats);
+  el.innerHTML=panels||`<div class="estate"><div class="estate-ic"><i class="ti ti-safe" style="font-size:28px;color:var(--tx3)"></i></div><div style="font-size:15px;font-weight:600;margin-bottom:4px">Sin depósitos con salida registrada</div><div style="font-size:13px;color:var(--tx3)">Cuando un inquilino registre fecha de salida aparecerá aquí su liquidación.</div></div>`;
+  mo(el);
 }
 function abrirDevolucion(inmId){
   devDepInmId=inmId;const inm=getInm(inmId),r=calcDeposito(inm);if(!r)return;
@@ -1562,16 +1760,15 @@ function renderEC(){
     const renta=pagosMes.filter(p=>p.concepto==='renta').reduce((s,p)=>s+Number(p.monto),0);
     const svcs=getSvcMonto(inm.id,vM,vY);
     const totalEC=renta+svcs;
-    return`<div class="ec-item">
-      <div class="ec-num">${inm.num}</div>
-      <div class="ec-info"><strong>Depto. ${inm.num} — ${inm.inquilino}</strong><span>Renta: ${fmt(renta)} · Servicios: ${fmt(svcs)}</span></div>
-      <div class="ec-total"><strong>${fmt(totalEC)}</strong><span>Total ${MESES[vM]}</span></div>
-      <div class="ec-actions">
-        <button class="btn sm" onclick="verEC('${inm.id}')"><i class="ti ti-eye"></i>Ver</button>
-        <button class="btn sm teal" onclick="generarPDF('${inm.id}')"><i class="ti ti-file-invoice"></i>PDF</button>
-      </div>
+    return`<div class="ecrow">
+      <div class="dav">${inm.num.slice(0,4)}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${inm.inquilino}</div><div style="font-size:12px;color:var(--tx3)">Renta ${fmt(renta)} · Servicios ${fmt(svcs)}</div></div>
+      <div style="text-align:right;margin-right:6px"><div class="mono" style="font-size:16px;font-weight:500">${fmt(totalEC)}</div><div style="font-size:10.5px;color:var(--tx3)">total ${MESES[vM].slice(0,3).toLowerCase()}</div></div>
+      <button class="btn sm" onclick="verEC('${inm.id}')"><i class="ti ti-eye"></i>Ver</button>
+      <button class="btn-cobrar" onclick="generarPDF('${inm.id}')"><i class="ti ti-file-type-pdf"></i>PDF</button>
     </div>`;
   }).join('');
+  mo(el);
 }
 
 function getSvcMonto(inmId,mes,anio){
@@ -1820,9 +2017,23 @@ async function renderMem(){
   const {data}=await sb.from('memberships').select('*').eq('workspace_id',CW.id);
   const mems=data||[];
   document.getElementById('l-mem').innerHTML=`
-    <div style="margin-bottom:1.5rem"><div class="code-box"><div class="inv-code">${CW.invite_code}</div><p style="font-size:12px;color:var(--tx2);margin-top:4px">Código de acceso a "${CW.nombre}"</p></div><button class="btn" onclick="copiarCodigo()"><i class="ti ti-copy"></i>Copiar código</button></div>
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:.75rem">Personas con acceso (${mems.length})</h3>
-    ${mems.map(m=>`<div class="mem-item"><div class="mem-av">${(m.email||'?').slice(0,1).toUpperCase()}</div><div style="flex:1"><strong style="font-size:13px;font-weight:500;display:block">${m.email||'Usuario'}</strong><span style="font-size:12px;color:var(--tx2)">${m.user_id===CU.id?'Tú · ':''} ${m.role==='owner'?'Propietario':'Miembro'}</span></div><span class="mem-role ${m.role}">${m.role==='owner'?'Propietario':'Miembro'}</span>${CW.role==='owner'&&m.user_id!==CU.id?`<button class="btn sm danger" onclick="quitarMem('${m.id}')" style="margin-left:8px"><i class="ti ti-user-minus"></i></button>`:''}</div>`).join('')}`;
+    <div class="card2" style="padding:24px;margin-bottom:16px;text-align:center">
+      <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:12px">Código de invitación a "${CW.nombre}"</div>
+      <div style="background:#FAF9F5;border:2px dashed var(--bd2);border-radius:10px;padding:18px;margin-bottom:14px"><span class="mono" style="font-size:28px;font-weight:500;letter-spacing:.18em">${CW.invite_code}</span></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn" onclick="copiarCodigo()"><i class="ti ti-copy"></i>Copiar código</button>
+        <button class="btn primary" onclick="openM('m-inv-email')"><i class="ti ti-mail"></i>Invitar por correo</button>
+      </div>
+    </div>
+    <div class="card2" style="overflow:hidden">
+      <div style="padding:16px 22px;border-bottom:1px solid var(--bd-soft);font-size:13px;font-weight:700">Miembros (${mems.length})</div>
+      ${mems.map((m,idx)=>`<div class="memrow" style="animation-delay:${idx*.05}s">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--sf2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${(m.email||'?').slice(0,1).toUpperCase()}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis">${m.email||'Usuario'}</div><div style="font-size:12px;color:var(--tx3)">${m.user_id===CU.id?'Tú · ':''}${m.role==='owner'?'Propietario':'Miembro'}</div></div>
+        <span class="chip" style="background:${m.role==='owner'?'var(--teal-bg)':'var(--blue-bg)'};color:${m.role==='owner'?'var(--teal-tx)':'var(--blue-tx)'}">${m.role==='owner'?'Propietario':'Miembro'}</span>
+        ${CW.role==='owner'&&m.user_id!==CU.id?`<button class="ibtn rm" onclick="quitarMem('${m.id}')" title="Quitar acceso"><i class="ti ti-user-minus"></i></button>`:''}
+      </div>`).join('')}
+    </div>`;
 }
 async function quitarMem(id){if(!confirm('¿Quitar acceso?'))return;await sb.from('memberships').delete().eq('id',id);toast('Miembro eliminado');renderMem()}
 async function invEmail(){
