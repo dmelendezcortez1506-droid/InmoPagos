@@ -534,6 +534,57 @@ tbody tr:hover td{background:var(--hover)}
   .phead{display:none}
   .prow{grid-template-columns:1fr auto;grid-auto-rows:auto;row-gap:4px;column-gap:10px;padding:14px 16px}
 }
+
+/* ══════════════════════════════════════════
+   ANILLO DE SERVICIOS (svcd) — solo presentación
+   ══════════════════════════════════════════ */
+.svcd{background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:24px 28px;display:flex;align-items:center;gap:34px;flex-wrap:wrap}
+.svcd-ring{position:relative;width:170px;height:170px;flex-shrink:0}
+.svcd-ring svg{display:block;overflow:visible}
+.svcd-seg{cursor:pointer;transition:opacity .25s,stroke-width .18s}
+.svcd-ring.hovering .svcd-seg{opacity:.22}
+.svcd-ring.hovering .svcd-seg.hot{opacity:1;stroke-width:23}
+.svcd-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+.svcd-legs{flex:1;min-width:250px;display:grid;gap:3px}
+.svcd-leg{display:flex;align-items:center;gap:11px;padding:7px 12px;border:1px solid transparent;border-radius:10px;cursor:pointer;background:none;font-family:inherit;text-align:left;width:100%;transition:background .15s,border-color .15s,transform .12s}
+.svcd-leg:hover{background:#FAFAF7}
+.svcd-leg:active{transform:scale(.985)}
+.svcd-leg.on{background:#FAF9F5;border-color:#E2E0D8;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.svcd-ins{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;padding:10px 12px 2px;border-top:1px solid #EEECE4}
+.svcd-note{width:250px;background:#FAF9F5;border:1px solid #EEECE4;border-radius:10px;padding:14px 16px;font-size:12px;color:#6B6963;line-height:1.55}
+@media(max-width:980px){.svcd-note{width:100%}}
+
+/* ══════════════════════════════════════════
+   EDIFICIO 3D (iso) — mapa interactivo del Resumen
+   ══════════════════════════════════════════ */
+.iso-wrap{position:relative;height:420px;border-radius:12px;overflow:hidden;border:1px solid #EEECE4;touch-action:pan-y;cursor:grab;background:radial-gradient(85% 70% at 50% 38%,#FDFDFC 0%,#F7F6F2 58%,#EFEDE6 100%)}
+.iso-wrap.dragging{cursor:grabbing}
+.iso-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;perspective:1700px}
+.iso-float,.iso-scale,.iso-tilt,.iso-turn,.iso-el{transform-style:preserve-3d}
+.iso-float{animation:isoFloat 6.5s ease-in-out infinite}
+.iso-tilt{transform:rotateX(-24deg)}
+.iso-turn{transform:rotateY(var(--isoY,-38deg));transition:transform .55s cubic-bezier(.16,1,.3,1)}
+.iso-wrap.dragging .iso-turn{transition:none}
+.iso-el{position:absolute;left:0;top:0}
+.iso-face{position:absolute;left:50%;top:50%;backface-visibility:hidden;box-shadow:inset 0 0 0 1px rgba(26,25,23,.05)}
+.iso-dept{cursor:pointer}
+.iso-dept .iso-face{transition:filter .15s}
+.iso-dept:hover .iso-face,.iso-dept:focus-visible .iso-face{filter:brightness(1.08)}
+.iso-dept:focus-visible{outline:none}
+.iso-dept.sel .iso-face{filter:brightness(1.12) saturate(1.06)}
+.iso-wrap:not(.play) .iso-dept .iso-face{opacity:0}
+.iso-wrap.play .iso-dept .iso-face{animation:isoIn .5s ease-out both;animation-delay:var(--d,0s)}
+.iso-shadow{position:absolute;left:50%;bottom:24px;height:46px;transform:translateX(-50%);background:radial-gradient(ellipse at center,rgba(26,25,23,.30),rgba(26,25,23,0) 68%);filter:blur(7px);animation:isoShadow 6.5s ease-in-out infinite;pointer-events:none}
+.iso-pop{position:absolute;z-index:6;width:270px;max-width:calc(100% - 20px);background:#fff;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 18px 44px rgba(26,25,23,.18);padding:16px;animation:modalUp .22s cubic-bezier(.16,1,.3,1) both;cursor:default}
+.iso-num{position:absolute;top:7px;left:9px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:rgba(26,25,23,.72);letter-spacing:.02em}
+.iso-win{position:absolute;right:10px;bottom:9px;width:34%;height:46%;background:linear-gradient(160deg,#C09468 0%,#8A6239 100%);border:3px solid #3E3630;border-radius:2px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.iso-win::after{content:'';position:absolute;top:0;bottom:0;left:52%;width:3px;background:#3E3630}
+.iso-alert{position:absolute;top:8px;right:9px;width:9px;height:9px;border-radius:50%;background:#E24B4A;box-shadow:0 0 0 2px rgba(255,255,255,.7);animation:pulseVenc 2.2s ease-in-out infinite}
+@keyframes isoFloat{0%,100%{transform:translateY(6px)}50%{transform:translateY(-10px)}}
+@keyframes isoShadow{0%,100%{transform:translateX(-50%) scale(1);opacity:.75}50%{transform:translateX(-50%) scale(.90);opacity:.45}}
+@keyframes isoIn{from{opacity:0}}
+@media(max-width:760px){.iso-wrap{height:340px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -778,6 +829,30 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <div style="font-size:14px;font-weight:700;margin-bottom:16px">Actividad reciente</div>
         <div id="dash-act" style="display:grid;gap:13px"></div>
       </div>
+    </div>
+    <!-- ══ EDIFICIO 3D ══ -->
+    <div id="dash-iso-card" style="margin-top:16px;background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:22px 26px;animation:fadeUp .3s cubic-bezier(.16,1,.3,1) .12s both">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="ti ti-building-community" style="color:#1D9E75;font-size:16px"></i>Edificio en vivo</div>
+          <div id="iso-sub" style="font-size:12px;color:#9D9B96;margin-top:1px">Gira el edificio y toca un departamento para ver su estado</div>
+        </div>
+        <button onclick="isoRotate(-45)" title="Girar a la izquierda" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit"><i class="ti ti-rotate-2" style="font-size:15px"></i></button>
+        <button onclick="isoRotate(45)" title="Girar a la derecha" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit"><i class="ti ti-rotate-clockwise-2" style="font-size:15px"></i></button>
+        <div style="display:flex;background:#F1EFE8;border-radius:8px;padding:3px;gap:2px">
+          <button id="iso-seg-on" onclick="isoToggle(true)" style="border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s">Mapa 3D</button>
+          <button id="iso-seg-off" onclick="isoToggle(false)" style="border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s">Oculto</button>
+        </div>
+      </div>
+      <div id="iso-wrap" class="iso-wrap" style="display:none"></div>
+      <div id="iso-legend" style="display:none;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:#6B6963;align-items:center">
+        <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#9FBF9B"></span>Al día</span>
+        <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#C97C5E"></span>Vencido</span>
+        <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#D6AC72"></span>En proceso</span>
+        <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#D6D4CC"></span>Sin cargos</span>
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:#9D9B96"><i class="ti ti-hand-move" style="font-size:13px"></i>Arrastra para girar</span>
+      </div>
+      <div id="iso-off-hint" style="display:none;font-size:12.5px;color:#9D9B96;padding:6px 0 2px">El mapa 3D está oculto. Actívalo con el interruptor «Mapa 3D».</div>
     </div>
   </div>
 
@@ -1054,6 +1129,7 @@ let sb=null,CU=null,CW=null;
 let pagos=[],inmuebles=[],servicios=[],svcDet=[];
 let editPagoId=null,editInmId=null,editSvcId=null;
 let vM=new Date().getMonth(),vY=new Date().getFullYear();
+let svcTipoFilter=null; // filtro visual del anillo de servicios (solo presentación)
 
 // ═══════════════════════════════════════
 //  SCREEN HELPERS
@@ -1642,9 +1718,12 @@ function renderSvcList(){
   renderSvcDonut();
   const el=document.getElementById('svc-list');
   if(!servicios.length){el.innerHTML=`<div class="empty"><i class="ti ti-bolt"></i><p>Sin servicios registrados.<br>Registra el primer servicio de Agua, Luz o Gas.</p></div>`;return}
+  // Fuente visible: si el anillo tiene un filtro activo, solo ese tipo (presentación; no toca datos)
+  const svcSrc=svcTipoFilter?servicios.filter(s=>s.tipo===svcTipoFilter):servicios;
+  if(!svcSrc.length){el.innerHTML=`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:40px 32px;text-align:center;color:#9D9B96;font-size:13px">No hay facturas de <strong style="color:#1A1917">${svcTipoFilter}</strong> registradas. <button onclick="setSvcFilter(null)" style="border:none;background:none;color:#1D9E75;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline">Quitar filtro</button></div>`;return}
   // Group by mes/anio
   const groups={};
-  servicios.forEach(s=>{const k=`${s.anio||'?'}-${(s.mes||0)+1}`;if(!groups[k])groups[k]={label:MESES[s.mes||0]+' '+(s.anio||''),svcs:[]};groups[k].svcs.push(s)});
+  svcSrc.forEach(s=>{const k=`${s.anio||'?'}-${(s.mes||0)+1}`;if(!groups[k])groups[k]={label:MESES[s.mes||0]+' '+(s.anio||''),svcs:[]};groups[k].svcs.push(s)});
   const CO={agua:{c:'#378ADD',bg:'#E6F1FB',ico:'ti-droplet'},luz:{c:'#BA7517',bg:'#FAEEDA',ico:'ti-bolt'},gas:{c:'#E24B4A',bg:'#FCEBEB',ico:'ti-flame'}};
   el.innerHTML=Object.entries(groups).map(([k,g])=>`
     <h3 style="font-size:13px;font-weight:700;color:#6B6963;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 12px">${g.label}</h3>
@@ -2159,34 +2238,71 @@ function renderSvcDonut(){
   const cont=document.getElementById('svc-donut');if(!cont)return;
   const svcMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
   if(!svcMes.length){cont.style.display='none';return;}
-  const acc={agua:0,luz:0,gas:0};
-  svcMes.forEach(s=>{if(acc[s.tipo]!==undefined)acc[s.tipo]+=Number(s.total);else acc[s.tipo]=(acc[s.tipo]||0)+Number(s.total);});
+  const TIP={agua:{c:'#378ADD',ico:'ti-droplet',nom:'Agua'},luz:{c:'#BA7517',ico:'ti-bolt',nom:'Luz'},gas:{c:'#E24B4A',ico:'ti-flame',nom:'Gas'}};
+  const acc={},cnt={};
+  svcMes.forEach(s=>{acc[s.tipo]=(acc[s.tipo]||0)+Number(s.total);cnt[s.tipo]=(cnt[s.tipo]||0)+1;});
   const total=Object.values(acc).reduce((a,b)=>a+b,0);
-  const C=339.29,cols={agua:'var(--blue)',luz:'var(--amber)',gas:'var(--red)'},ico={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'},nom={agua:'Agua',luz:'Luz',gas:'Gas'};
-  let off=0,segs='',leg='',delay=.1;
-  ['agua','luz','gas'].forEach(t=>{
+  const C=339.29;let off=0,delay=.1,segs='',legs='';
+  Object.keys(TIP).forEach(t=>{
     const v=acc[t]||0;if(v<=0)return;
-    const frac=total>0?v/total:0,len=frac*C;
-    segs+=`<circle cx="70" cy="70" r="54" fill="none" stroke="${cols[t]}" stroke-width="19" transform="rotate(-90 70 70)" stroke-dashoffset="${-off}" style="stroke-dasharray:${len} ${C};animation:dashIn .9s cubic-bezier(.16,1,.3,1) ${delay}s both"></circle>`;
-    leg+=`<div style="display:flex;align-items:center;gap:9px;font-size:13px"><span style="width:10px;height:10px;border-radius:3px;background:${cols[t]};flex-shrink:0"></span><i class="ti ${ico[t]}" style="color:${cols[t]};font-size:15px"></i><span style="flex:1">${nom[t]}</span><strong style="font-family:'DM Mono',monospace">${fmt(v)}</strong><span style="color:var(--tx3);font-size:11px;width:38px;text-align:right">${Math.round(frac*100)}%</span></div>`;
-    off+=len;delay+=.2;
+    const ti=TIP[t],frac=total>0?v/total:0,len=frac*C;
+    segs+=`<circle class="svcd-seg" data-tipo="${t}" cx="70" cy="70" r="54" fill="none" stroke="${ti.c}" stroke-width="19" transform="rotate(-90 70 70)" stroke-dashoffset="${-off}" style="stroke-dasharray:${len} ${C};animation:dashIn .9s cubic-bezier(.16,1,.3,1) ${delay}s both"><title>${ti.nom}: ${fmt(v)} (${Math.round(frac*100)}%)</title></circle>`;
+    legs+=`<button class="svcd-leg${svcTipoFilter===t?' on':''}" data-tipo="${t}" aria-pressed="${svcTipoFilter===t}">
+      <span style="width:11px;height:11px;border-radius:3.5px;background:${ti.c};flex-shrink:0"></span>
+      <i class="ti ${ti.ico}" style="color:${ti.c};font-size:15px"></i>
+      <span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:#1A1917">${ti.nom}</span><span style="display:block;font-size:11px;color:#9D9B96">${cnt[t]} factura${cnt[t]===1?'':'s'}</span></span>
+      <span style="text-align:right"><span style="display:block;font-family:'DM Mono',monospace;font-size:13.5px;font-weight:500;color:#1A1917">${fmt0(v)}</span><span style="display:block;font-size:10.5px;color:#9D9B96">${Math.round(frac*100)}%</span></span>
+    </button>`;
+    off+=len;delay+=.22;
   });
-  cont.style.display='block';
-  cont.className='svc-donut';
-  cont.innerHTML=`<div style="display:flex;align-items:center;gap:34px;flex-wrap:wrap">
-    <div style="position:relative;width:150px;height:150px;flex-shrink:0">
-      <svg width="150" height="150" viewBox="0 0 140 140"><circle cx="70" cy="70" r="54" fill="none" stroke="var(--sf2)" stroke-width="19"></circle>${segs}</svg>
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
-        <div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em">${fmt(total)}</div>
-        <div style="font-size:10.5px;color:var(--tx3)">total ${MESES[vM].toLowerCase()}</div>
+  // Insights (solo lectura, derivados de svcDet del mes)
+  const perD={};svcMes.forEach(s=>svcDet.forEach(d=>{if(d.servicio_id===s.id&&Number(d.monto)>0)perD[d.inmueble_id]=(perD[d.inmueble_id]||0)+Number(d.monto);}));
+  const ids=Object.keys(perD);
+  let topId=null;ids.forEach(k=>{if(!topId||perD[k]>perD[topId])topId=k;});
+  const topInm=topId?getInm(topId):null;
+  const prom=ids.length?ids.reduce((s,k)=>s+perD[k],0)/ids.length:0;
+  const insight=(ico,c,lbl,val)=>`<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#6B6963"><i class="ti ${ico}" style="color:${c};font-size:13px"></i>${lbl} <strong style="font-family:'DM Mono',monospace;font-weight:500;color:#1A1917">${val}</strong></div>`;
+  cont.style.display='block';cont.className='';
+  cont.innerHTML=`<div class="svcd">
+    <div class="svcd-ring" id="svcd-ring">
+      <svg width="170" height="170" viewBox="0 0 140 140"><circle cx="70" cy="70" r="54" fill="none" stroke="#F1EFE8" stroke-width="19"></circle>${segs}</svg>
+      <div class="svcd-c"><div id="svcd-num" style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em">$0</div><div id="svcd-lbl" style="font-size:10.5px;color:#9D9B96">total ${MESES[vM].toLowerCase()}</div></div>
+    </div>
+    <div class="svcd-legs">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;padding:0 12px">
+        <span style="font-size:11px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.07em">Reparto por servicio · ${MESES[vM]} ${vY}</span>
+        ${svcTipoFilter&&TIP[svcTipoFilter]?`<button onclick="setSvcFilter(null)" data-hs="background:#FCEBEB;color:#791F1F;border-color:#F3D2D2" style="display:inline-flex;align-items:center;gap:5px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s">Filtrando: ${TIP[svcTipoFilter].nom} <i class="ti ti-x" style="font-size:11px"></i></button>`:''}
+      </div>
+      ${legs}
+      <div class="svcd-ins">
+        ${topInm?insight('ti-trophy','#BA7517','Mayor consumo · '+topInm.num,fmt0(perD[topId])):''}
+        ${ids.length?insight('ti-divide','#378ADD','Promedio por depto',fmt0(prom)):''}
+        ${insight('ti-file-invoice','#1D9E75','Facturas del mes',svcMes.length)}
       </div>
     </div>
-    <div style="flex:1;min-width:200px;display:grid;gap:11px">
-      <div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Reparto por servicio · ${MESES[vM]} ${vY}</div>
-      ${leg||'<span style="color:var(--tx3);font-size:13px">Sin servicios este mes</span>'}
+    <div class="svcd-note">
+      <div style="display:flex;align-items:center;gap:6px;font-weight:600;color:#1A1917;margin-bottom:4px"><i class="ti ti-scale" style="font-size:14px;color:#1D9E75"></i>Cómo se reparte</div>
+      Cada depto paga según su <strong style="color:#1A1917">ponderación</strong>: días de uso en el periodo × personas que habitan. Nadie subsidia a nadie.
     </div>
   </div>`;
+  // Count-up del centro
+  countUp(document.getElementById('svcd-num'),svcTipoFilter?(acc[svcTipoFilter]||0):total,fmt0);
+  if(svcTipoFilter&&TIP[svcTipoFilter]){const l=document.getElementById('svcd-lbl');l.textContent=TIP[svcTipoFilter].nom.toLowerCase()+' · '+MESES[vM].toLowerCase();l.style.color=TIP[svcTipoFilter].c;}
+  // Interactividad: hover resalta segmento y actualiza el centro; clic filtra
+  const ring=document.getElementById('svcd-ring');
+  const num=document.getElementById('svcd-num'),lbl=document.getElementById('svcd-lbl');
+  const hot=t=>{ring.classList.add('hovering');ring.querySelectorAll('.svcd-seg').forEach(s2=>s2.classList.toggle('hot',s2.dataset.tipo===t));
+    num.textContent=fmt0(acc[t]||0);lbl.textContent=TIP[t].nom.toLowerCase()+' · '+MESES[vM].toLowerCase();lbl.style.color=TIP[t].c;};
+  const cold=()=>{ring.classList.remove('hovering');ring.querySelectorAll('.svcd-seg.hot').forEach(s2=>s2.classList.remove('hot'));
+    if(svcTipoFilter&&TIP[svcTipoFilter]){num.textContent=fmt0(acc[svcTipoFilter]||0);lbl.textContent=TIP[svcTipoFilter].nom.toLowerCase()+' · '+MESES[vM].toLowerCase();lbl.style.color=TIP[svcTipoFilter].c;}
+    else{num.textContent=fmt0(total);lbl.textContent='total '+MESES[vM].toLowerCase();lbl.style.color='#9D9B96';}};
+  cont.querySelectorAll('.svcd-leg,.svcd-seg').forEach(el=>{
+    el.addEventListener('mouseenter',()=>hot(el.dataset.tipo));
+    el.addEventListener('mouseleave',cold);
+    el.addEventListener('click',()=>setSvcFilter(svcTipoFilter===el.dataset.tipo?null:el.dataset.tipo));
+  });
 }
+function setSvcFilter(t){svcTipoFilter=t;renderSvcList();}
 function renderDashboard(){
   if(!document.getElementById('sec-inicio'))return;
   // Saludo
@@ -2266,6 +2382,8 @@ function renderDashboard(){
     else{bg='#FAEEDA';c='#BA7517';icon='ti-clock';txt=`Pago registrado · Depto. ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.monto)}</strong>`;}
     return `<div style="display:flex;align-items:center;gap:11px;animation:slideIn .4s cubic-bezier(.16,1,.3,1) ${(0.12+i*0.08).toFixed(2)}s both"><div style="width:30px;height:30px;border-radius:9px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${icon}" style="font-size:15px;color:${c}"></i></div><div style="flex:1;font-size:12.5px;line-height:1.4">${txt}</div><div style="font-size:11px;color:#9D9B96;flex-shrink:0">${tiempoRel(p.created_at)}</div></div>`;
   }).join('');
+  // Edificio 3D (mapa interactivo de departamentos)
+  renderIsoMap();
 }
 // Confetti (micro-interacción al registrar un pago liquidado) — puramente visual
 function lanzarConfetti(x,y){
@@ -2281,6 +2399,179 @@ function lanzarConfetti(x,y){
   }
   document.body.appendChild(wrap);setTimeout(()=>wrap.remove(),1200);
 }
+
+// ═══════════════════════════════════════
+//  EDIFICIO 3D (iso) — mapa interactivo del Resumen
+//  Solo lectura: deriva TODO de inmuebles/pagos/servicios/svcDet
+//  con las mismas funciones validadas (getEstado, getSvcMonto, calcDeposito).
+// ═══════════════════════════════════════
+let isoY=-38,isoOn=(typeof localStorage!=='undefined'&&localStorage.getItem('ib_iso3d')!=='0'),isoSelId=null,_isoMoved=false;
+const ISO={W:88,H:58,D:64,GAP:12};
+
+// Estado visual por depto — misma semántica que las tarjetas de Departamentos
+function isoStatus(inm){
+  const mp=pagos.filter(p=>p.inmueble_id===inm.id);
+  const mm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY;});
+  const pagados=mm.filter(p=>getEstado(p)==='pagado').length;
+  const tv=mp.some(p=>getEstado(p)==='vencido');
+  const pct=mm.length?Math.round(pagados/mm.length*100):0;
+  if(tv)return{k:'venc',lbl:'Vencido',pct,colors:{top:'#DA9273',front:'#C97C5E',side:'#A96246',side2:'#B96F51'}};
+  if(mm.length>0&&pct===100)return{k:'ok',lbl:'Al día',pct,colors:{top:'#B2CDA9',front:'#9FBF9B',side:'#7FA37D',side2:'#8FB28B'}};
+  if(mm.length>0)return{k:'proc',lbl:'En proceso',pct,colors:{top:'#E6C795',front:'#D6AC72',side:'#B78E55',side2:'#C79D63'}};
+  return{k:'none',lbl:'Sin cargos',pct:0,colors:{top:'#E7E5DE',front:'#D6D4CC',side:'#B9B7AF',side2:'#C7C5BD'}};
+}
+
+// Cuboide CSS 3D: 5 caras (frente/atrás/lados/techo)
+function isoBoxHTML(w,h,d,x,y,z,c,opt){
+  opt=opt||{};
+  const dl=opt.delay?`;--d:${opt.delay}`:'';
+  const face=(fw,fh,tf,bg,inner)=>`<div class="iso-face" style="width:${fw}px;height:${fh}px;margin-left:${-fw/2}px;margin-top:${-fh/2}px;transform:${tf};background:${bg}${dl}">${inner||''}</div>`;
+  const rot=opt.rot?` rotateY(${opt.rot}deg)`:'';
+  return `<div class="iso-el${opt.cls?' '+opt.cls:''}"${opt.attrs||''} style="transform:translate3d(${x}px,${y}px,${z}px)${rot}">`+
+    face(w,h,`translateZ(${d/2}px)`,c.front,opt.front)+
+    face(w,h,`rotateY(180deg) translateZ(${d/2}px)`,c.back||c.front)+
+    face(d,h,`rotateY(90deg) translateZ(${w/2}px)`,c.side)+
+    face(d,h,`rotateY(-90deg) translateZ(${w/2}px)`,c.side2||c.side)+
+    face(w,d,`rotateX(90deg) translateZ(${h/2}px)`,c.top,opt.top)+
+  `</div>`;
+}
+
+function renderIsoMap(){
+  const wrap=document.getElementById('iso-wrap'),hint=document.getElementById('iso-off-hint'),leg=document.getElementById('iso-legend');
+  if(!wrap)return;
+  const on=document.getElementById('iso-seg-on'),off=document.getElementById('iso-seg-off');
+  const segBase='border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;';
+  const sOn='color:#1A1917;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.08)',sOff='color:#9D9B96;background:transparent;box-shadow:none';
+  if(on)on.setAttribute('style',segBase+(isoOn?sOn:sOff));
+  if(off)off.setAttribute('style',segBase+(!isoOn?sOn:sOff));
+  if(!isoOn){wrap.style.display='none';if(leg)leg.style.display='none';if(hint)hint.style.display='block';return;}
+  if(hint)hint.style.display='none';wrap.style.display='block';if(leg)leg.style.display='flex';
+  if(!inmuebles.length){wrap.innerHTML='<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9D9B96;font-size:13px;gap:8px"><i class="ti ti-building" style="font-size:30px;opacity:.4"></i>Agrega departamentos para ver tu edificio en 3D</div>';return;}
+  const {W,H,D,GAP}=ISO;
+  // Agrupar por piso (orden numérico si aplica)
+  const pisos={};inmuebles.forEach(i=>{const k=(i.piso==null||String(i.piso).trim()==='')?'1':String(i.piso).trim();(pisos[k]=pisos[k]||[]).push(i);});
+  const keys=Object.keys(pisos).sort((a,b)=>{const na=parseFloat(a),nb=parseFloat(b);if(!isNaN(na)&&!isNaN(nb))return na-nb;return a.localeCompare(b);});
+  keys.forEach(k=>pisos[k].sort((a,b)=>a.num.localeCompare(b.num)));
+  const maxN=Math.max(...keys.map(k=>pisos[k].length));
+  const rowW=maxN*(W+GAP);
+  const platW=rowW+120,platD=200,platH=22,platY=44;
+  // Bloques de departamentos
+  let blocks='';let bi=0;
+  keys.forEach((k,f)=>{
+    const arr=pisos[k];const offX=(f%2?14:-8);const offZ=(f%2?12:-6);
+    arr.forEach((inm,i)=>{
+      const st=isoStatus(inm);
+      const x=(i-(arr.length-1)/2)*(W+GAP)+offX;
+      const y=(platY-platH/2)-H/2-f*H;
+      blocks+=isoBoxHTML(W,H,D,x,y,offZ,st.colors,{
+        cls:'iso-dept'+(isoSelId===inm.id?' sel':''),
+        attrs:` data-inm="${inm.id}" role="button" tabindex="0" aria-label="Departamento ${inm.num}, ${inm.inquilino}, ${st.lbl}"`,
+        delay:(0.05*bi).toFixed(2)+'s',
+        front:`<span class="iso-num">${inm.num}</span><span class="iso-win"></span>`,
+        top:st.k==='venc'?'<span class="iso-alert"></span>':''
+      });
+      bi++;
+    });
+  });
+  // Plataforma de concreto + escalones + arbolito (decoración fija, estilo imagen)
+  const conc={top:'#E8EAEC',front:'#CFD4D8',side:'#B6BCC1',side2:'#C3C9CE'};
+  let deco=isoBoxHTML(platW,platH,platD,0,platY,0,conc);
+  deco+=isoBoxHTML(84,10,30,-platW/6,platY+8,platD/2+15,conc);
+  deco+=isoBoxHTML(84,10,30,-platW/6,platY+18,platD/2+45,conc);
+  deco+=isoBoxHTML(18,14,18,platW/2-70,platY-platH/2-7,60,{top:'#E9C46A',front:'linear-gradient(180deg,#E76F51 0%,#E76F51 34%,#2A9D8F 34%,#2A9D8F 67%,#E9C46A 67%)',side:'#C65B3F',side2:'#D96A4B'});
+  deco+=isoBoxHTML(5,12,5,platW/2-70,platY-platH/2-14-6,60,{top:'#9A7146',front:'#8A6239',side:'#6F4E2D',side2:'#7C5833'});
+  deco+=isoBoxHTML(26,26,26,platW/2-70,platY-platH/2-26-13,60,{top:'#D9BC92',front:'#CBA97B',side:'#B08F60',side2:'#BD9A6B'},{rot:45});
+  deco+=isoBoxHTML(15,14,15,platW/2-70,platY-platH/2-52-7,60,{top:'#E2C89F',front:'#D4B488',side:'#B9986A',side2:'#C6A576'},{rot:45});
+  // Escala para que quepa
+  const availW=wrap.clientWidth||800,availH=wrap.clientHeight||420;
+  const totH=keys.length*H+platH+80;
+  const isoS=Math.max(.4,Math.min(1,(availW-90)/(platW+190),(availH-70)/(totH+130)));
+  const cy=(keys.length*H)/2-22;
+  wrap.innerHTML=`<div class="iso-stage"><div class="iso-float"><div class="iso-scale" style="transform:scale(${isoS}) translateY(${cy}px)"><div class="iso-tilt"><div class="iso-turn" style="--isoY:${isoY}deg">${deco}${blocks}</div></div></div></div></div><div class="iso-shadow" style="width:${Math.round(Math.min(platW*isoS+110,availW*.8))}px"></div>`;
+  if(isoSelId&&getInm(isoSelId))requestAnimationFrame(()=>isoOpenPop(isoSelId,true));
+  // Animación de entrada al hacer scroll (IntersectionObserver)
+  if(!wrap._io){wrap._io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)wrap.classList.add('play');});},{threshold:.2});wrap._io.observe(wrap);}
+}
+
+// Popover ("ventanita") por departamento — misma info que las otras pestañas
+function isoOpenPop(id,reposition){
+  const wrap=document.getElementById('iso-wrap');const inm=getInm(id);if(!wrap||!inm)return;
+  if(!reposition&&isoSelId===id){isoClosePop();return;}
+  isoSelId=id;
+  wrap.querySelectorAll('.iso-dept').forEach(b=>b.classList.toggle('sel',b.dataset.inm===id));
+  const old=wrap.querySelector('.iso-pop');if(old)old.remove();
+  const st=isoStatus(inm);
+  const mm=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===id&&v.getMonth()===vM&&v.getFullYear()===vY;});
+  const esp=mm.reduce((s,p)=>s+Number(p.monto),0),cob=mm.reduce((s,p)=>s+Math.min(Number(p.pagado),Number(p.monto)),0);
+  const nv=pagos.filter(p=>p.inmueble_id===id&&getEstado(p)==='vencido').length;
+  const svcs=getSvcMonto(id,vM,vY);
+  const dep=calcDeposito(inm);
+  const chip={venc:['#FCEBEB','#791F1F','ti-alert-triangle'],ok:['#E1F5EE','#085041','ti-circle-check'],proc:['#FAEEDA','#633806','ti-clock'],none:['#F1EFE8','#6B6963','ti-minus']}[st.k];
+  const IB='display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:8px;cursor:pointer;transition:all .15s;font-family:inherit';
+  const row=(ico,lbl,val,c)=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 0;border-bottom:1px dashed #EEECE4"><i class="ti ${ico}" style="font-size:14px;color:${c||'#9D9B96'};width:16px;text-align:center"></i><span style="color:#6B6963;flex:1">${lbl}</span><span style="font-family:'DM Mono',monospace;font-weight:500">${val}</span></div>`;
+  let depRow='';
+  if(dep){const dc=dep.estado==='retenido'?'#E24B4A':dep.estado==='parcial'?'#1D9E75':'#378ADD';depRow=row('ti-shield-lock','Depósito',fmt0(dep.totalDep)+(dep.estado==='parcial'?' · devolver':dep.estado==='retenido'?' · retenido':' · activo'),dc);}
+  const barC=st.pct===100?'#1D9E75':st.k==='venc'?'#E24B4A':'#BA7517';
+  const pop=document.createElement('div');pop.className='iso-pop';
+  pop.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:9px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;flex-shrink:0">${inm.num}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${inm.inquilino}</div>
+      <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;background:${chip[0]};color:${chip[1]}"><i class="ti ${chip[2]}" style="font-size:10px"></i>${st.lbl}</span></div>
+      <button onclick="isoClosePop()" title="Cerrar" data-hs="background:#F1EFE8;color:#1A1917" style="border:none;background:none;cursor:pointer;color:#9D9B96;font-size:16px;padding:4px;border-radius:6px;display:flex;font-family:inherit"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:#9D9B96;margin-bottom:4px"><span>Cobranza ${MESES[vM].slice(0,3).toLowerCase()}</span><span style="font-family:'DM Mono',monospace;color:${barC}">${st.pct}%</span></div>
+    <div style="height:5px;background:#F1EFE8;border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;border-radius:3px;background:${barC};width:${st.pct}%;transform-origin:left;animation:growBar .6s cubic-bezier(.16,1,.3,1) both"></div></div>
+    ${row('ti-cash','Renta mensual',fmt0(inm.renta))}
+    ${row('ti-receipt','Esperado · cobrado',fmt0(esp)+' · '+fmt0(cob))}
+    ${row('ti-bolt','Servicios del mes',svcs>0?fmt(svcs):'—','#BA7517')}
+    ${depRow}
+    ${nv>0?row('ti-alert-triangle',nv===1?'Pago vencido':'Pagos vencidos',nv,'#E24B4A'):''}
+    <div style="display:flex;gap:6px;margin-top:12px">
+      <button title="Recordatorio WhatsApp" onclick="isoAct('rec','${id}')" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>
+      <button title="Nuevo pago" onclick="isoAct('pago','${id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-plus" style="font-size:15px"></i></button>
+      <button title="Editar departamento" onclick="isoAct('inm','${id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-pencil" style="font-size:15px"></i></button>
+      <button title="Estado de cuenta PDF" onclick="isoAct('pdf','${id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-file-type-pdf" style="font-size:15px"></i></button>
+      <button title="Ver en Departamentos" onclick="isoAct('dep','${id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB};margin-left:auto"><i class="ti ti-arrow-right" style="font-size:15px"></i></button>
+    </div>`;
+  wrap.appendChild(pop);
+  // Posicionar la ventanita junto al bloque (con límites del mapa)
+  const wr=wrap.getBoundingClientRect();
+  const blk=wrap.querySelector(`.iso-dept[data-inm="${id}"]`);
+  let x=wr.width/2+40,yy=40;
+  if(blk){const br=blk.getBoundingClientRect();x=br.right-wr.left+14;yy=br.top-wr.top-20;}
+  const pw=Math.min(270,wr.width-20),ph=pop.offsetHeight||240;
+  if(x+pw>wr.width-10)x=Math.max(10,(blk?blk.getBoundingClientRect().left-wr.left:x)-pw-14);
+  yy=Math.max(10,Math.min(yy,wr.height-ph-10));
+  pop.style.left=x+'px';pop.style.top=yy+'px';
+}
+function isoClosePop(){isoSelId=null;const w=document.getElementById('iso-wrap');if(!w)return;const p=w.querySelector('.iso-pop');if(p)p.remove();w.querySelectorAll('.iso-dept.sel').forEach(b=>b.classList.remove('sel'));}
+function isoAct(a,id){isoClosePop();if(a==='rec')abrirRecordatorio(id);else if(a==='pago')abrirPago(id);else if(a==='inm')abrirInm(id);else if(a==='pdf')generarPDF(id);else if(a==='dep')setTab('inmuebles');}
+function isoRotate(d){isoY+=d;const t=document.querySelector('#iso-wrap .iso-turn');if(t)t.style.setProperty('--isoY',isoY+'deg');if(isoSelId){const id=isoSelId;setTimeout(()=>{if(isoSelId===id)isoOpenPop(id,true);},580);}}
+function isoToggle(v){isoOn=v;try{localStorage.setItem('ib_iso3d',v?'1':'0');}catch(e){}isoClosePop();renderIsoMap();}
+
+// Interacción del mapa: arrastrar para girar, clic/teclado para abrir depto
+(function(){
+  const wrap=document.getElementById('iso-wrap');if(!wrap)return;
+  let px=0,baseY=0,drag=false;
+  wrap.addEventListener('pointerdown',e=>{if(e.target.closest('.iso-pop'))return;drag=true;_isoMoved=false;px=e.clientX;baseY=isoY;try{wrap.setPointerCapture(e.pointerId);}catch(err){}});
+  wrap.addEventListener('pointermove',e=>{
+    if(!drag)return;const dx=e.clientX-px;
+    if(!_isoMoved&&Math.abs(dx)>5){_isoMoved=true;wrap.classList.add('dragging');isoClosePop();}
+    if(_isoMoved){isoY=baseY+dx*.45;const t=wrap.querySelector('.iso-turn');if(t)t.style.setProperty('--isoY',isoY+'deg');}
+  });
+  const end=()=>{drag=false;wrap.classList.remove('dragging');};
+  wrap.addEventListener('pointerup',end);wrap.addEventListener('pointercancel',end);
+  wrap.addEventListener('click',e=>{
+    if(_isoMoved){_isoMoved=false;return;}
+    const b=e.target.closest('.iso-dept');
+    if(b)isoOpenPop(b.dataset.inm);
+    else if(!e.target.closest('.iso-pop'))isoClosePop();
+  });
+  wrap.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('iso-dept')){e.preventDefault();isoOpenPop(e.target.dataset.inm);}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')isoClosePop();});
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{const sec=document.getElementById('sec-inicio');if(sec&&sec.style.display!=='none'&&isoOn)renderIsoMap();},250);});
+})();
 
 function refresh(){renderStats();renderPagos();renderAl();renderEC();renderSvcList();renderDepositos();renderDashboard();}
 
