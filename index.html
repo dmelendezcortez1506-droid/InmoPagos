@@ -701,6 +701,7 @@ CREATE TABLE workspaces (
   clabe text,
   cuenta_scotiabank text,
   tarjeta_oxxo text,
+  dias_tolerancia integer DEFAULT 3,
   nombre_cobrador text,
   created_at timestamptz DEFAULT now()
 );
@@ -757,6 +758,9 @@ CREATE TABLE pagos (
   vencimiento date NOT NULL,
   fecha_pago date,
   notas text,
+  origen text DEFAULT 'manual',
+  servicio_id uuid,
+  omitido boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 CREATE TABLE servicios (
@@ -1003,7 +1007,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div id="stats-grid" style="margin-bottom:26px"></div>
     <div class="toolbar">
       <input type="text" id="sp" placeholder="Buscar depto, inquilino..." oninput="renderPagos()">
-      <select id="fe" onchange="renderPagos()"><option value="">Todos los estados</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option><option value="vencido">Vencido</option><option value="parcial">Parcial</option></select>
+      <select id="fe" onchange="renderPagos()"><option value="">Todos los estados</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option><option value="tolerancia">En tolerancia</option><option value="vencido">Vencido</option><option value="parcial">Parcial</option></select>
       <select id="fc" onchange="renderPagos()"><option value="">Todos los conceptos</option><option value="renta">Renta</option><option value="mantenimiento">Mant.</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="servicios">Servicios</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select>
     </div>
     <div id="pagos-list" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden"><div style="text-align:center;padding:2rem"><span class="spinner"></span></div></div>
@@ -1021,7 +1025,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
   <!-- ALERTAS -->
   <div id="sec-alertas" style="display:none;max-width:860px;margin:0 auto">
-    <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Alertas</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Pagos vencidos y próximos a vencer · tolerancia de 3 días</p></div>
+    <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Alertas</h2><p id="al-sub" style="margin:2px 0 0;font-size:13px;color:#6B6963">Pagos vencidos y próximos a vencer</p></div>
     <div id="l-al" style="display:grid;gap:10px"></div>
   </div>
 
@@ -1085,6 +1089,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">CLABE interbancaria</label><input type="text" id="cfg-clabe" placeholder="044420038023331555" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
         <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Cuenta Scotiabank</label><input type="text" id="cfg-scott" placeholder="0248687525" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
         <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Tarjeta OXXO</label><input type="text" id="cfg-oxxo" placeholder="4421 7700 3018 5061" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Días de tolerancia para pagos</label><input type="number" id="cfg-tol" min="0" max="30" placeholder="3" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"><span style="font-size:11.5px;color:#9D9B96">Días de gracia después del día de pago antes de marcar un pago como vencido y generar alerta. 0 = sin tolerancia.</span></div>
       </div>
       <div style="margin-top:22px;padding-top:18px;border-top:1px solid #EEECE4;display:flex;justify-content:flex-end"><button onclick="guardarConfig()" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-check" style="font-size:14px"></i>Guardar configuración</button></div>
     </div>
@@ -1254,9 +1259,9 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div class="fg"><label>Concepto *</label><select id="fp-con"><option value="renta">Renta mensual</option><option value="servicios">Servicios (Agua+Luz+Gas)</option><option value="mantenimiento">Mantenimiento</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select></div>
     <div class="fg"><label>Monto total *</label><input type="number" id="fp-mto" placeholder="0.00" step="0.01" min="0"></div>
     <div class="fg"><label>Monto pagado</label><input type="number" id="fp-pag" placeholder="0.00" step="0.01" min="0"></div>
-    <div class="fg"><label>Fecha de vencimiento *</label><input type="date" id="fp-venc"></div>
     <div class="fg"><label>Fecha de pago</label><input type="date" id="fp-fpag"></div>
     <div class="fg full"><label>Notas</label><textarea id="fp-not" placeholder="Observaciones..."></textarea></div>
+    <div class="fg full" style="font-size:11.5px;color:#9D9B96;margin-top:-4px">La renta y los servicios se generan automáticamente; usa este formulario para cargos sueltos. El cargo cae en el mes que estás viendo, cobrable de inmediato.</div>
   </div>
   <div class="mf">
     <button class="btn danger" id="btn-del-p" style="display:none;margin-right:auto" onclick="elimPago()"><i class="ti ti-trash"></i>Eliminar</button>
@@ -1280,6 +1285,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <div class="fg"><label>Fecha inicio contrato</label><input type="date" id="fi-fini"></div>
     <div class="fg"><label>Fecha término contrato</label><input type="date" id="fi-fter"></div>
     <div class="fg"><label>Fecha de salida del inquilino</label><input type="date" id="fi-fsal"></div>
+    <div class="fg" id="fi-dep-wrap"><label>Depósito en garantía ($, opcional)</label><input type="number" id="fi-dep" placeholder="0.00" step="0.01" min="0"></div>
     <div class="fg full"><label>Notas</label><textarea id="fi-not" placeholder="Observaciones..."></textarea></div>
   </div>
   <div class="mf">
@@ -1316,7 +1322,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <thead><tr><th>Depto.</th><th>Inquilino</th><th>¿Aplica?</th><th>Días de uso</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ a pagar</th></tr></thead>
     <tbody id="sv-rows"></tbody>
     <tfoot><tr style="background:var(--sf2)">
-      <td colspan="5" id="sv-adm-lbl" style="font-weight:600;padding:10px 14px">Subsidio — Deptos que salieron / sin uso</td>
+      <td colspan="5" id="sv-adm-lbl" style="font-weight:600;padding:10px 14px">Subsidio Administración y Deptos que salieron</td>
       <td id="sv-adm-pond" style="padding:10px 14px;font-weight:600"></td>
       <td id="sv-adm-pct" style="padding:10px 14px;font-weight:600"></td>
       <td id="sv-adm-mto" style="padding:10px 14px;font-weight:600"></td>
@@ -1380,7 +1386,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 // ═══════════════════════════════════════
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let sb=null,CU=null,CW=null;
-let pagos=[],inmuebles=[],servicios=[],svcDet=[],contratos=[];
+let pagos=[],pagosOmit=[],inmuebles=[],servicios=[],svcDet=[],contratos=[];
 let editPagoId=null,editInmId=null,editSvcId=null,editingSvcId=null,nuevoContratoInm=null;
 let vM=new Date().getMonth(),vY=new Date().getFullYear();
 let svcTipoFilter=null; // filtro visual del anillo de servicios (solo presentación)
@@ -1641,8 +1647,91 @@ async function cargarTodo(){
     sb.from('servicio_detalles').select('*').eq('workspace_id',wsId),
     sb.from('contratos').select('*').eq('workspace_id',wsId).order('created_at',{ascending:true})
   ]);
-  inmuebles=ri.data||[];pagos=rp.data||[];servicios=rs.data||[];svcDet=rd.data||[];contratos=rc.data||[];
+  inmuebles=ri.data||[];servicios=rs.data||[];svcDet=rd.data||[];contratos=rc.data||[];
+  const _tp=rp.data||[];pagosOmit=_tp.filter(p=>p.omitido);pagos=_tp.filter(p=>!p.omitido);
+  await ensureAutoPagos(vY,vM);
   refresh();
+}
+
+// ═══════════════════════════════════════
+//  MOTOR DE PAGOS AUTOMÁTICOS
+//  La renta de cada contrato se genera sola (mes actual + hasta MESES_RETRO atrás,
+//  y meses futuros al navegarlos → así funciona el pago adelantado). El usuario
+//  solo da clic en "Cobrar". Nunca duplica: si el contrato+mes ya tiene un pago de
+//  renta (manual, auto u omitido por el usuario), no genera otro.
+// ═══════════════════════════════════════
+const MESES_RETRO=3;
+let motorBusy=false;
+function contratoActivoEnMes(c,anio,mes){
+  const mIni=new Date(anio,mes,1),mFin=new Date(anio,mes+1,0);
+  const ini=c.fecha_inicio_contrato?new Date(c.fecha_inicio_contrato+'T00:00:00'):null;
+  const finStr=c.fecha_salida||c.fecha_termino_contrato||null;
+  const fin=finStr?new Date(finStr+'T00:00:00'):null;
+  if(ini&&ini>mFin)return false;
+  if(fin&&fin<mIni)return false;
+  return true;
+}
+// ¿Ya existe pago de renta para este contrato en este mes? (incluye omitidos = tombstones)
+function tienePagoRenta(inmId,cId,anio,mes){
+  return pagos.concat(pagosOmit).some(p=>{
+    if(p.concepto!=='renta'||p.inmueble_id!==inmId)return false;
+    const v=new Date(p.vencimiento+'T00:00:00');
+    if(v.getMonth()!==mes||v.getFullYear()!==anio)return false;
+    // Un pago sin contrato_id (previo a la migración de contratos) también bloquea, para no duplicar
+    return cId?(p.contrato_id===cId||!p.contrato_id):!p.contrato_id;
+  });
+}
+function fechaRenta(anio,mes,dia){
+  const d=Math.min(Math.max(1,parseInt(dia)||1),new Date(anio,mes+1,0).getDate());
+  return `${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+async function ensureAutoPagos(anioVista,mesVista){
+  if(!CW||motorBusy||!inmuebles.length)return;
+  motorBusy=true;
+  try{
+    const hoy=new Date();
+    const targets=new Set();
+    for(let k=0;k<=MESES_RETRO;k++){const d=new Date(hoy.getFullYear(),hoy.getMonth()-k,1);targets.add(d.getFullYear()*12+d.getMonth());}
+    // Mes futuro navegado → se materializa para poder cobrar adelantado
+    if(anioVista!=null&&(anioVista*12+mesVista)>(hoy.getFullYear()*12+hoy.getMonth()))targets.add(anioVista*12+mesVista);
+    const nuevos=[];
+    targets.forEach(key=>{
+      const anio=Math.floor(key/12),mes=key%12;
+      inmuebles.forEach(inm=>{
+        historialContratos(inm.id).forEach(c=>{
+          if(!c)return;
+          if(!contratoActivoEnMes(c,anio,mes))return;
+          const renta=Number(c.renta)||0;if(renta<=0)return;
+          if(tienePagoRenta(inm.id,c.id,anio,mes))return;
+          nuevos.push({workspace_id:CW.id,inmueble_id:inm.id,contrato_id:c.id||null,concepto:'renta',monto:renta,pagado:0,vencimiento:fechaRenta(anio,mes,c.dia||inm.dia),origen:'auto_renta',notas:null});
+        });
+      });
+    });
+    if(!nuevos.length)return;
+    let {data,error}=await sb.from('pagos').insert(nuevos).select();
+    // Compat: si las columnas nuevas aún no existen, reintenta sin ellas
+    if(error&&/origen|omitido|servicio_id/i.test(error.message||'')){const sin=nuevos.map(({origen:_o,...r})=>r);({data,error}=await sb.from('pagos').insert(sin).select());}
+    if(error&&/contrato_id/i.test(error.message||'')){const sin2=nuevos.map(({origen:_o,contrato_id:_c,...r})=>r);({data,error}=await sb.from('pagos').insert(sin2).select());}
+    if(!error&&data)pagos.push(...data);
+  }finally{motorBusy=false;}
+}
+// Sincroniza los pagos de renta NO cobrados (mes actual en adelante) con el contrato vigente
+// tras editar renta o día de pago. Los cobrados jamás se tocan.
+async function syncRentaPagos(inmId){
+  const vig=contratoVigente(inmId);if(!vig)return;
+  const hoy=new Date();const mesIni=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+  const objetivo=pagos.filter(p=>p.inmueble_id===inmId&&p.concepto==='renta'&&Number(p.pagado)===0&&p.vencimiento>=mesIni&&(vig.id?(p.contrato_id===vig.id||!p.contrato_id):!p.contrato_id));
+  for(const p of objetivo){
+    const v=new Date(p.vencimiento+'T00:00:00');
+    if(Number(vig.renta)<=0){await sb.from('pagos').delete().eq('id',p.id);pagos=pagos.filter(x=>x.id!==p.id);continue;}
+    const cambios={};
+    if(Number(p.monto)!==Number(vig.renta))cambios.monto=Number(vig.renta);
+    const nv=fechaRenta(v.getFullYear(),v.getMonth(),vig.dia);
+    if(nv!==p.vencimiento)cambios.vencimiento=nv;
+    if(!Object.keys(cambios).length)continue;
+    const {data}=await sb.from('pagos').update(cambios).eq('id',p.id).select().single();
+    if(data){const k=pagos.findIndex(x=>x.id===p.id);if(k>=0)pagos[k]=data;}
+  }
 }
 function suscribir(){
   ['inmuebles','pagos','servicios','servicio_detalles','contratos'].forEach(tbl=>{
@@ -1656,11 +1745,15 @@ function suscribir(){
 // ═══════════════════════════════════════
 //  HELPERS PAGOS
 // ═══════════════════════════════════════
+// Días de tolerancia configurados por el usuario (Configuración del negocio; default 3)
+function getTolerancia(){const v=CW?.cfg?.dias_tolerancia;return v==null?3:Math.max(0,parseInt(v)||0)}
 function getEstado(p){
   const t=new Date();t.setHours(0,0,0,0);const v=new Date(p.vencimiento+'T00:00:00');
   if(Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0)return'pagado';
   if(Number(p.pagado)>0&&Number(p.pagado)<Number(p.monto))return'parcial';
-  if(v<t)return'vencido';return'pendiente';
+  if(v>=t)return'pendiente';
+  const lim=new Date(v.getTime());lim.setDate(lim.getDate()+getTolerancia());
+  return t<=lim?'tolerancia':'vencido';
 }
 
 // ═══════════════════════════════════════
@@ -1670,8 +1763,8 @@ function renderStats(){
   const t=new Date();t.setHours(0,0,0,0);
   const mes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY});
   const esp=mes.reduce((s,p)=>s+Number(p.monto),0),cob=mes.reduce((s,p)=>s+Number(p.pagado),0);
-  const venc=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v<t&&Number(p.pagado)<Number(p.monto)});
-  const pendArr=mes.filter(p=>getEstado(p)==='pendiente'),pend=pendArr.length,pct=esp>0?Math.round(cob/esp*100):0;
+  const venc=pagos.filter(p=>getEstado(p)==='vencido');
+  const pendArr=mes.filter(p=>{const e=getEstado(p);return e==='pendiente'||e==='tolerancia'}),pend=pendArr.length,pct=esp>0?Math.round(cob/esp*100):0;
   const pendMonto=pendArr.reduce((s,p)=>s+Number(p.monto),0);
   const vencMonto=venc.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
   const g=document.getElementById('stats-grid');g.className='';
@@ -1707,13 +1800,13 @@ function renderPagos(){
     if(fe&&getEstado(p)!==fe)return false;if(fc&&p.concepto!==fc)return false;
     if(q){const i=getInm(p.inmueble_id);if(!((i?.num||'')+(i?.inquilino||'')+(p.concepto||'')).toLowerCase().includes(q))return false}
     return true;
-  }).sort((a,b)=>{const o={vencido:0,parcial:1,pendiente:2,pagado:3},ea=getEstado(a),eb=getEstado(b);return o[ea]!==o[eb]?o[ea]-o[eb]:new Date(a.vencimiento)-new Date(b.vencimiento)});
+  }).sort((a,b)=>{const o={vencido:0,parcial:1,tolerancia:2,pendiente:3,pagado:4},ea=getEstado(a),eb=getEstado(b);return o[ea]!==o[eb]?o[ea]-o[eb]:new Date(a.vencimiento)-new Date(b.vencimiento)});
   const cont=document.getElementById('pagos-list');
   if(!list.length){cont.innerHTML=`<div style="text-align:center;padding:56px 20px;color:#9D9B96"><i class="ti ti-inbox" style="font-size:34px;opacity:.35;display:block;margin-bottom:10px"></i><div style="font-size:13.5px">Sin pagos programados para ${MESES[vM]} ${vY}</div></div>`;return}
   const den=densMode==='densa';
   const fs=den?'12.5px':'13.5px',padTh=den?'8px 14px':'11px 16px',padTd=den?'7px 14px':'12px 16px';
   const GT='display:grid;grid-template-columns:76px minmax(150px,1.5fr) minmax(90px,1fr) 105px 105px 145px 135px 100px;align-items:center;column-gap:12px';
-  const BADGE={pagado:{bg:'#EAF3DE',c:'#3B6D11',ico:'ti-check',lbl:'Pagado',anim:'none'},pendiente:{bg:'#FAEEDA',c:'#633806',ico:'ti-clock',lbl:'Pendiente',anim:'none'},vencido:{bg:'#FCEBEB',c:'#791F1F',ico:'ti-alert-triangle',lbl:'Vencido',anim:'pulseVenc 2.2s ease-in-out infinite'},parcial:{bg:'#E6F1FB',c:'#0C447C',ico:'ti-percentage',lbl:'Parcial',anim:'none'}};
+  const BADGE={pagado:{bg:'#EAF3DE',c:'#3B6D11',ico:'ti-check',lbl:'Pagado',anim:'none'},pendiente:{bg:'#FAEEDA',c:'#633806',ico:'ti-clock',lbl:'Pendiente',anim:'none'},tolerancia:{bg:'#FDF0DB',c:'#8A5A00',ico:'ti-hourglass',lbl:'En tolerancia',anim:'none'},vencido:{bg:'#FCEBEB',c:'#791F1F',ico:'ti-alert-triangle',lbl:'Vencido',anim:'pulseVenc 2.2s ease-in-out infinite'},parcial:{bg:'#E6F1FB',c:'#0C447C',ico:'ti-percentage',lbl:'Parcial',anim:'none'}};
   const th='font-size:11px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.06em';
   const head=`<div style="${GT};background:#FAF9F5;border-bottom:1px solid #E2E0D8;padding:${padTh}"><span style="${th}">Depto.</span><span style="${th}">Inquilino</span><span style="${th}">Concepto</span><span style="${th};text-align:right">Monto</span><span style="${th};text-align:right">Pagado</span><span style="${th}">Vencimiento</span><span style="${th}">Estado</span><span></span></div>`;
   const rows=list.map((p,idx)=>{
@@ -1721,6 +1814,7 @@ function renderPagos(){
     const v=new Date(p.vencimiento+'T00:00:00'),dv=Math.round((v-t)/86400000);
     let vencF=fdS(p.vencimiento),vencC='#6B6963';
     if(est==='vencido'){vencF+=' · hace '+Math.abs(dv)+'d';vencC='#E24B4A';}
+    else if(est==='tolerancia'){vencF+=' · gracia '+(getTolerancia()-Math.abs(dv))+'d';vencC='#BA7517';}
     else if(est==='pendiente'&&dv<=3){vencC='#BA7517';}
     const pagC=Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0?'#1D9E75':Number(p.pagado)>0?'#BA7517':'#9D9B96';
     const con=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'';
@@ -1741,7 +1835,7 @@ function renderPagos(){
   }).join('');
   cont.innerHTML=`<div style="overflow-x:auto"><div style="min-width:950px;font-size:${fs}">${head}${rows}</div></div>`;
 }
-function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}renderStats();renderPagos();renderEC()}
+async function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}await ensureAutoPagos(vY,vM);renderStats();renderPagos();renderEC()}
 
 // ═══════════════════════════════════════
 //  RENDER INMUEBLES
@@ -1792,11 +1886,13 @@ function renderInm(){
 //  RENDER ALERTAS
 // ═══════════════════════════════════════
 function renderAl(){
-  const t=new Date();t.setHours(0,0,0,0);const al=[];
+  const t=new Date();t.setHours(0,0,0,0);const al=[];const tol=getTolerancia();
+  const subT=document.getElementById('al-sub');if(subT)subT.textContent=`Pagos vencidos y próximos a vencer · tolerancia de ${tol} día${tol===1?'':'s'}`;
   pagos.forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),i=getInm(p.inmueble_id),est=getEstado(p),nm=i?.num||'?',d=dB(t,v);
     if(est==='vencido'){const dd=Math.abs(d);al.push({type:'venc',icon:'ti-alert-triangle',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vencido hace ${dd} día${dd!==1?'s':''} · vencía ${fd(p.vencimiento)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'pendiente',pri:0})}
-    else if(est==='pendiente'&&d>=0&&d<=3)al.push({type:'prox',icon:'ti-clock',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vence ${d===0?'hoy':d===1?'mañana':`en ${d} días`} · tolerancia de 3 días`,monto:Number(p.monto),montoSub:'por cobrar',pri:1});
+    else if(est==='tolerancia'){const dd=Math.abs(d);al.push({type:'prox',icon:'ti-hourglass',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`En tolerancia · día de pago hace ${dd} día${dd!==1?'s':''} (${tol} de gracia)`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});}
+    else if(est==='pendiente'&&d>=0&&d<=3)al.push({type:'prox',icon:'ti-clock',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vence ${d===0?'hoy':d===1?'mañana':`en ${d} días`}`,monto:Number(p.monto),montoSub:'por cobrar',pri:1});
     else if(est==='parcial')al.push({type:'parc',icon:'ti-percentage',inmId:i?.id||'',titulo:`Depto. ${nm} — pago parcial`,sub:`Abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'restante',pri:2});
   });
   const mesAct=new Date();
@@ -1806,9 +1902,13 @@ function renderAl(){
     const diaP=vig.dia||inm.dia||1;
     const fechaDia=new Date(mesAct.getFullYear(),mesAct.getMonth(),diaP);fechaDia.setHours(0,0,0,0);
     const diasDespues=dB(fechaDia,t);
-    if(diasDespues>3){
-      const tieneRenta=pagos.some(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inm.id&&p.concepto==='renta'&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)==='pagado';});
-      if(!tieneRenta)al.push({type:'venc',icon:'ti-coin',inmId:inm.id,titulo:`Depto. ${inm.num} — Renta sin registrar`,sub:`Día de pago fue el ${diaP} · hace ${diasDespues} días (pasada la tolerancia)`,monto:Number(vig.renta||inm.renta),montoSub:'renta',pri:0});
+    if(diasDespues>tol){
+      // Red de seguridad: el motor ya genera la renta; esto solo alerta si no existe pago ese mes
+      // y el usuario NO lo omitió a propósito (tombstone)
+      const esDelMes=p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inm.id&&p.concepto==='renta'&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()};
+      const tieneRenta=pagos.some(p=>esDelMes(p)&&getEstado(p)==='pagado');
+      const existeCargo=pagos.some(esDelMes)||pagosOmit.some(esDelMes);
+      if(!tieneRenta&&!existeCargo)al.push({type:'venc',icon:'ti-coin',inmId:inm.id,titulo:`Depto. ${inm.num} — Renta sin registrar`,sub:`Día de pago fue el ${diaP} · hace ${diasDespues} días (pasada la tolerancia)`,monto:Number(vig.renta||inm.renta),montoSub:'renta',pri:0});
     }
   });
   al.sort((a,b)=>a.pri-b.pri);
@@ -2108,29 +2208,77 @@ function editarDistribucion(id){
   openM('m-new-svc');
 }
 
-// ¿Le aplica el servicio a este espacio según las fechas de su contrato (mirror del vigente)?
-// Reutiliza las REGLAS 1–4 existentes + regla nueva: salida ANTES del período → no aplica.
+// Solapamiento (en días) de UN contrato con el período del servicio. El fin de ocupación
+// efectivo del contrato es su fecha de salida real (si existe) o, en su defecto, su fecha de
+// término formal. Sin fecha de inicio → arranca al inicio del período; sin fin → llega al final.
+function svcSolapeContrato(c,periodoIni,periodoFin){
+  const finiStr=c.fecha_inicio_contrato,fterStr=c.fecha_termino_contrato,fsalStr=c.fecha_salida;
+  const cIni=finiStr?new Date(finiStr+'T00:00:00'):null;
+  const cFinStr=fsalStr||fterStr||null,cFin=cFinStr?new Date(cFinStr+'T00:00:00'):null;
+  const desde=cIni?new Date(Math.max(periodoIni.getTime(),cIni.getTime())):new Date(periodoIni.getTime());
+  const hasta=cFin?new Date(Math.min(periodoFin.getTime(),cFin.getTime())):new Date(periodoFin.getTime());
+  const dias=hasta>=desde?Math.round((hasta-desde)/86400000)+1:0;
+  return{dias,cIni,cFin,finiStr,fterStr,fsalStr};
+}
+// ¿Le aplica el servicio a este espacio, y por cuántos días? Considera TODO el historial de
+// contratos del espacio (vigente + anteriores), no solo el mirror del inmueble: un servicio lo
+// paga quien haya ocupado el depto durante el período, aunque hoy viva otro inquilino o el
+// espacio esté desocupado. Suma los días de cada contrato que se solapa con el período y pondera
+// las personas por esos días. Reglas 1–4 (entró tarde / salió / terminó / salida intermedia)
+// se aplican ahora contrato por contrato dentro del historial.
 function svcAplicaInfo(inm,periodoIni,periodoFin){
   const diasTotal=Math.max(1,dB(periodoIni,periodoFin)+1);
-  const finiStr=inm.fecha_inicio_contrato,fterStr=inm.fecha_termino_contrato,fsalStr=inm.fecha_salida;
-  if(!finiStr&&!fsalStr)return{aplica:true,diasUso:diasTotal,diasTotal,motivo:''}; // sin fechas → período completo
-  const contratoIni=finiStr?new Date(finiStr+'T00:00:00'):null;
-  const contratoFin=fterStr?new Date(fterStr+'T00:00:00'):null;
-  const fechaSalida=fsalStr?new Date(fsalStr+'T00:00:00'):null;
-  // REGLA 3: contrato empieza después del fin del período → no corresponde cobro
-  if(contratoIni&&contratoIni>periodoFin)return{aplica:false,diasUso:0,diasTotal,motivo:`Inquilino a partir del ${fdS(finiStr)}`};
-  // REGLA NUEVA: salió antes de que empezara el período → no corresponde cobro
-  if(fechaSalida&&fechaSalida<periodoIni)return{aplica:false,diasUso:0,diasTotal,motivo:`Salió el ${fdS(fsalStr)}`};
-  if(contratoFin&&contratoFin<periodoIni&&!fechaSalida)return{aplica:false,diasUso:0,diasTotal,motivo:`Contrato terminó el ${fdS(fterStr)}`};
-  // REGLAS 1 y 2: contador arranca en inicio del período (o del contrato si entró después)
-  const desde=contratoIni?new Date(Math.max(periodoIni.getTime(),contratoIni.getTime())):new Date(periodoIni.getTime());
-  let hasta=new Date(periodoFin.getTime()),motivo='';
-  // REGLA 4: fecha de salida intermedia → contador termina en fecha de salida
-  if(fechaSalida&&fechaSalida>=periodoIni&&fechaSalida<=periodoFin){hasta=new Date(fechaSalida.getTime());motivo=`Salió el ${fdS(fsalStr)}`;}
-  else if(contratoFin&&contratoFin<periodoFin){hasta=new Date(contratoFin.getTime());}
-  if(!motivo&&contratoIni&&contratoIni>periodoIni)motivo=`Inquilino desde el ${fdS(finiStr)}`;
-  const diasUso=Math.max(0,Math.round((hasta-desde)/86400000)+1);
-  return{aplica:diasUso>0,diasUso,diasTotal,motivo};
+  const csRaw=historialContratos(inm.id),cs=(csRaw&&csRaw.length)?csRaw:[contratoSintetico(inm)];
+  let diasUso=0,pondPers=0,motivo='',inq='',domDias=-1,domId=null;
+  cs.forEach(c=>{
+    if(!c)return;
+    const s=svcSolapeContrato(c,periodoIni,periodoFin);
+    if(s.dias<=0)return;
+    const pers=Number(c.personas)||Number(inm.personas)||1;
+    diasUso+=s.dias;pondPers+=s.dias*pers;
+    // motivo/nombre representativos = los del contrato que más días aporta al período
+    if(s.dias>domDias){domDias=s.dias;inq=c.inquilino||inm.inquilino||'';domId=c.id||null;
+      if(s.fsalStr&&s.cFin&&s.cFin>=periodoIni&&s.cFin<=periodoFin)motivo=`Salió el ${fdS(s.fsalStr)}`;
+      else if(s.cIni&&s.cIni>periodoIni)motivo=`Inquilino desde el ${fdS(s.finiStr)}`;
+      else motivo='';}
+  });
+  const personas=diasUso>0?Math.max(1,Math.round(pondPers/diasUso)):(Number(inm.personas)||1);
+  return{aplica:diasUso>0,diasUso,diasTotal,personas,motivo,inquilino:inq||inm.inquilino||'',contratoId:domId};
+}
+
+// ═══════════════════════════════════════
+//  SERVICIOS → PAGOS AUTOMÁTICOS
+//  Al guardar un servicio, cada depto con monto > 0 recibe su pago cobrable de
+//  inmediato. Editar el servicio sincroniza los pagos NO cobrados; los cobrados
+//  jamás se tocan. El pago se atribuye al contrato que ocupó el período.
+// ═══════════════════════════════════════
+async function syncPagosServicio(svc,rows,pIni,pFin){
+  const NOMS={agua:'Agua',luz:'Luz',gas:'Gas'};
+  const exist=pagos.filter(p=>p.servicio_id===svc.id);
+  const ins=[];
+  for(const r of rows){
+    const m=Math.round(Number(r.monto)*100)/100;
+    const ex=exist.find(p=>p.inmueble_id===r.inm.id);
+    if(m>0.005){
+      if(!ex){
+        const cId=svcAplicaInfo(r.inm,pIni,pFin).contratoId||null;
+        ins.push({workspace_id:CW.id,inmueble_id:r.inm.id,contrato_id:cId,concepto:svc.tipo,monto:m,pagado:0,vencimiento:hoyISO(),origen:'auto_servicio',servicio_id:svc.id,notas:`Servicio de ${NOMS[svc.tipo]||svc.tipo} · período ${fdS(svc.periodo_ini)} — ${fdS(svc.periodo_fin)}`});
+      }else if(Number(ex.pagado)===0&&Math.abs(Number(ex.monto)-m)>0.009){
+        const {data}=await sb.from('pagos').update({monto:m}).eq('id',ex.id).select().single();
+        if(data){const k=pagos.findIndex(x=>x.id===ex.id);if(k>=0)pagos[k]=data;}
+      }
+    }else if(ex&&Number(ex.pagado)===0){
+      await sb.from('pagos').delete().eq('id',ex.id);
+      pagos=pagos.filter(p=>p.id!==ex.id);
+    }
+  }
+  if(ins.length){
+    let {data,error}=await sb.from('pagos').insert(ins).select();
+    // Compat: si las columnas nuevas no existen, inserta sin ellas (no habrá sync en edición)
+    if(error&&/origen|servicio_id|omitido/i.test(error.message||'')){const sin=ins.map(({origen:_o,servicio_id:_s,...r})=>r);({data,error}=await sb.from('pagos').insert(sin).select());}
+    if(error&&/contrato_id/i.test(error.message||'')){const sin2=ins.map(({origen:_o,servicio_id:_s,contrato_id:_c,...r})=>r);({data,error}=await sb.from('pagos').insert(sin2).select());}
+    if(!error&&data)pagos.push(...data);
+  }
 }
 
 // Resultado vivo del cálculo del modal (lo usan guardarServicio y el PNG)
@@ -2151,10 +2299,10 @@ function calcSvcRows(){
     if(!info.aplica){ocultos++;return'';}
     return`<tr id="sv-row-${idx}">
       <td><strong style="font-family:'DM Mono',monospace;font-size:12px">${inm.num}</strong></td>
-      <td style="font-size:12px">${inm.inquilino.split(' ')[0]}${info.motivo?`<br><span style="font-size:10px;color:var(--tx3)">${info.motivo}</span>`:''}</td>
+      <td style="font-size:12px">${(info.inquilino||inm.inquilino||'').split(' ')[0]}${info.motivo?`<br><span style="font-size:10px;color:var(--tx3)">${info.motivo}</span>`:''}</td>
       <td><input type="checkbox" id="sv-aplica-${idx}" checked onchange="recalcSvc(${idx},'${inm.id}')" style="width:18px;height:18px;cursor:pointer"></td>
       <td><input type="number" id="sv-dias-${idx}" value="${info.diasUso}" min="0" max="${diasTotal}" style="width:70px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
-      <td><input type="number" id="sv-pers-${idx}" value="${inm.personas||1}" min="0" max="20" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
+      <td><input type="number" id="sv-pers-${idx}" value="${info.personas||inm.personas||1}" min="0" max="20" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
       <td id="sv-pond-${idx}" style="font-family:'DM Mono',monospace;font-size:13px">0</td>
       <td id="sv-pct-${idx}" style="font-size:13px">0%</td>
       <td id="sv-mto-${idx}" style="font-weight:500;font-size:13px">$0.00</td>
@@ -2180,7 +2328,7 @@ function recalcAllSvc(){
     const enModal=!!document.getElementById(`sv-aplica-${idx}`); // fila visible (aplica por fechas)
     const manualOn=enModal?document.getElementById(`sv-aplica-${idx}`).checked:false;
     const dias=enModal&&manualOn?(parseInt(document.getElementById(`sv-dias-${idx}`)?.value)||0):(enModal?0:info.diasUso);
-    const pers=enModal?(parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||(inm.personas||1)):(inm.personas||1);
+    const pers=enModal?(parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||(info.personas||inm.personas||1)):(info.personas||inm.personas||1);
     const pondUsada=(enModal?(manualOn?dias*pers:0):0); // ocultos por fechas no usan nada
     const pondCompleta=info.diasTotal*pers;
     sumCompleta+=pondCompleta;sumUsada+=pondUsada;
@@ -2258,6 +2406,8 @@ async function guardarServicio(){
   const {data:savedDets,error:de}=await sb.from('servicio_detalles').insert(detalles).select();
   if(de){toast('Error en detalles: '+de.message,'ti-alert-triangle');return}
   if(savedDets) svcDet.push(...savedDets);
+  // Generar/sincronizar los pagos de este servicio (cobrables de inmediato)
+  try{await syncPagosServicio(svc,svcCalc.rows,iniDate,finDate);}catch(e){console.warn('pagos servicio (no bloqueante):',e.message||e);}
   // Registrar / actualizar / borrar el gasto de apoyo en Finanzas
   await syncApoyoGasto(svc,apoyo);
   editingSvcId=null;
@@ -2417,6 +2567,11 @@ async function elimServicio(){
   // Borrar el gasto de apoyo ligado en Finanzas (si existe) para no dejarlo huérfano
   const svc=servicios.find(s=>s.id===editSvcId);
   if(svc&&svc.apoyo_gasto_id){try{await finLoad();if(gastosOp.find(g=>g.id===svc.apoyo_gasto_id))await finDelRow('gastos_operacion',svc.apoyo_gasto_id);if(document.getElementById('fin-app'))finRenderAll();}catch(e){}}
+  // Borrar los pagos NO cobrados generados por este servicio; los cobrados quedan como historial
+  try{
+    await sb.from('pagos').delete().eq('servicio_id',editSvcId).eq('pagado',0);
+    pagos=pagos.filter(p=>!(p.servicio_id===editSvcId&&Number(p.pagado)===0));
+  }catch(e){console.warn('pagos servicio (no bloqueante):',e.message||e);}
   await sb.from('servicio_detalles').delete().eq('servicio_id',editSvcId);
   await sb.from('servicios').delete().eq('id',editSvcId);
   closeM('m-svc-det');toast('Servicio eliminado','ti-trash');
@@ -2468,7 +2623,9 @@ function verEC(inmId){
 //  CONFIGURACIÓN DEL NEGOCIO
 // ═══════════════════════════════════════
 async function cargarConfig(){
-  const {data}=await sb.from('workspaces').select('empresa,nombre_cobrador,direccion,clabe,cuenta_scotiabank,tarjeta_oxxo').eq('id',CW.id).single();
+  // Compat: si la columna dias_tolerancia aún no existe, reintenta sin ella
+  let {data,error}=await sb.from('workspaces').select('empresa,nombre_cobrador,direccion,clabe,cuenta_scotiabank,tarjeta_oxxo,dias_tolerancia').eq('id',CW.id).single();
+  if(error)({data}=await sb.from('workspaces').select('empresa,nombre_cobrador,direccion,clabe,cuenta_scotiabank,tarjeta_oxxo').eq('id',CW.id).single());
   if(!data)return;
   CW.cfg=data;
   document.getElementById('cfg-empresa').value=data.empresa||'';
@@ -2477,11 +2634,19 @@ async function cargarConfig(){
   document.getElementById('cfg-clabe').value=data.clabe||'';
   document.getElementById('cfg-scott').value=data.cuenta_scotiabank||'';
   document.getElementById('cfg-oxxo').value=data.tarjeta_oxxo||'';
+  const tolEl=document.getElementById('cfg-tol');if(tolEl)tolEl.value=data.dias_tolerancia??3;
+  refresh(); // re-pintar con la tolerancia real (badges/alertas)
 }
 async function guardarConfig(){
-  const d={empresa:document.getElementById('cfg-empresa').value||'InmoPagos',nombre_cobrador:document.getElementById('cfg-cobrador').value||'',direccion:document.getElementById('cfg-dir').value||'',clabe:document.getElementById('cfg-clabe').value||'',cuenta_scotiabank:document.getElementById('cfg-scott').value||'',tarjeta_oxxo:document.getElementById('cfg-oxxo').value||''};
-  await sb.from('workspaces').update(d).eq('id',CW.id);
-  CW.cfg=d;toast('Configuración guardada');
+  const tolV=document.getElementById('cfg-tol')?.value;
+  const tol=tolV===''||tolV==null?3:Math.max(0,Math.min(30,parseInt(tolV)||0));
+  const d={empresa:document.getElementById('cfg-empresa').value||'InmoPagos',nombre_cobrador:document.getElementById('cfg-cobrador').value||'',direccion:document.getElementById('cfg-dir').value||'',clabe:document.getElementById('cfg-clabe').value||'',cuenta_scotiabank:document.getElementById('cfg-scott').value||'',tarjeta_oxxo:document.getElementById('cfg-oxxo').value||'',dias_tolerancia:tol};
+  let {error}=await sb.from('workspaces').update(d).eq('id',CW.id);
+  // Compat: si la columna dias_tolerancia aún no existe, guarda el resto sin romper
+  if(error&&/dias_tolerancia/i.test(error.message||'')){const{dias_tolerancia:_t,...d2}=d;({error}=await sb.from('workspaces').update(d2).eq('id',CW.id));if(!error)toast('Guardado (corre la migración SQL para activar la tolerancia)','ti-alert-triangle');}
+  else if(!error)toast('Configuración guardada');
+  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  CW.cfg=d;refresh();
 }
 
 // ═══════════════════════════════════════
@@ -2653,10 +2818,8 @@ function abrirPago(inmId){
   const sel=document.getElementById('fp-dep');
   sel.innerHTML='<option value="">Seleccionar...</option>'+inmuebles.map(i=>`<option value="${i.id}"${i.id===inmId?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
   pobContratosPago();
-  if(inmId){const c=contratoVigente(inmId)||getInm(inmId);if(c){document.getElementById('fp-mto').value=c.renta||'';document.getElementById('fp-con').value='renta'}}
-  else{document.getElementById('fp-mto').value='';document.getElementById('fp-con').value='renta'}
+  document.getElementById('fp-mto').value='';document.getElementById('fp-con').value='mantenimiento';
   document.getElementById('fp-pag').value='';
-  document.getElementById('fp-venc').value=new Date().toISOString().split('T')[0];
   document.getElementById('fp-fpag').value='';document.getElementById('fp-not').value='';
   openM('m-pago');
 }
@@ -2665,20 +2828,25 @@ function abrirEditPago(id){
   document.getElementById('mp-ttl').textContent='Editar pago';document.getElementById('btn-del-p').style.display='inline-flex';
   const sel=document.getElementById('fp-dep');sel.innerHTML=inmuebles.map(i=>`<option value="${i.id}"${i.id===p.inmueble_id?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
   pobContratosPago(p.contrato_id||'');
-  document.getElementById('fp-con').value=p.concepto;document.getElementById('fp-mto').value=p.monto;document.getElementById('fp-pag').value=p.pagado;document.getElementById('fp-venc').value=p.vencimiento;document.getElementById('fp-fpag').value=p.fecha_pago||'';document.getElementById('fp-not').value=p.notas||'';
+  document.getElementById('fp-con').value=p.concepto;document.getElementById('fp-mto').value=p.monto;document.getElementById('fp-pag').value=p.pagado;document.getElementById('fp-fpag').value=p.fecha_pago||'';document.getElementById('fp-not').value=p.notas||'';
   openM('m-pago');
 }
 async function guardarPago(){
-  const inmueble_id=document.getElementById('fp-dep').value,monto=parseFloat(document.getElementById('fp-mto').value)||0,pagado=Math.min(parseFloat(document.getElementById('fp-pag').value)||0,monto),vencimiento=document.getElementById('fp-venc').value;
-  if(!inmueble_id||!monto||!vencimiento){toast('Completa los campos requeridos','ti-alert-triangle');return}
+  const inmueble_id=document.getElementById('fp-dep').value,monto=parseFloat(document.getElementById('fp-mto').value)||0,pagado=Math.min(parseFloat(document.getElementById('fp-pag').value)||0,monto);
+  if(!inmueble_id||!monto){toast('Completa los campos requeridos','ti-alert-triangle');return}
+  // Sin campo de vencimiento: al editar se conserva; al crear, el cargo cae en el mes visible
+  let vencimiento;
+  if(editPagoId){vencimiento=pagos.find(x=>x.id===editPagoId)?.vencimiento||hoyISO();}
+  else{const hoy=new Date();vencimiento=(hoy.getMonth()===vM&&hoy.getFullYear()===vY)?hoyISO():`${vY}-${String(vM+1).padStart(2,'0')}-01`;}
   const contrato_id=(document.getElementById('fp-contrato')?.value)||null;
-  const d={workspace_id:CW.id,inmueble_id,contrato_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null};
+  const d={workspace_id:CW.id,inmueble_id,contrato_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null,...(editPagoId?{}:{origen:'manual'})};
   const doSave=(row)=>editPagoId
     ? sb.from('pagos').update(row).eq('id',editPagoId).select().single()
     : sb.from('pagos').insert(row).select().single();
   let {data:savedPago,error}=await doSave(d);
-  // Compat: si la columna contrato_id aún no existe en la BD, reintenta sin ella
-  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_,...d2}=d;({data:savedPago,error}=await doSave(d2));}
+  // Compat: si las columnas nuevas aún no existen en la BD, reintenta sin ellas
+  if(error&&/origen|omitido|servicio_id/i.test(error.message||'')){const{origen:_o,...d1}=d;({data:savedPago,error}=await doSave(d1));}
+  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_,origen:_o2,...d2}=d;({data:savedPago,error}=await doSave(d2));}
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
   if(editPagoId){const idx=pagos.findIndex(x=>x.id===editPagoId);if(idx!==-1)pagos[idx]=savedPago;}
   else{pagos.unshift(savedPago);}
@@ -2686,7 +2854,19 @@ async function guardarPago(){
   if(Number(savedPago.pagado)>=Number(savedPago.monto)&&Number(savedPago.monto)>0)lanzarConfetti(window.innerWidth/2,window.innerHeight/2);
   refresh();
 }
-async function elimPago(){if(!confirm('¿Eliminar este pago?'))return;await sb.from('pagos').delete().eq('id',editPagoId);closeM('m-pago');toast('Pago eliminado','ti-trash')}
+async function elimPago(){
+  const p=pagos.find(x=>x.id===editPagoId);if(!p)return;
+  const esAuto=(p.origen||'').startsWith('auto');
+  if(!confirm(esAuto?'¿Eliminar este pago automático? No se volverá a generar para este mes (puedes crearlo a mano si te arrepientes).':'¿Eliminar este pago?'))return;
+  if(esAuto){
+    // Tombstone: se marca omitido para que el motor no lo regenere. El usuario manda.
+    const {error}=await sb.from('pagos').update({omitido:true}).eq('id',p.id);
+    if(error)await sb.from('pagos').delete().eq('id',p.id); // compat sin columna omitido
+    else pagosOmit.push({...p,omitido:true});
+  }else await sb.from('pagos').delete().eq('id',editPagoId);
+  pagos=pagos.filter(x=>x.id!==editPagoId);
+  closeM('m-pago');toast('Pago eliminado','ti-trash');refresh();
+}
 
 // ═══════════════════════════════════════
 //  CRUD INMUEBLES
@@ -2733,8 +2913,10 @@ function abrirInm(id){
     document.getElementById('fi-ren').value=c.renta||'';document.getElementById('fi-dia').value=c.dia||'';document.getElementById('fi-per').value=c.personas||1;
     document.getElementById('fi-fini').value=c.fecha_inicio_contrato||'';document.getElementById('fi-fter').value=c.fecha_termino_contrato||'';document.getElementById('fi-fsal').value=c.fecha_salida||'';
     document.getElementById('fi-not').value=i.notas||''}
-  else['fi-num','fi-pis','fi-inq','fi-tel','fi-em','fi-ren','fi-dia','fi-fini','fi-fter','fi-fsal','fi-not'].forEach(x=>document.getElementById(x).value='');
+  else['fi-num','fi-pis','fi-inq','fi-tel','fi-em','fi-ren','fi-dia','fi-fini','fi-fter','fi-fsal','fi-not','fi-dep'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('fi-per').value=document.getElementById('fi-per').value||1;
+  // El depósito solo se captura al crear (contrato nuevo); al editar no aplica
+  const dw=document.getElementById('fi-dep-wrap');if(dw)dw.style.display=id?'none':'';
   openM('m-inm');
 }
 // Asignar un nuevo inquilino/contrato a un espacio (normalmente desocupado)
@@ -2744,7 +2926,8 @@ function abrirNuevoContrato(inmId){
   document.getElementById('mi-ttl').textContent=`Nuevo contrato · Depto. ${inm.num}`;
   document.getElementById('btn-del-i').style.display='none';
   const bs=document.getElementById('btn-salida-i');if(bs)bs.style.display='none';
-  ['fi-inq','fi-tel','fi-em','fi-ren','fi-dia','fi-fter','fi-fsal','fi-not'].forEach(x=>document.getElementById(x).value='');
+  ['fi-inq','fi-tel','fi-em','fi-ren','fi-dia','fi-fter','fi-fsal','fi-not','fi-dep'].forEach(x=>document.getElementById(x).value='');
+  const dwN=document.getElementById('fi-dep-wrap');if(dwN)dwN.style.display='';
   document.getElementById('fi-num').value=inm.num;document.getElementById('fi-num').readOnly=true;
   document.getElementById('fi-pis').value=inm.piso||'';
   document.getElementById('fi-per').value=1;
@@ -2769,7 +2952,7 @@ async function guardarInm(){
       }
       const nuevo={...cf,fecha_salida:null};
       const {data,error}=await sb.from('contratos').insert({workspace_id:CW.id,inmueble_id:inmId,...nuevo}).select().single();
-      if(error)throw error;if(data)contratos.push(data);
+      if(error)throw error;if(data){contratos.push(data);await crearPagoDeposito(inmId,data.id);}
     }catch(e){toast('Error al crear contrato: '+(e.message||e),'ti-alert-triangle');return;}
     // Espejar el inmueble al nuevo inquilino y reocupar (limpiar salida)
     const d={num,piso:document.getElementById('fi-pis').value||null,...cf,fecha_salida:null};
@@ -2777,6 +2960,7 @@ async function guardarInm(){
     if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
     const idx=inmuebles.findIndex(x=>x.id===inmId);if(idx!==-1)inmuebles[idx]=savedInm;
     nuevoContratoInm=null;closeM('m-inm');toast('Contrato registrado · espacio ocupado');
+    await ensureAutoPagos(vY,vM); // la renta del nuevo contrato aparece de inmediato
     renderInm();refresh();return;
   }
   // ── Modo: editar o crear departamento (mirror del vigente) ──
@@ -2789,8 +2973,21 @@ async function guardarInm(){
   if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;inmId=editInmId;}
   else{inmuebles.push(savedInm);inmuebles.sort((a,b)=>a.num.localeCompare(b.num));inmId=savedInm.id;}
   await upsertContratoVigente(inmId,cf);
+  if(!editInmId)await crearPagoDeposito(inmId,contratoVigente(inmId)?.id||null); // depósito del alta
+  else await syncRentaPagos(inmId); // renta/día editados → actualizar pagos pendientes
+  await ensureAutoPagos(vY,vM);
   closeM('m-inm');toast(editInmId?'Departamento actualizado':'Departamento agregado');
   renderInm();refresh();
+}
+// Genera el pago del depósito en garantía capturado en el formulario de contrato (si hay monto)
+async function crearPagoDeposito(inmId,contratoId){
+  const dep=parseFloat(document.getElementById('fi-dep')?.value)||0;
+  if(dep<=0)return;
+  const d={workspace_id:CW.id,inmueble_id:inmId,contrato_id:contratoId,concepto:'deposito',monto:dep,pagado:0,vencimiento:hoyISO(),origen:'auto_deposito',notas:'Depósito en garantía del contrato'};
+  let {data,error}=await sb.from('pagos').insert(d).select().single();
+  if(error&&/origen|omitido|servicio_id/i.test(error.message||'')){const{origen:_o,...d1}=d;({data,error}=await sb.from('pagos').insert(d1).select().single());}
+  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_c,origen:_o2,...d2}=d;({data,error}=await sb.from('pagos').insert(d2).select().single());}
+  if(!error&&data)pagos.unshift(data);
 }
 // Registrar salida del inquilino vigente → libera el espacio (mirror + contrato)
 async function registrarSalidaVigente(){
@@ -2805,6 +3002,15 @@ async function registrarSalidaVigente(){
   const {data:savedInm,error}=await sb.from('inmuebles').update({fecha_salida:fecha}).eq('id',inmId).select().single();
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
   const idx=inmuebles.findIndex(x=>x.id===inmId);if(idx!==-1)inmuebles[idx]=savedInm;
+  // Limpiar rentas pendientes de meses POSTERIORES a la salida (el mes de salida se cobra completo)
+  try{
+    const fs=new Date(fecha+'T00:00:00');
+    const corteD=new Date(fs.getFullYear(),fs.getMonth()+1,1); // 1º del mes siguiente a la salida
+    const corteISO=`${corteD.getFullYear()}-${String(corteD.getMonth()+1).padStart(2,'0')}-01`;
+    const aBorrar=pagos.filter(p=>p.inmueble_id===inmId&&p.concepto==='renta'&&Number(p.pagado)===0&&p.vencimiento>=corteISO&&(c.id?(p.contrato_id===c.id||!p.contrato_id):!p.contrato_id));
+    for(const p of aBorrar){await sb.from('pagos').delete().eq('id',p.id);}
+    if(aBorrar.length)pagos=pagos.filter(p=>!aBorrar.some(b=>b.id===p.id));
+  }catch(e){console.warn('limpieza rentas salida:',e.message||e);}
   closeM('m-inm');toast('Salida registrada · espacio desocupado','ti-door-exit');
   renderInm();refresh();
 }
@@ -2917,20 +3123,24 @@ document.getElementById('sv-fin').addEventListener('change',calcSvcRows);
 // ═══════════════════════════════════════
 // Cuenta de alertas: replica EXACTAMENTE las condiciones de renderAl() sin mutarla.
 function contarAlertas(){
-  const t=new Date();t.setHours(0,0,0,0);let n=0;
+  const t=new Date();t.setHours(0,0,0,0);let n=0;const tol=getTolerancia();
   pagos.forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),est=getEstado(p),d=dB(t,v);
     if(est==='vencido')n++;
+    else if(est==='tolerancia')n++;
     else if(est==='pendiente'&&d>=0&&d<=3)n++;
     else if(est==='parcial')n++;
   });
   const mesAct=new Date();
   inmuebles.forEach(inm=>{
-    const diaP=inm.dia||1;
+    const vig=contratoVigente(inm.id);if(!vig)return;
+    const diaP=vig.dia||inm.dia||1;
     const fechaDia=new Date(mesAct.getFullYear(),mesAct.getMonth(),diaP);fechaDia.setHours(0,0,0,0);
-    if(dB(fechaDia,t)>3){
-      const tieneRenta=pagos.some(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inm.id&&p.concepto==='renta'&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)==='pagado';});
-      if(!tieneRenta)n++;
+    if(dB(fechaDia,t)>tol){
+      const esDelMes=p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inm.id&&p.concepto==='renta'&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()};
+      const tieneRenta=pagos.some(p=>esDelMes(p)&&getEstado(p)==='pagado');
+      const existeCargo=pagos.some(esDelMes)||pagosOmit.some(esDelMes);
+      if(!tieneRenta&&!existeCargo)n++;
     }
   });
   return n;
