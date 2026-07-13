@@ -1302,13 +1302,13 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
 <!-- Nuevo Servicio -->
 <div class="overlay" id="m-new-svc"><div class="modal lg">
-  <div class="mh"><h3><i class="ti ti-bolt" style="color:var(--amber)"></i>Registrar servicio</h3><button class="mc" onclick="closeM('m-new-svc')"><i class="ti ti-x"></i></button></div>
+  <div class="mh"><h3><i class="ti ti-bolt" style="color:var(--amber)"></i><span id="sv-modal-ttl">Registrar servicio</span></h3><button class="mc" onclick="closeM('m-new-svc')"><i class="ti ti-x"></i></button></div>
   <div class="fg-grid" style="margin-bottom:1rem">
     <div class="fg"><label>Tipo de servicio *</label><select id="sv-tipo"><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option></select></div>
     <div class="fg"><label>Monto total de la factura *</label><input type="number" id="sv-total" placeholder="0.00" step="0.01" min="0"></div>
     <div class="fg"><label>Inicio del período *</label><input type="date" id="sv-ini"></div>
     <div class="fg"><label>Fin del período *</label><input type="date" id="sv-fin"></div>
-    <div class="fg full"><label>Parte no usada (deptos que salieron / sin uso)</label><select id="sv-subsidio-modo" onchange="recalcAllSvc()"><option value="adeudo">Queda como adeudo de los inquilinos que salieron</option><option value="dueno">La aporta el dueño (administración)</option></select><span style="font-size:11px;color:var(--tx3);margin-top:3px;display:block">Cada inquilino paga solo sus días × personas sobre la ponderación completa del período; el resto se marca aquí.</span></div>
+    <div class="fg full"><label>Apoyo de administración (opcional)</label><input type="number" id="sv-apoyo" placeholder="0.00" step="0.01" min="0" oninput="recalcAllSvc()"><span style="font-size:11px;color:var(--tx3);margin-top:3px;display:block">Dinero que aporta el administrador para abaratar el recibo a los inquilinos. Se descuenta proporcionalmente entre los departamentos; el subsidio (deptos que salieron / sin uso) nunca se toca. Se registra automáticamente como gasto en Finanzas.</span></div>
     <div class="fg full"><label>Notas</label><input type="text" id="sv-not" placeholder="Ej: Factura CFE marzo-abril"></div>
   </div>
   <p style="font-size:13px;font-weight:600;margin-bottom:.75rem">Distribución por departamento <span style="font-weight:400;color:var(--tx2)">(días de uso × personas = ponderación)</span> <span id="sv-ocultos-nota" style="font-weight:400;color:var(--tx3);font-size:11.5px"></span></p>
@@ -1321,6 +1321,12 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
       <td id="sv-adm-pct" style="padding:10px 14px;font-weight:600"></td>
       <td id="sv-adm-mto" style="padding:10px 14px;font-weight:600"></td>
     </tr>
+    <tr id="sv-apoyo-row" style="background:var(--sf2);display:none">
+      <td colspan="5" style="font-weight:600;padding:10px 14px;color:#1D9E75"><i class="ti ti-heart-handshake" style="font-size:13px;vertical-align:-1px"></i> Apoyo de administración</td>
+      <td style="padding:10px 14px;font-weight:600">—</td>
+      <td id="sv-apoyo-pct" style="padding:10px 14px;font-weight:600"></td>
+      <td id="sv-apoyo-mto" style="padding:10px 14px;font-weight:600;color:#1D9E75"></td>
+    </tr>
     <tr style="background:var(--sf2)">
       <td colspan="5" style="font-weight:700;padding:10px 14px">TOTAL</td>
       <td id="sv-tot-pond" style="padding:10px 14px;font-weight:700"></td>
@@ -1330,7 +1336,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   </table></div></div>
   <div class="mf">
     <button class="btn" onclick="closeM('m-new-svc')">Cancelar</button>
-    <button class="btn primary" onclick="guardarServicio()"><i class="ti ti-check"></i>Guardar distribución</button>
+    <button class="btn primary" id="sv-save-btn" onclick="guardarServicio()"><i class="ti ti-check"></i><span id="sv-save-lbl">Guardar distribución</span></button>
   </div>
 </div></div>
 
@@ -1359,6 +1365,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div id="msv-body"></div>
   <div class="mf">
     <button class="btn danger" id="btn-del-svc" style="margin-right:auto" onclick="elimServicio()"><i class="ti ti-trash"></i>Eliminar</button>
+    <button class="btn" onclick="editarDistribucion(editSvcId)"><i class="ti ti-edit"></i>Editar distribución</button>
     <button class="btn" onclick="closeM('m-svc-det')">Cerrar</button>
   </div>
 </div></div>
@@ -1374,7 +1381,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let sb=null,CU=null,CW=null;
 let pagos=[],inmuebles=[],servicios=[],svcDet=[],contratos=[];
-let editPagoId=null,editInmId=null,editSvcId=null,nuevoContratoInm=null;
+let editPagoId=null,editInmId=null,editSvcId=null,editingSvcId=null,nuevoContratoInm=null;
 let vM=new Date().getMonth(),vY=new Date().getFullYear();
 let svcTipoFilter=null; // filtro visual del anillo de servicios (solo presentación)
 let svcSeleccion=null;  // null = todas las facturas en la gráfica; Set(ids) = solo las seleccionadas
@@ -2059,12 +2066,46 @@ function renderSvcList(){
 }
 
 function abrirNuevoSvc(){
+  editingSvcId=null;
   // Calcular días automáticamente
   const ini=document.getElementById('sv-ini'),fin=document.getElementById('sv-fin');
   [ini,fin].forEach(el=>{el.addEventListener('change',calcSvcRows)});
+  document.getElementById('sv-tipo').value='agua';
   document.getElementById('sv-ini').value='';document.getElementById('sv-fin').value='';
   document.getElementById('sv-total').value='';document.getElementById('sv-not').value='';
+  document.getElementById('sv-apoyo').value='';
+  document.getElementById('sv-modal-ttl').textContent='Registrar servicio';
+  document.getElementById('sv-save-lbl').textContent='Guardar distribución';
   calcSvcRows();openM('m-new-svc');
+}
+
+// Reabre el modal en modo EDICIÓN, precargado con los datos del servicio existente.
+function editarDistribucion(id){
+  const svc=servicios.find(s=>s.id===id);if(!svc)return;
+  closeM('m-svc-det');
+  editingSvcId=id;
+  const ini=document.getElementById('sv-ini'),fin=document.getElementById('sv-fin');
+  [ini,fin].forEach(el=>{el.addEventListener('change',calcSvcRows)});
+  document.getElementById('sv-tipo').value=svc.tipo;
+  document.getElementById('sv-total').value=svc.total;
+  document.getElementById('sv-ini').value=svc.periodo_ini;
+  document.getElementById('sv-fin').value=svc.periodo_fin;
+  document.getElementById('sv-not').value=svc.notas||'';
+  document.getElementById('sv-apoyo').value=Number(svc.apoyo_admin)>0?svc.apoyo_admin:'';
+  document.getElementById('sv-modal-ttl').textContent='Editar distribución';
+  document.getElementById('sv-save-lbl').textContent='Guardar cambios';
+  calcSvcRows(); // construye las filas según fechas actuales
+  // Sobreponer días/personas/aplica guardados (valores físicos; el apoyo se re-aplica solo)
+  const dets=svcDet.filter(d=>d.servicio_id===id&&!d.es_administracion);
+  inmuebles.forEach((inm,idx)=>{
+    const d=dets.find(x=>x.inmueble_id===inm.id);if(!d)return;
+    const diaEl=document.getElementById(`sv-dias-${idx}`),persEl=document.getElementById(`sv-pers-${idx}`),apEl=document.getElementById(`sv-aplica-${idx}`);
+    if(apEl)apEl.checked=(Number(d.ponderacion)>0||Number(d.dias_uso)>0);
+    if(diaEl)diaEl.value=d.dias_uso;
+    if(persEl)persEl.value=d.personas;
+  });
+  recalcAllSvc();
+  openM('m-new-svc');
 }
 
 // ¿Le aplica el servicio a este espacio según las fechas de su contrato (mirror del vigente)?
@@ -2125,13 +2166,12 @@ function calcSvcRows(){
 }
 
 function recalcSvc(){recalcAllSvc()}
-const SUBSIDIO_LBL={adeudo:'Subsidio — Adeudo de inquilinos que salieron / sin uso',dueno:'Subsidio — Aportación del dueño (administración)'};
+const SUB_LBL='Subsidio Administración y Deptos que salieron';
 function recalcAllSvc(){
   const total=parseFloat(document.getElementById('sv-total').value)||0;
   const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
   if(!iniStr||!finStr){svcCalc=null;return}
   const periodoIni=new Date(iniStr+'T00:00:00'),periodoFin=new Date(finStr+'T00:00:00');
-  const modo=document.getElementById('sv-subsidio-modo')?.value||'adeudo';
   // Reparto sobre PONDERACIÓN COMPLETA: cada depto paga sus días×personas sobre lo que
   // habría usado el edificio ocupado todo el período. La parte no usada va al subsidio.
   const rows=[];let sumCompleta=0,sumUsada=0;
@@ -2146,23 +2186,34 @@ function recalcAllSvc(){
     sumCompleta+=pondCompleta;sumUsada+=pondUsada;
     rows.push({idx,inm,aplica:info.aplica&&(!enModal||manualOn),diasUso:enModal?(manualOn?dias:0):0,pers,pondUsada,pondCompleta,motivo:info.motivo,visible:enModal});
   });
+  // Montos BASE (antes del apoyo). El subsidio se calcula sobre estos → el apoyo nunca lo toca.
   let sumMto=0;
+  rows.forEach(r=>{r.pct=sumCompleta>0?r.pondUsada/sumCompleta:0;r.montoBase=r.pct*total;sumMto+=r.montoBase;});
+  // Subsidio por RESTA para que siempre cuadre al centavo con el total de la factura
+  const subPond=sumCompleta-sumUsada,subMto=Math.max(0,total-sumMto),subPct=sumCompleta>0?subPond/sumCompleta:0;
+  // Apoyo de administración: dinero del admin que abarata SOLO la parte de los departamentos.
+  // Se reparte proporcional al monto de cada depto. Tope = lo que deben los deptos (sumMto);
+  // el subsidio JAMÁS recibe apoyo.
+  let apoyo=parseFloat(document.getElementById('sv-apoyo')?.value)||0;
+  apoyo=Math.min(Math.max(0,apoyo),Math.round(sumMto*100)/100);
+  const f=sumMto>0?(1-apoyo/sumMto):0;
   rows.forEach(r=>{
-    r.pct=sumCompleta>0?r.pondUsada/sumCompleta:0;
-    r.monto=r.pct*total;sumMto+=r.monto;
+    r.monto=r.montoBase*f; // monto final ya con el apoyo aplicado
     if(!r.visible)return;
     const pEl=document.getElementById(`sv-pond-${r.idx}`),pcEl=document.getElementById(`sv-pct-${r.idx}`),mEl=document.getElementById(`sv-mto-${r.idx}`);
     if(pEl)pEl.textContent=r.pondUsada;if(pcEl)pcEl.textContent=Math.round(r.pct*100)+'%';if(mEl)mEl.textContent=fmt(r.monto);
   });
-  // Subsidio por RESTA para que siempre cuadre al centavo con el total de la factura
-  const subPond=sumCompleta-sumUsada,subMto=Math.max(0,total-sumMto),subPct=sumCompleta>0?subPond/sumCompleta:0;
-  const lbl=document.getElementById('sv-adm-lbl');if(lbl)lbl.textContent=SUBSIDIO_LBL[modo];
+  const lbl=document.getElementById('sv-adm-lbl');if(lbl)lbl.textContent=SUB_LBL;
   document.getElementById('sv-adm-pond').textContent=subPond;
   document.getElementById('sv-adm-pct').textContent=Math.round(subPct*100)+'%';
   document.getElementById('sv-adm-mto').textContent=fmt(subMto);
+  // Fila de apoyo (solo visible cuando hay apoyo > 0)
+  const apoyoRow=document.getElementById('sv-apoyo-row');
+  if(apoyoRow){apoyoRow.style.display=apoyo>0?'':'none';
+    if(apoyo>0){document.getElementById('sv-apoyo-pct').textContent=(total>0?Math.round(apoyo/total*100):0)+'%';document.getElementById('sv-apoyo-mto').textContent='−'+fmt(apoyo);}}
   document.getElementById('sv-tot-pond').textContent=sumCompleta;
   document.getElementById('sv-tot-mto').textContent=fmt(total);
-  svcCalc={rows,subsidio:{pond:subPond,pct:subPct,monto:subMto},modo,sumCompleta,total};
+  svcCalc={rows,subsidio:{pond:subPond,pct:subPct,monto:subMto},apoyo,sumMto,sumCompleta,total};
 }
 
 document.getElementById('sv-total').addEventListener('input',recalcAllSvc);
@@ -2175,24 +2226,78 @@ async function guardarServicio(){
   if(!svcCalc){toast('Revisa las fechas del período','ti-alert-triangle');return}
   const iniDate=new Date(iniStr+'T00:00:00'),finDate=new Date(finStr+'T00:00:00');
   const dias=Math.max(1,dB(iniDate,finDate)+1);
-  const row={workspace_id:CW.id,tipo,total,periodo_ini:iniStr,periodo_fin:finStr,dias_servicio:dias,mes:iniDate.getMonth(),anio:iniDate.getFullYear(),subsidio_modo:svcCalc.modo,notas:document.getElementById('sv-not').value||null};
-  let {data:svc,error:se}=await sb.from('servicios').insert(row).select().single();
-  // Compat: si la columna subsidio_modo aún no existe, reintenta sin ella
-  if(se&&/subsidio_modo/i.test(se.message||'')){const{subsidio_modo:_,...r2}=row;({data:svc,error:se}=await sb.from('servicios').insert(r2).select().single());}
-  if(se){toast('Error: '+se.message,'ti-alert-triangle');return}
+  const apoyo=svcCalc.apoyo||0;
+  const editing=editingSvcId;
+  const base={workspace_id:CW.id,tipo,total,periodo_ini:iniStr,periodo_fin:finStr,dias_servicio:dias,mes:iniDate.getMonth(),anio:iniDate.getFullYear(),notas:document.getElementById('sv-not').value||null,apoyo_admin:apoyo};
+  let svc;
+  if(editing){
+    // ── EDICIÓN: actualiza el servicio y reemplaza sus detalles ──
+    const prev=servicios.find(s=>s.id===editing);
+    const patch={...base,apoyo_gasto_id:prev?(prev.apoyo_gasto_id||null):null};
+    let {data,error:ue}=await sb.from('servicios').update(patch).eq('id',editing).select().single();
+    if(ue&&/apoyo_admin|apoyo_gasto_id/i.test(ue.message||'')){const{apoyo_admin:_a,apoyo_gasto_id:_g,...p2}=patch;({data,error:ue}=await sb.from('servicios').update(p2).eq('id',editing).select().single());}
+    if(ue){toast('Error: '+ue.message,'ti-alert-triangle');return}
+    svc=data;
+    await sb.from('servicio_detalles').delete().eq('servicio_id',editing);
+    svcDet=svcDet.filter(d=>d.servicio_id!==editing);
+    const k=servicios.findIndex(s=>s.id===editing);if(k>-1)servicios[k]=svc;
+  }else{
+    // ── ALTA: inserta un servicio nuevo ──
+    let {data,error:se}=await sb.from('servicios').insert(base).select().single();
+    // Compat: si las columnas de apoyo aún no existen, reintenta sin ellas
+    if(se&&/apoyo_admin|apoyo_gasto_id/i.test(se.message||'')){const{apoyo_admin:_a,...r2}=base;({data,error:se}=await sb.from('servicios').insert(r2).select().single());}
+    if(se){toast('Error: '+se.message,'ti-alert-triangle');return}
+    svc=data;servicios.unshift(svc);
+  }
 
   // Guardar TODAS las filas (incluidas las que no aplican, con 0) para poder regenerar el PNG,
-  // más la fila de subsidio (es_administracion) con su ponderación no usada.
+  // más la fila de subsidio (es_administracion) con su ponderación no usada. Los montos ya
+  // vienen con el apoyo aplicado.
   const detalles=svcCalc.rows.map(r=>({servicio_id:svc.id,workspace_id:CW.id,inmueble_id:r.inm.id,dias_uso:r.diasUso,personas:r.pers,ponderacion:r.pondUsada,porcentaje:r.pct,monto:r.monto}));
   detalles.push({servicio_id:svc.id,workspace_id:CW.id,inmueble_id:null,dias_uso:0,personas:0,ponderacion:svcCalc.subsidio.pond,porcentaje:svcCalc.subsidio.pct,monto:svcCalc.subsidio.monto,es_administracion:true});
   const {data:savedDets,error:de}=await sb.from('servicio_detalles').insert(detalles).select();
   if(de){toast('Error en detalles: '+de.message,'ti-alert-triangle');return}
-  servicios.unshift(svc);
   if(savedDets) svcDet.push(...savedDets);
+  // Registrar / actualizar / borrar el gasto de apoyo en Finanzas
+  await syncApoyoGasto(svc,apoyo);
+  editingSvcId=null;
   closeM('m-new-svc');
-  toast('Servicio registrado · generando imagen…');
+  toast(editing?'Distribución actualizada · generando imagen…':'Servicio registrado · generando imagen…');
   generarSvcPNG(svc.id);
   renderSvcList();refresh();
+}
+
+// Categoría dedicada para el apoyo del administrador (se crea una sola vez por workspace)
+async function ensureApoyoCat(){
+  await finLoad();
+  let cat=gastoCats.find(c=>c.clave==='apoyo_admin');
+  if(!cat){try{cat=await finIns('gasto_categorias',{workspace_id:CW.id,nombre:'Apoyo de administración (servicios)',clave:'apoyo_admin'});}catch(e){cat=gastoCats.find(c=>c.clave==='apoyo_admin');}}
+  return cat;
+}
+// Mantiene sincronizado el gasto de Finanzas con el apoyo del servicio (crea/edita/borra)
+async function syncApoyoGasto(svc,apoyo){
+  try{
+    await finLoad();
+    const NOM={agua:'Agua',luz:'Luz',gas:'Gas'};
+    const fc=s=>{const d=new Date(s+'T00:00:00');return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`};
+    const desc=`Apoyo administración — ${NOM[svc.tipo]||svc.tipo} ${fc(svc.periodo_ini)}–${fc(svc.periodo_fin)}`;
+    const prevId=svc.apoyo_gasto_id;
+    if(apoyo>0){
+      const cat=await ensureApoyoCat();
+      const row={workspace_id:CW.id,inmueble_id:null,categoria_id:cat?cat.id:null,categoria:'apoyo_admin',monto:apoyo,fecha:svc.periodo_ini,descripcion:desc};
+      if(prevId&&gastosOp.find(g=>g.id===prevId)){await finUpd('gastos_operacion',prevId,row);}
+      else{const g=await finIns('gastos_operacion',row);await svcSetApoyoGasto(svc,g.id);}
+    }else if(prevId){
+      if(gastosOp.find(g=>g.id===prevId))await finDelRow('gastos_operacion',prevId);
+      await svcSetApoyoGasto(svc,null);
+    }
+    finLSave();if(document.getElementById('fin-app'))finRenderAll();
+  }catch(e){toast('Servicio guardado, pero no se pudo sincronizar el gasto en Finanzas: '+(e.message||e),'ti-alert-triangle');}
+}
+async function svcSetApoyoGasto(svc,gid){
+  svc.apoyo_gasto_id=gid;
+  const k=servicios.findIndex(s=>s.id===svc.id);if(k>-1)servicios[k].apoyo_gasto_id=gid;
+  try{await sb.from('servicios').update({apoyo_gasto_id:gid}).eq('id',svc.id);}catch(e){}
 }
 
 async function verServicio(id){
@@ -2212,7 +2317,8 @@ async function verServicio(id){
     </div>
     <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Días</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ Pagar</th></tr></thead>
     <tbody>${det.filter(d=>Number(d.ponderacion)>0).map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((Number(d.ponderacion)/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
-    ${adm?`<tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px">${SUBSIDIO_LBL[svc.subsidio_modo||'adeudo']}</td><td style="font-weight:600;padding:10px 14px">${adm.ponderacion}</td><td style="font-weight:600;padding:10px 14px">${Math.round(Number(adm.porcentaje)*100)}%</td><td style="font-weight:600;padding:10px 14px">${fmt(adm.monto)}</td></tr>`:''}
+    <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px">${SUB_LBL}</td><td style="font-weight:600;padding:10px 14px">${adm?adm.ponderacion:0}</td><td style="font-weight:600;padding:10px 14px">${adm?Math.round(Number(adm.porcentaje)*100):0}%</td><td style="font-weight:600;padding:10px 14px">${fmt(adm?adm.monto:0)}</td></tr>
+    ${Number(svc.apoyo_admin)>0?`<tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px;color:#1D9E75"><i class="ti ti-heart-handshake"></i> Apoyo de administración</td><td style="font-weight:600;padding:10px 14px">—</td><td style="font-weight:600;padding:10px 14px">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td><td style="font-weight:600;padding:10px 14px;color:#1D9E75">−${fmt(svc.apoyo_admin)}</td></tr>`:''}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:700;padding:10px 14px">TOTAL</td><td style="font-weight:700;padding:10px 14px">${sumPond}</td><td style="font-weight:700;padding:10px 14px">100%</td><td style="font-weight:700;padding:10px 14px">${fmt(svc.total)}</td></tr>
     </tbody></table></div></div>`;
   openM('m-svc-det');
@@ -2270,11 +2376,17 @@ async function generarSvcPNG(svcId){
       </tr></thead>
       <tbody>
         ${filas}
-        ${adm?`<tr>
-          <td colspan="5" style="${B};font-weight:700">${SUBSIDIO_LBL[svc.subsidio_modo||'adeudo']}</td>
-          <td style="${B};text-align:center;font-weight:700">${adm.ponderacion}</td>
+        <tr>
+          <td colspan="5" style="${B};font-weight:700">${SUB_LBL}</td>
+          <td style="${B};text-align:center;font-weight:700">${adm?adm.ponderacion:0}</td>
           <td style="${B};text-align:center;font-weight:700">${subPct}%</td>
-          <td style="${B};text-align:right;font-weight:700">${fmt(adm.monto)}</td>
+          <td style="${B};text-align:right;font-weight:700">${fmt(adm?adm.monto:0)}</td>
+        </tr>
+        ${Number(svc.apoyo_admin)>0?`<tr>
+          <td colspan="5" style="${B};font-weight:700;color:#0A6B4B">Apoyo de administración</td>
+          <td style="${B};text-align:center;font-weight:700">—</td>
+          <td style="${B};text-align:center;font-weight:700">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td>
+          <td style="${B};text-align:right;font-weight:700;color:#0A6B4B">−${fmt(svc.apoyo_admin)}</td>
         </tr>`:''}
         <tr>
           <td colspan="5" style="${B};font-weight:700;background:#F1EFE8">TOTAL</td>
@@ -2284,7 +2396,7 @@ async function generarSvcPNG(svcId){
         </tr>
       </tbody>
     </table>
-    <div style="margin-top:12px;font-size:11.5px;color:#55514A">${(svc.subsidio_modo||'adeudo')==='dueno'?'La parte no usada del período la aporta la administración; cada inquilino paga únicamente sus días de uso × personas.':'Cada inquilino paga únicamente sus días de uso × personas. La parte marcada como subsidio corresponde a los departamentos que salieron o no tuvieron uso en el período.'} · Generado con InmoPagos · ${new Date().toLocaleDateString('es-MX')}</div>`;
+    <div style="margin-top:12px;font-size:11.5px;color:#55514A">Cada inquilino paga únicamente sus días de uso × personas. El subsidio corresponde a los departamentos que salieron o no tuvieron uso en el período.${Number(svc.apoyo_admin)>0?' El apoyo de administración lo aporta el administrador para abaratar el recibo a los inquilinos.':''} · Generado con InmoPagos · ${new Date().toLocaleDateString('es-MX')}</div>`;
   document.body.appendChild(node);
   try{
     const canvas=await html2canvas(node,{scale:2,backgroundColor:'#FFFFFF'});
@@ -2302,6 +2414,9 @@ async function generarSvcPNG(svcId){
 
 async function elimServicio(){
   if(!confirm('¿Eliminar este servicio y su distribución?'))return;
+  // Borrar el gasto de apoyo ligado en Finanzas (si existe) para no dejarlo huérfano
+  const svc=servicios.find(s=>s.id===editSvcId);
+  if(svc&&svc.apoyo_gasto_id){try{await finLoad();if(gastosOp.find(g=>g.id===svc.apoyo_gasto_id))await finDelRow('gastos_operacion',svc.apoyo_gasto_id);if(document.getElementById('fin-app'))finRenderAll();}catch(e){}}
   await sb.from('servicio_detalles').delete().eq('servicio_id',editSvcId);
   await sb.from('servicios').delete().eq('id',editSvcId);
   closeM('m-svc-det');toast('Servicio eliminado','ti-trash');
