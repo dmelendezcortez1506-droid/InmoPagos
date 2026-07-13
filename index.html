@@ -604,7 +604,7 @@ tbody tr:hover td{background:var(--hover)}
 .mode-menu.open{display:block;animation:modalUp .22s cubic-bezier(.16,1,.3,1) both}
 .mode-opt{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;border:none;background:none;font-family:inherit;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s}
 .mode-tag{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.12em;padding:2px 8px;border-radius:5px;width:max-content}
-#mode-menu{left:12px;top:64px;background:#FFFFFF;border:1px solid #E2E0D8;box-shadow:0 20px 50px rgba(26,25,23,.16)}
+#mode-menu{left:12px;top:112px;background:#FFFFFF;border:1px solid #E2E0D8;box-shadow:0 20px 50px rgba(26,25,23,.16)}
 #mode-menu .mode-opt:hover{background:#F6F5F0}
 #mode-menu .mode-desc{font-size:12px;color:#6B6963}
 #fin-menu{left:14px;top:58px;background:#131022;border:1px solid rgba(139,92,246,.35);box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(139,92,246,.15)}
@@ -612,6 +612,9 @@ tbody tr:hover td{background:var(--hover)}
 #fin-menu .mode-desc{font-size:12px;color:#8E89A8}
 .mode-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit;flex-shrink:0}
 .mode-btn:hover{background:#F1EFE8;color:#1A1917}
+/* Píldora del modo Finanzas (sidebar de gestión): más grande y reconocible */
+.fin-pill{width:auto;height:auto;gap:5px;padding:6px 10px;border:1px solid #DDD6FE;background:#EDE9FE;color:#5B21B6;border-radius:9px;font-size:11.5px;font-weight:700;letter-spacing:.02em}
+.fin-pill:hover{background:#DDD6FE;color:#4C1D95;border-color:#C4B5FD}
 
 #fin-app{position:fixed;inset:0;z-index:460;display:none;flex-direction:column;background:#08070E;color:#EDEBFA;font-size:14px;overflow:hidden}
 #fin-app::before{content:'';position:absolute;inset:0;pointer-events:none;background:
@@ -721,12 +724,33 @@ CREATE TABLE inmuebles (
   dia integer DEFAULT 1,
   personas integer DEFAULT 1,
   notas text,
+  fecha_inicio_contrato date,
+  fecha_termino_contrato date,
+  fecha_salida date,
+  created_at timestamptz DEFAULT now()
+);
+-- Contratos: cada inquilino de un espacio (historial). El inmueble espeja al vigente.
+CREATE TABLE contratos (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  inmueble_id uuid REFERENCES inmuebles(id) ON DELETE CASCADE,
+  inquilino text NOT NULL,
+  tel text,
+  email text,
+  renta numeric DEFAULT 0,
+  dia integer DEFAULT 1,
+  personas integer DEFAULT 1,
+  fecha_inicio_contrato date,
+  fecha_termino_contrato date,
+  fecha_salida date,
+  notas text,
   created_at timestamptz DEFAULT now()
 );
 CREATE TABLE pagos (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
   inmueble_id uuid REFERENCES inmuebles(id) ON DELETE CASCADE,
+  contrato_id uuid REFERENCES contratos(id) ON DELETE SET NULL,
   concepto text DEFAULT 'renta',
   monto numeric DEFAULT 0,
   pagado numeric DEFAULT 0,
@@ -745,6 +769,7 @@ CREATE TABLE servicios (
   dias_servicio integer,
   mes integer,
   anio integer,
+  subsidio_modo text DEFAULT 'adeudo',
   notas text,
   created_at timestamptz DEFAULT now()
 );
@@ -763,12 +788,14 @@ CREATE TABLE servicio_detalles (
 ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inmuebles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contratos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pagos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE servicios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE servicio_detalles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "ws" ON workspaces FOR ALL USING (id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
 CREATE POLICY "mem" ON memberships FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
 CREATE POLICY "inm" ON inmuebles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
+CREATE POLICY "con" ON contratos FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
 CREATE POLICY "pag" ON pagos FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
 CREATE POLICY "svc" ON servicios FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
 CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));</div></div></div>
@@ -844,13 +871,15 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <!-- ════ APP ════ -->
 <div id="s-app" class="screen">
 <aside style="width:236px;background:#FFFFFF;border-right:1px solid #E2E0D8;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto">
-  <div style="padding:18px 20px 16px;border-bottom:1px solid #EEECE4;display:flex;align-items:center;gap:10px;position:relative">
-    <img src="logoinmopagos.png" alt="InmoPagos" style="width:36px;height:27px;object-fit:contain" onerror="this.style.display='none'">
-    <div style="min-width:0;flex:1">
-      <div style="font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.2;display:flex;align-items:center;gap:6px">InmoPagos<span id="sb-dot" style="width:6px;height:6px;border-radius:50%;background:#9D9B96;display:inline-block" title="Conexión en tiempo real"></span></div>
-      <div style="font-size:11px;color:#9D9B96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-wsn">InmoPagos</div>
+  <div style="padding:18px 20px 14px;border-bottom:1px solid #EEECE4;position:relative">
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="logoinmopagos.png" alt="InmoPagos" style="width:36px;height:27px;object-fit:contain" onerror="this.style.display='none'">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.2;display:flex;align-items:center;gap:6px">InmoPagos<span id="sb-dot" style="width:6px;height:6px;border-radius:50%;background:#9D9B96;display:inline-block" title="Conexión en tiempo real"></span></div>
+        <div style="font-size:11px;color:#9D9B96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-wsn">InmoPagos</div>
+      </div>
     </div>
-    <button class="mode-btn" id="mode-btn" title="Cambiar de modo" aria-haspopup="menu" onclick="toggleModeMenu('mode-menu',event)"><i class="ti ti-selector" style="font-size:13px"></i></button>
+    <button class="mode-btn fin-pill" id="mode-btn" style="width:100%;justify-content:center;margin-top:12px" title="Cambiar al modo Finanzas" aria-haspopup="menu" onclick="toggleModeMenu('mode-menu',event)"><i class="ti ti-chart-pie" style="font-size:15px"></i>Modo Finanzas<i class="ti ti-selector" style="font-size:12px;opacity:.65"></i></button>
     <div id="mode-menu" class="mode-menu" role="menu">
       <button class="mode-opt" role="menuitem" onclick="closeModeMenus()">
         <span style="display:flex;align-items:center;justify-content:space-between;width:100%"><span class="mode-tag" style="background:#E1F5EE;color:#085041;border:1px solid #BFE8D8">GESTIÓN</span><i class="ti ti-check" style="color:#1D9E75;font-size:14px"></i></span>
@@ -1220,7 +1249,8 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <div class="overlay" id="m-pago"><div class="modal">
   <div class="mh"><h3><i class="ti ti-receipt" style="color:var(--teal)"></i><span id="mp-ttl">Registrar pago</span></h3><button class="mc" onclick="closeM('m-pago')"><i class="ti ti-x"></i></button></div>
   <div class="fg-grid">
-    <div class="fg"><label>Departamento *</label><select id="fp-dep"></select></div>
+    <div class="fg"><label>Departamento *</label><select id="fp-dep" onchange="pobContratosPago()"></select></div>
+    <div class="fg"><label>Inquilino / contrato</label><select id="fp-contrato"></select></div>
     <div class="fg"><label>Concepto *</label><select id="fp-con"><option value="renta">Renta mensual</option><option value="servicios">Servicios (Agua+Luz+Gas)</option><option value="mantenimiento">Mantenimiento</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select></div>
     <div class="fg"><label>Monto total *</label><input type="number" id="fp-mto" placeholder="0.00" step="0.01" min="0"></div>
     <div class="fg"><label>Monto pagado</label><input type="number" id="fp-pag" placeholder="0.00" step="0.01" min="0"></div>
@@ -1254,8 +1284,19 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   </div>
   <div class="mf">
     <button class="btn danger" id="btn-del-i" style="display:none;margin-right:auto" onclick="elimInm()"><i class="ti ti-trash"></i>Eliminar</button>
+    <button class="btn" id="btn-salida-i" style="display:none" onclick="registrarSalidaVigente()"><i class="ti ti-door-exit"></i>Registrar salida</button>
     <button class="btn" onclick="closeM('m-inm')">Cancelar</button>
     <button class="btn primary" onclick="guardarInm()"><i class="ti ti-check"></i>Guardar</button>
+  </div>
+</div></div>
+
+<!-- Historial de contratos -->
+<div class="overlay" id="m-hist"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-history" style="color:var(--teal)"></i><span id="mhist-ttl">Historial de contratos</span></h3><button class="mc" onclick="closeM('m-hist')"><i class="ti ti-x"></i></button></div>
+  <div id="mhist-body" style="max-height:60vh;overflow:auto"></div>
+  <div class="mf">
+    <button class="btn" id="btn-hist-nuevo" onclick="histNuevoContrato()"><i class="ti ti-user-plus"></i>Nuevo contrato</button>
+    <button class="btn primary" onclick="closeM('m-hist')">Cerrar</button>
   </div>
 </div></div>
 
@@ -1267,14 +1308,15 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div class="fg"><label>Monto total de la factura *</label><input type="number" id="sv-total" placeholder="0.00" step="0.01" min="0"></div>
     <div class="fg"><label>Inicio del período *</label><input type="date" id="sv-ini"></div>
     <div class="fg"><label>Fin del período *</label><input type="date" id="sv-fin"></div>
+    <div class="fg full"><label>Parte no usada (deptos que salieron / sin uso)</label><select id="sv-subsidio-modo" onchange="recalcAllSvc()"><option value="adeudo">Queda como adeudo de los inquilinos que salieron</option><option value="dueno">La aporta el dueño (administración)</option></select><span style="font-size:11px;color:var(--tx3);margin-top:3px;display:block">Cada inquilino paga solo sus días × personas sobre la ponderación completa del período; el resto se marca aquí.</span></div>
     <div class="fg full"><label>Notas</label><input type="text" id="sv-not" placeholder="Ej: Factura CFE marzo-abril"></div>
   </div>
-  <p style="font-size:13px;font-weight:600;margin-bottom:.75rem">Distribución por departamento <span style="font-weight:400;color:var(--tx2)">(días de uso × personas = ponderación)</span></p>
+  <p style="font-size:13px;font-weight:600;margin-bottom:.75rem">Distribución por departamento <span style="font-weight:400;color:var(--tx2)">(días de uso × personas = ponderación)</span> <span id="sv-ocultos-nota" style="font-weight:400;color:var(--tx3);font-size:11.5px"></span></p>
   <div class="card"><div class="tw"><table>
     <thead><tr><th>Depto.</th><th>Inquilino</th><th>¿Aplica?</th><th>Días de uso</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ a pagar</th></tr></thead>
     <tbody id="sv-rows"></tbody>
     <tfoot><tr style="background:var(--sf2)">
-      <td colspan="5" style="font-weight:600;padding:10px 14px">Subsidio Administración</td>
+      <td colspan="5" id="sv-adm-lbl" style="font-weight:600;padding:10px 14px">Subsidio — Deptos que salieron / sin uso</td>
       <td id="sv-adm-pond" style="padding:10px 14px;font-weight:600"></td>
       <td id="sv-adm-pct" style="padding:10px 14px;font-weight:600"></td>
       <td id="sv-adm-mto" style="padding:10px 14px;font-weight:600"></td>
@@ -1323,6 +1365,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/motion@10.18.0/dist/motion.min.js"></script>
 <script>
 // ═══════════════════════════════════════
@@ -1330,10 +1373,11 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 // ═══════════════════════════════════════
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let sb=null,CU=null,CW=null;
-let pagos=[],inmuebles=[],servicios=[],svcDet=[];
-let editPagoId=null,editInmId=null,editSvcId=null;
+let pagos=[],inmuebles=[],servicios=[],svcDet=[],contratos=[];
+let editPagoId=null,editInmId=null,editSvcId=null,nuevoContratoInm=null;
 let vM=new Date().getMonth(),vY=new Date().getFullYear();
 let svcTipoFilter=null; // filtro visual del anillo de servicios (solo presentación)
+let svcSeleccion=null;  // null = todas las facturas en la gráfica; Set(ids) = solo las seleccionadas
 
 // ═══════════════════════════════════════
 //  SCREEN HELPERS
@@ -1357,6 +1401,60 @@ function fd(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateStri
 function fdS(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short'})}
 function getInm(id){return inmuebles.find(x=>x.id===id)||null}
 function dB(a,b){return Math.round((b-a)/86400000)}
+
+// ═══════════════════════════════════════
+//  CONTRATOS — espacio físico (inmueble) con historial de inquilinos
+//  El inmueble "espeja" (mirror) al contrato vigente para que el resto de la
+//  app siga leyendo inm.inquilino/renta/dia/etc sin cambios. Si un espacio
+//  aún no tiene filas en `contratos` (p.ej. antes de migrar), los helpers hacen
+//  FALLBACK a los campos del propio inmueble → comportamiento idéntico al actual.
+// ═══════════════════════════════════════
+function hoyISO(){return new Date().toISOString().split('T')[0]}
+function getContrato(id){return id?contratos.find(c=>c.id===id)||null:null}
+// Contratos de un espacio, orden cronológico ascendente (más antiguo = A, luego B, C…)
+function contratosDe(inmId){
+  return contratos.filter(c=>c.inmueble_id===inmId).sort((a,b)=>{
+    const da=(a.fecha_inicio_contrato||a.created_at||''),db=(b.fecha_inicio_contrato||b.created_at||'');
+    return da<db?-1:da>db?1:0;
+  });
+}
+// Contrato sintético a partir de los campos del inmueble (fallback sin migración)
+function contratoSintetico(inm){
+  if(!inm)return null;
+  return {id:null,_sintetico:true,inmueble_id:inm.id,workspace_id:inm.workspace_id,
+    inquilino:inm.inquilino,tel:inm.tel,email:inm.email,renta:inm.renta,dia:inm.dia,personas:inm.personas,
+    fecha_inicio_contrato:inm.fecha_inicio_contrato,fecha_termino_contrato:inm.fecha_termino_contrato,
+    fecha_salida:inm.fecha_salida,notas:inm.notas,created_at:inm.created_at};
+}
+// Contrato vigente: sin fecha_salida o fecha_salida >= hoy. Null si el espacio está desocupado.
+function contratoVigente(inmId){
+  const t=hoyISO(),cs=contratosDe(inmId);
+  if(cs.length){
+    const vig=cs.filter(c=>!c.fecha_salida||c.fecha_salida>=t);
+    return vig.length?vig[vig.length-1]:null; // el más reciente de los vigentes
+  }
+  const inm=getInm(inmId);if(!inm)return null;
+  if(inm.fecha_salida&&inm.fecha_salida<t)return null;
+  return contratoSintetico(inm);
+}
+function estaDesocupado(inmId){return !contratoVigente(inmId)}
+// Historial completo (incluye sintético si no hay filas migradas)
+function historialContratos(inmId){
+  const cs=contratosDe(inmId);
+  if(cs.length)return cs;
+  const inm=getInm(inmId);return inm?[contratoSintetico(inm)]:[];
+}
+// Etiqueta A/B/C… de un contrato dentro de su espacio (solo presentación: 8-A, 8-B…)
+function etiquetaContrato(inmId,cId){
+  const cs=historialContratos(inmId);
+  const idx=cs.findIndex(c=>c.id===cId);const k=idx<0?0:idx;
+  const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';return k<26?L[k]:String(k+1);
+}
+// Pagos atribuidos a un contrato (por contrato_id; si es sintético/null, todos los del espacio sin contrato_id)
+function pagosDeContrato(inmId,cId){
+  if(cId)return pagos.filter(p=>p.contrato_id===cId);
+  return pagos.filter(p=>p.inmueble_id===inmId&&!p.contrato_id);
+}
 
 // ── MOTION (animaciones; si el CDN no cargó, degrada a CSS sin romper nada) ──
 function mo(container){
@@ -1529,17 +1627,18 @@ function copiarCodigo(){navigator.clipboard?.writeText(CW.invite_code).then(()=>
 // ═══════════════════════════════════════
 async function cargarTodo(){
   const wsId=CW.id;
-  const [ri,rp,rs,rd]=await Promise.all([
+  const [ri,rp,rs,rd,rc]=await Promise.all([
     sb.from('inmuebles').select('*').eq('workspace_id',wsId).order('num'),
     sb.from('pagos').select('*').eq('workspace_id',wsId).order('vencimiento',{ascending:false}),
     sb.from('servicios').select('*').eq('workspace_id',wsId).order('created_at',{ascending:false}),
-    sb.from('servicio_detalles').select('*').eq('workspace_id',wsId)
+    sb.from('servicio_detalles').select('*').eq('workspace_id',wsId),
+    sb.from('contratos').select('*').eq('workspace_id',wsId).order('created_at',{ascending:true})
   ]);
-  inmuebles=ri.data||[];pagos=rp.data||[];servicios=rs.data||[];svcDet=rd.data||[];
+  inmuebles=ri.data||[];pagos=rp.data||[];servicios=rs.data||[];svcDet=rd.data||[];contratos=rc.data||[];
   refresh();
 }
 function suscribir(){
-  ['inmuebles','pagos','servicios','servicio_detalles'].forEach(tbl=>{
+  ['inmuebles','pagos','servicios','servicio_detalles','contratos'].forEach(tbl=>{
     sb.channel('ws-'+tbl+'-'+CW.id)
       .on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'workspace_id=eq.'+CW.id},async()=>{
         await cargarTodo();
@@ -1651,23 +1750,27 @@ function renderInm(){
     const tv=mp.some(p=>getEstado(p)==='vencido'),pct=tm?Math.round(pm/tm*100):0;
     const barC=pct===100?'#1D9E75':pct>=50?'#BA7517':'#E24B4A';
     const pctC=pct===100?'#1D9E75':tv?'#E24B4A':'#6B6963';
+    const desoc=estaDesocupado(i.id),vig=contratoVigente(i.id),nHist=historialContratos(i.id).length;
     let chipBg,chipC,chipIco,chipLbl,chipAnim='none';
-    if(tv){chipBg='#FCEBEB';chipC='#791F1F';chipIco='ti-alert-triangle';chipLbl='Vencido';chipAnim='pulseVenc 2.6s ease-in-out infinite';}
+    if(desoc){chipBg='#EDEBFE';chipC='#4B3F9E';chipIco='ti-door-exit';chipLbl='Desocupado';}
+    else if(tv){chipBg='#FCEBEB';chipC='#791F1F';chipIco='ti-alert-triangle';chipLbl='Vencido';chipAnim='pulseVenc 2.6s ease-in-out infinite';}
     else if(tm>0&&pct===100){chipBg='#E1F5EE';chipC='#085041';chipIco='ti-circle-check';chipLbl='Al día';}
     else if(tm>0){chipBg='#FAEEDA';chipC='#633806';chipIco='ti-clock';chipLbl='En proceso';}
     else{chipBg='#F1EFE8';chipC='#6B6963';chipIco='ti-minus';chipLbl='Sin cargos';}
+    const inqNombre=desoc?'Espacio disponible':(vig?.inquilino||i.inquilino||'—');
     const delay=(0.08+idx*0.06).toFixed(2)+'s';
     return`<div data-hs="transform:translateY(-3px);box-shadow:0 10px 30px rgba(26,25,23,.09),0 2px 8px rgba(26,25,23,.05);border-color:#CBC9C0" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s,border-color .18s">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0;color:#1A1917">${i.num}</div>
-        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.inquilino}</div><div style="font-size:12px;color:#9D9B96">Depto. ${i.num}${i.piso?` · Piso ${i.piso}`:''} · ${i.personas||1} personas · paga el día ${i.dia||'—'}</div></div>
-        <div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(i.renta)}</div><div style="font-size:11px;color:#9D9B96">/ mes</div></div>
+        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${desoc?';color:#9D9B96;font-style:italic':''}">${inqNombre}</div><div style="font-size:12px;color:#9D9B96">Depto. ${i.num}${i.piso?` · Piso ${i.piso}`:''}${desoc?` · ${nHist} contrato${nHist===1?'':'s'} en historial`:` · ${(vig?.personas||i.personas||1)} personas · paga el día ${vig?.dia||i.dia||'—'}`}</div></div>
+        <div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:500;font-family:'DM Mono',monospace${desoc?';color:#9D9B96':''}">${desoc?'—':fmt0(vig?.renta||i.renta)}</div><div style="font-size:11px;color:#9D9B96">${desoc?'sin renta':'/ mes'}</div></div>
       </div>
       ${tm>0?`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#9D9B96;margin-bottom:5px"><span>Cobranza ${MESES[vM].slice(0,3).toLowerCase()}</span><span style="font-family:'DM Mono',monospace;color:${pctC}">${pct}%</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden;margin-bottom:14px"><div style="height:100%;border-radius:4px;background:${barC};width:${pct}%;transform-origin:left;animation:growBar .8s cubic-bezier(.16,1,.3,1) ${delay} both"></div></div>`:'<div style="height:2px;margin-bottom:12px"></div>'}
       <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #EEECE4">
         <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${chipBg};color:${chipC};animation:${chipAnim}"><i class="ti ${chipIco}" style="font-size:11px"></i>${chipLbl}</span>
         <div style="margin-left:auto;display:flex;gap:6px">
-          <button title="Enviar recordatorio" onclick="abrirRecordatorio('${i.id}')" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>
+          ${desoc?`<button title="Asignar nuevo inquilino" onclick="abrirNuevoContrato('${i.id}')" data-hs="background:#EDEBFE;color:#4B3F9E;border-color:#CFC8FB" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-user-plus" style="font-size:15px"></i></button>`:`<button title="Enviar recordatorio" onclick="abrirRecordatorio('${i.id}')" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>`}
+          <button title="Ver historial de contratos" onclick="abrirHistorial('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-history" style="font-size:15px"></i></button>
           <button title="Nuevo pago" onclick="abrirPago('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-plus" style="font-size:15px"></i></button>
           <button title="Editar" onclick="abrirInm('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-pencil" style="font-size:15px"></i></button>
           <button title="Estado de cuenta PDF" onclick="generarPDF('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-file-type-pdf" style="font-size:15px"></i></button>
@@ -1691,12 +1794,14 @@ function renderAl(){
   });
   const mesAct=new Date();
   inmuebles.forEach(inm=>{
-    const diaP=inm.dia||1;
+    const vig=contratoVigente(inm.id);
+    if(!vig)return; // espacio desocupado → no se alerta renta
+    const diaP=vig.dia||inm.dia||1;
     const fechaDia=new Date(mesAct.getFullYear(),mesAct.getMonth(),diaP);fechaDia.setHours(0,0,0,0);
     const diasDespues=dB(fechaDia,t);
     if(diasDespues>3){
       const tieneRenta=pagos.some(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inm.id&&p.concepto==='renta'&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)==='pagado';});
-      if(!tieneRenta)al.push({type:'venc',icon:'ti-coin',inmId:inm.id,titulo:`Depto. ${inm.num} — Renta sin registrar`,sub:`Día de pago fue el ${diaP} · hace ${diasDespues} días (pasada la tolerancia)`,monto:Number(inm.renta),montoSub:'renta',pri:0});
+      if(!tieneRenta)al.push({type:'venc',icon:'ti-coin',inmId:inm.id,titulo:`Depto. ${inm.num} — Renta sin registrar`,sub:`Día de pago fue el ${diaP} · hace ${diasDespues} días (pasada la tolerancia)`,monto:Number(vig.renta||inm.renta),montoSub:'renta',pri:0});
     }
   });
   al.sort((a,b)=>a.pri-b.pri);
@@ -1933,8 +2038,9 @@ function renderSvcList(){
   el.innerHTML=Object.entries(groups).map(([k,g])=>`
     <h3 style="font-size:13px;font-weight:700;color:#6B6963;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 12px">${g.label}</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">${g.svcs.map(s=>{
-      const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
+      const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion&&Number(d.ponderacion)>0).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
       const co=CO[s.tipo]||CO.agua;const maxP=Math.max(1,...det.map(d=>Number(d.ponderacion)||0));const pondTotal=det.reduce((x,d)=>x+(Number(d.ponderacion)||0),0);
+      const enGrafica=svcSeleccion===null||svcSeleccion.has(s.id);
       const filas=det.map((d,fi)=>{const i=getInm(d.inmueble_id);const pct=Math.round((Number(d.ponderacion)||0)/maxP*100);return`<div><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:3px"><span style="font-family:'DM Mono',monospace;font-weight:500">${i?.num||'?'} <span style="font-family:'DM Sans',sans-serif;color:#9D9B96;font-weight:400">· ${d.dias_uso} días × ${d.personas} pers.</span></span><span style="font-family:'DM Mono',monospace;color:#1A1917">${fmt(d.monto)}</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${co.c};opacity:.85;width:${pct}%;transform-origin:left;animation:growBar .75s cubic-bezier(.16,1,.3,1) ${(0.1+fi*0.07).toFixed(2)}s both"></div></div></div>`}).join('');
       return`<div data-hs="transform:translateY(-2px);box-shadow:0 8px 26px rgba(26,25,23,.08)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:20px 22px;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
@@ -1943,8 +2049,9 @@ function renderSvcList(){
           <div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(s.total)}</div>
         </div>
         <div style="display:grid;gap:9px;margin-top:16px">${filas}</div>
-        <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid #EEECE4;font-size:11.5px;color:#9D9B96">
-          <span>Ponderación total: <span style="font-family:'DM Mono',monospace">${pondTotal}</span></span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #EEECE4;font-size:11.5px;color:#9D9B96">
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none" title="Incluir esta factura en la gráfica circular"><input type="checkbox" ${enGrafica?'checked':''} onchange="toggleSvcSel('${s.id}')" style="width:15px;height:15px;cursor:pointer;accent-color:#1D9E75">En gráfica</label>
+          <span>Ponderación: <span style="font-family:'DM Mono',monospace">${pondTotal}</span></span>
           <button onclick="verServicio('${s.id}')" data-hs="color:#085041" style="border:none;background:none;color:#1D9E75;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;padding:0">Ver detalle →</button>
         </div>
       </div>`;
@@ -1960,8 +2067,35 @@ function abrirNuevoSvc(){
   calcSvcRows();openM('m-new-svc');
 }
 
+// ¿Le aplica el servicio a este espacio según las fechas de su contrato (mirror del vigente)?
+// Reutiliza las REGLAS 1–4 existentes + regla nueva: salida ANTES del período → no aplica.
+function svcAplicaInfo(inm,periodoIni,periodoFin){
+  const diasTotal=Math.max(1,dB(periodoIni,periodoFin)+1);
+  const finiStr=inm.fecha_inicio_contrato,fterStr=inm.fecha_termino_contrato,fsalStr=inm.fecha_salida;
+  if(!finiStr&&!fsalStr)return{aplica:true,diasUso:diasTotal,diasTotal,motivo:''}; // sin fechas → período completo
+  const contratoIni=finiStr?new Date(finiStr+'T00:00:00'):null;
+  const contratoFin=fterStr?new Date(fterStr+'T00:00:00'):null;
+  const fechaSalida=fsalStr?new Date(fsalStr+'T00:00:00'):null;
+  // REGLA 3: contrato empieza después del fin del período → no corresponde cobro
+  if(contratoIni&&contratoIni>periodoFin)return{aplica:false,diasUso:0,diasTotal,motivo:`Inquilino a partir del ${fdS(finiStr)}`};
+  // REGLA NUEVA: salió antes de que empezara el período → no corresponde cobro
+  if(fechaSalida&&fechaSalida<periodoIni)return{aplica:false,diasUso:0,diasTotal,motivo:`Salió el ${fdS(fsalStr)}`};
+  if(contratoFin&&contratoFin<periodoIni&&!fechaSalida)return{aplica:false,diasUso:0,diasTotal,motivo:`Contrato terminó el ${fdS(fterStr)}`};
+  // REGLAS 1 y 2: contador arranca en inicio del período (o del contrato si entró después)
+  const desde=contratoIni?new Date(Math.max(periodoIni.getTime(),contratoIni.getTime())):new Date(periodoIni.getTime());
+  let hasta=new Date(periodoFin.getTime()),motivo='';
+  // REGLA 4: fecha de salida intermedia → contador termina en fecha de salida
+  if(fechaSalida&&fechaSalida>=periodoIni&&fechaSalida<=periodoFin){hasta=new Date(fechaSalida.getTime());motivo=`Salió el ${fdS(fsalStr)}`;}
+  else if(contratoFin&&contratoFin<periodoFin){hasta=new Date(contratoFin.getTime());}
+  if(!motivo&&contratoIni&&contratoIni>periodoIni)motivo=`Inquilino desde el ${fdS(finiStr)}`;
+  const diasUso=Math.max(0,Math.round((hasta-desde)/86400000)+1);
+  return{aplica:diasUso>0,diasUso,diasTotal,motivo};
+}
+
+// Resultado vivo del cálculo del modal (lo usan guardarServicio y el PNG)
+let svcCalc=null;
+
 function calcSvcRows(){
-  const total=parseFloat(document.getElementById('sv-total').value)||0;
   const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
   const iniDate=iniStr?new Date(iniStr+'T00:00:00'):null,finDate=finStr?new Date(finStr+'T00:00:00'):null;
   const diasTotal=iniDate&&finDate?Math.max(1,dB(iniDate,finDate)+1):31;
@@ -1969,66 +2103,66 @@ function calcSvcRows(){
   const tbody=document.getElementById('sv-rows');
   if(!inmuebles.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:1rem">Agrega departamentos primero</td></tr>`;return}
 
+  let ocultos=0;
   tbody.innerHTML=inmuebles.map((inm,idx)=>{
-    const diasDefault=diasTotal;
+    // Filtro automático: si por fechas no le aplica, la fila NO se muestra (irá al PNG con $0)
+    const info=iniDate&&finDate?svcAplicaInfo(inm,iniDate,finDate):{aplica:true,diasUso:diasTotal,motivo:''};
+    if(!info.aplica){ocultos++;return'';}
     return`<tr id="sv-row-${idx}">
       <td><strong style="font-family:'DM Mono',monospace;font-size:12px">${inm.num}</strong></td>
-      <td style="font-size:12px">${inm.inquilino.split(' ')[0]}</td>
+      <td style="font-size:12px">${inm.inquilino.split(' ')[0]}${info.motivo?`<br><span style="font-size:10px;color:var(--tx3)">${info.motivo}</span>`:''}</td>
       <td><input type="checkbox" id="sv-aplica-${idx}" checked onchange="recalcSvc(${idx},'${inm.id}')" style="width:18px;height:18px;cursor:pointer"></td>
-      <td><input type="number" id="sv-dias-${idx}" value="${diasDefault}" min="0" max="${diasTotal}" style="width:70px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
+      <td><input type="number" id="sv-dias-${idx}" value="${info.diasUso}" min="0" max="${diasTotal}" style="width:70px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
       <td><input type="number" id="sv-pers-${idx}" value="${inm.personas||1}" min="0" max="20" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
       <td id="sv-pond-${idx}" style="font-family:'DM Mono',monospace;font-size:13px">0</td>
       <td id="sv-pct-${idx}" style="font-size:13px">0%</td>
       <td id="sv-mto-${idx}" style="font-weight:500;font-size:13px">$0.00</td>
     </tr>`;
   }).join('');
+  const nota=document.getElementById('sv-ocultos-nota');
+  if(nota)nota.textContent=ocultos?`· ${ocultos} depto${ocultos===1?'':'s'} sin uso en este período (irá${ocultos===1?'':'n'} en la imagen con $0)`:'';
   recalcAllSvc();
 }
 
 function recalcSvc(){recalcAllSvc()}
+const SUBSIDIO_LBL={adeudo:'Subsidio — Adeudo de inquilinos que salieron / sin uso',dueno:'Subsidio — Aportación del dueño (administración)'};
 function recalcAllSvc(){
   const total=parseFloat(document.getElementById('sv-total').value)||0;
   const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
-  if(!iniStr||!finStr)return;
+  if(!iniStr||!finStr){svcCalc=null;return}
   const periodoIni=new Date(iniStr+'T00:00:00'),periodoFin=new Date(finStr+'T00:00:00');
-  let sumPond=0;const filas=[];
+  const modo=document.getElementById('sv-subsidio-modo')?.value||'adeudo';
+  // Reparto sobre PONDERACIÓN COMPLETA: cada depto paga sus días×personas sobre lo que
+  // habría usado el edificio ocupado todo el período. La parte no usada va al subsidio.
+  const rows=[];let sumCompleta=0,sumUsada=0;
   inmuebles.forEach((inm,idx)=>{
-    const aplicaCheck=document.getElementById(`sv-aplica-${idx}`);if(!aplicaCheck)return;
-    const finiStr=inm.fecha_inicio_contrato,fterStr=inm.fecha_termino_contrato,fsalStr=inm.fecha_salida;
-    if(!finiStr){
-      const aplica=aplicaCheck.checked;
-      const dias=aplica?(parseInt(document.getElementById(`sv-dias-${idx}`)?.value)||0):0;
-      const pers=aplica?(parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||0):0;
-      const pond=dias*pers;sumPond+=pond;filas.push({idx,pond});return;
-    }
-    const contratoIni=new Date(finiStr+'T00:00:00');
-    const contratoFin=fterStr?new Date(fterStr+'T00:00:00'):null;
-    const fechaSalida=fsalStr?new Date(fsalStr+'T00:00:00'):null;
-    // REGLA 3: contrato empieza después del fin del período → no corresponde cobro
-    if(contratoIni>periodoFin){const di=document.getElementById(`sv-dias-${idx}`);if(di)di.value=0;filas.push({idx,pond:0});return;}
-    if(contratoFin&&contratoFin<periodoIni){const di=document.getElementById(`sv-dias-${idx}`);if(di)di.value=0;filas.push({idx,pond:0});return;}
-    if(!aplicaCheck.checked){filas.push({idx,pond:0});return;}
-    // REGLAS 1 y 2: contador arranca en inicio del período
-    const desde=new Date(Math.max(periodoIni.getTime(),contratoIni.getTime()));
-    let hasta=new Date(periodoFin.getTime());
-    // REGLA 4: fecha de salida intermedia → contador termina en fecha de salida
-    if(fechaSalida&&fechaSalida>=periodoIni&&fechaSalida<=periodoFin){hasta=new Date(fechaSalida.getTime());}
-    else if(contratoFin&&contratoFin<periodoFin){hasta=new Date(contratoFin.getTime());}
-    let diasUso=Math.round((hasta-desde)/86400000)+1;diasUso=Math.max(0,diasUso);
-    const di=document.getElementById(`sv-dias-${idx}`);if(di)di.value=diasUso;
-    const pers=parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||(inm.personas||1);
-    const pond=diasUso*pers;sumPond+=pond;filas.push({idx,pond});
+    const info=svcAplicaInfo(inm,periodoIni,periodoFin);
+    const enModal=!!document.getElementById(`sv-aplica-${idx}`); // fila visible (aplica por fechas)
+    const manualOn=enModal?document.getElementById(`sv-aplica-${idx}`).checked:false;
+    const dias=enModal&&manualOn?(parseInt(document.getElementById(`sv-dias-${idx}`)?.value)||0):(enModal?0:info.diasUso);
+    const pers=enModal?(parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||(inm.personas||1)):(inm.personas||1);
+    const pondUsada=(enModal?(manualOn?dias*pers:0):0); // ocultos por fechas no usan nada
+    const pondCompleta=info.diasTotal*pers;
+    sumCompleta+=pondCompleta;sumUsada+=pondUsada;
+    rows.push({idx,inm,aplica:info.aplica&&(!enModal||manualOn),diasUso:enModal?(manualOn?dias:0):0,pers,pondUsada,pondCompleta,motivo:info.motivo,visible:enModal});
   });
-  filas.forEach(({idx,pond})=>{
-    const pct=sumPond>0?pond/sumPond:0,mto=pct*total;
-    const pEl=document.getElementById(`sv-pond-${idx}`),pcEl=document.getElementById(`sv-pct-${idx}`),mEl=document.getElementById(`sv-mto-${idx}`);
-    if(pEl)pEl.textContent=pond;if(pcEl)pcEl.textContent=Math.round(pct*100)+'%';if(mEl)mEl.textContent=fmt(mto);
+  let sumMto=0;
+  rows.forEach(r=>{
+    r.pct=sumCompleta>0?r.pondUsada/sumCompleta:0;
+    r.monto=r.pct*total;sumMto+=r.monto;
+    if(!r.visible)return;
+    const pEl=document.getElementById(`sv-pond-${r.idx}`),pcEl=document.getElementById(`sv-pct-${r.idx}`),mEl=document.getElementById(`sv-mto-${r.idx}`);
+    if(pEl)pEl.textContent=r.pondUsada;if(pcEl)pcEl.textContent=Math.round(r.pct*100)+'%';if(mEl)mEl.textContent=fmt(r.monto);
   });
-  document.getElementById('sv-adm-pond').textContent=sumPond;
-  document.getElementById('sv-adm-pct').textContent='';
-  document.getElementById('sv-adm-mto').textContent='';
-  document.getElementById('sv-tot-pond').textContent=sumPond;
+  // Subsidio por RESTA para que siempre cuadre al centavo con el total de la factura
+  const subPond=sumCompleta-sumUsada,subMto=Math.max(0,total-sumMto),subPct=sumCompleta>0?subPond/sumCompleta:0;
+  const lbl=document.getElementById('sv-adm-lbl');if(lbl)lbl.textContent=SUBSIDIO_LBL[modo];
+  document.getElementById('sv-adm-pond').textContent=subPond;
+  document.getElementById('sv-adm-pct').textContent=Math.round(subPct*100)+'%';
+  document.getElementById('sv-adm-mto').textContent=fmt(subMto);
+  document.getElementById('sv-tot-pond').textContent=sumCompleta;
   document.getElementById('sv-tot-mto').textContent=fmt(total);
+  svcCalc={rows,subsidio:{pond:subPond,pct:subPct,monto:subMto},modo,sumCompleta,total};
 }
 
 document.getElementById('sv-total').addEventListener('input',recalcAllSvc);
@@ -2037,26 +2171,27 @@ async function guardarServicio(){
   const tipo=document.getElementById('sv-tipo').value,total=parseFloat(document.getElementById('sv-total').value)||0;
   const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
   if(!total||!iniStr||!finStr){toast('Completa todos los campos requeridos','ti-alert-triangle');return}
+  recalcAllSvc();
+  if(!svcCalc){toast('Revisa las fechas del período','ti-alert-triangle');return}
   const iniDate=new Date(iniStr+'T00:00:00'),finDate=new Date(finStr+'T00:00:00');
   const dias=Math.max(1,dB(iniDate,finDate)+1);
-  const {data:svc,error:se}=await sb.from('servicios').insert({workspace_id:CW.id,tipo,total,periodo_ini:iniStr,periodo_fin:finStr,dias_servicio:dias,mes:iniDate.getMonth(),anio:iniDate.getFullYear(),notas:document.getElementById('sv-not').value||null}).select().single();
+  const row={workspace_id:CW.id,tipo,total,periodo_ini:iniStr,periodo_fin:finStr,dias_servicio:dias,mes:iniDate.getMonth(),anio:iniDate.getFullYear(),subsidio_modo:svcCalc.modo,notas:document.getElementById('sv-not').value||null};
+  let {data:svc,error:se}=await sb.from('servicios').insert(row).select().single();
+  // Compat: si la columna subsidio_modo aún no existe, reintenta sin ella
+  if(se&&/subsidio_modo/i.test(se.message||'')){const{subsidio_modo:_,...r2}=row;({data:svc,error:se}=await sb.from('servicios').insert(r2).select().single());}
   if(se){toast('Error: '+se.message,'ti-alert-triangle');return}
 
-  let sumPond=0;
-  const detalles=inmuebles.map((inm,idx)=>{
-    const aplica=document.getElementById(`sv-aplica-${idx}`)?.checked||false;
-    const ds=aplica?parseInt(document.getElementById(`sv-dias-${idx}`)?.value||0):0;
-    const ps=aplica?parseInt(document.getElementById(`sv-pers-${idx}`)?.value||1):0;
-    const pond=ds*ps;sumPond+=pond;
-    return{servicio_id:svc.id,workspace_id:CW.id,inmueble_id:inm.id,dias_uso:ds,personas:ps,ponderacion:pond};
-  });
-  // Calcular montos
-  detalles.forEach(d=>{d.porcentaje=sumPond>0?d.ponderacion/sumPond:0;d.monto=d.porcentaje*total});
-  const {data:savedDets}=await sb.from('servicio_detalles').insert(detalles).select();
+  // Guardar TODAS las filas (incluidas las que no aplican, con 0) para poder regenerar el PNG,
+  // más la fila de subsidio (es_administracion) con su ponderación no usada.
+  const detalles=svcCalc.rows.map(r=>({servicio_id:svc.id,workspace_id:CW.id,inmueble_id:r.inm.id,dias_uso:r.diasUso,personas:r.pers,ponderacion:r.pondUsada,porcentaje:r.pct,monto:r.monto}));
+  detalles.push({servicio_id:svc.id,workspace_id:CW.id,inmueble_id:null,dias_uso:0,personas:0,ponderacion:svcCalc.subsidio.pond,porcentaje:svcCalc.subsidio.pct,monto:svcCalc.subsidio.monto,es_administracion:true});
+  const {data:savedDets,error:de}=await sb.from('servicio_detalles').insert(detalles).select();
+  if(de){toast('Error en detalles: '+de.message,'ti-alert-triangle');return}
   servicios.unshift(svc);
   if(savedDets) svcDet.push(...savedDets);
   closeM('m-new-svc');
-  toast('Servicio registrado correctamente');
+  toast('Servicio registrado · generando imagen…');
+  generarSvcPNG(svc.id);
   renderSvcList();refresh();
 }
 
@@ -2064,20 +2199,105 @@ async function verServicio(id){
   editSvcId=id;
   const svc=servicios.find(s=>s.id===id);if(!svc)return;
   const det=svcDet.filter(d=>d.servicio_id===id&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
-  const sumPond=det.reduce((s,d)=>s+d.ponderacion,0);
+  const adm=svcDet.find(d=>d.servicio_id===id&&d.es_administracion);
+  const sumPond=det.reduce((s,d)=>s+Number(d.ponderacion),0)+(adm?Number(adm.ponderacion):0);
   const iconos={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'};
   document.getElementById('msv-ttl').innerHTML=`<i class="ti ${iconos[svc.tipo]}" style="color:var(--amber)"></i>${svc.tipo.charAt(0).toUpperCase()+svc.tipo.slice(1)} — ${fmt(svc.total)}`;
   document.getElementById('msv-body').innerHTML=`
-    <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+    <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;align-items:flex-end">
       <div><span style="font-size:12px;color:var(--tx2)">Período</span><br><strong>${fd(svc.periodo_ini)} al ${fd(svc.periodo_fin)}</strong></div>
       <div><span style="font-size:12px;color:var(--tx2)">Días</span><br><strong>${svc.dias_servicio}</strong></div>
       <div><span style="font-size:12px;color:var(--tx2)">Total factura</span><br><strong>${fmt(svc.total)}</strong></div>
+      <button onclick="generarSvcPNG('${svc.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-photo-down" style="font-size:14px"></i>Imagen para WhatsApp</button>
     </div>
     <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Días</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ Pagar</th></tr></thead>
-    <tbody>${det.map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((d.ponderacion/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
+    <tbody>${det.filter(d=>Number(d.ponderacion)>0).map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((Number(d.ponderacion)/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
+    ${adm?`<tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px">${SUBSIDIO_LBL[svc.subsidio_modo||'adeudo']}</td><td style="font-weight:600;padding:10px 14px">${adm.ponderacion}</td><td style="font-weight:600;padding:10px 14px">${Math.round(Number(adm.porcentaje)*100)}%</td><td style="font-weight:600;padding:10px 14px">${fmt(adm.monto)}</td></tr>`:''}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:700;padding:10px 14px">TOTAL</td><td style="font-weight:700;padding:10px 14px">${sumPond}</td><td style="font-weight:700;padding:10px 14px">100%</td><td style="font-weight:700;padding:10px 14px">${fmt(svc.total)}</td></tr>
     </tbody></table></div></div>`;
   openM('m-svc-det');
+}
+
+// ═══════════════════════════════════════
+//  PNG ESTILO EXCEL (para WhatsApp)
+//  Se genera desde servicios+svcDet (no del DOM) → funciona al guardar o con servicios viejos.
+// ═══════════════════════════════════════
+async function generarSvcPNG(svcId){
+  const svc=servicios.find(s=>s.id===svcId);if(!svc)return;
+  if(typeof html2canvas==='undefined'){toast('No se pudo cargar el generador de imagen (sin internet)','ti-alert-triangle');return}
+  const det=svcDet.filter(d=>d.servicio_id===svcId&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
+  const adm=svcDet.find(d=>d.servicio_id===svcId&&d.es_administracion);
+  const totPond=det.reduce((s,d)=>s+Number(d.ponderacion),0)+(adm?Number(adm.ponderacion):0);
+  const pIni=new Date(svc.periodo_ini+'T00:00:00'),pFin=new Date(svc.periodo_fin+'T00:00:00');
+  const NOM={agua:'Agua',luz:'Luz',gas:'Gas'};
+  const fdC=s=>{const d=new Date(s+'T00:00:00');return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(2)}`};
+  // Estilos "Excel"
+  const B='border:1px solid #1A1917;padding:6px 10px;font-size:13px;color:#1A1917';
+  const TH=`${B};background:#DCE6F1;font-weight:700;text-align:center`;
+  const filas=det.map(d=>{
+    const i=getInm(d.inmueble_id);
+    const info=i?svcAplicaInfo(i,pIni,pFin):{aplica:Number(d.ponderacion)>0,motivo:''};
+    const aplica=Number(d.ponderacion)>0;
+    const nombre=(i?.inquilino&&!estaDesocupado(i?.id||''))||aplica?(i?.inquilino||'—'):'—';
+    const nota=info.motivo?` (${info.motivo})`:'';
+    const pct=totPond>0?Math.round(Number(d.ponderacion)/totPond*100):0;
+    return `<tr>
+      <td style="${B};font-weight:600;text-align:center">${i?.num||'?'}${!aplica&&info.motivo?`<span style="font-weight:400"> — ${info.motivo}</span>`:''}</td>
+      <td style="${B}">${nombre}${aplica&&nota?`<span style="color:#55514A;font-size:11.5px">${nota}</span>`:''}</td>
+      <td style="${B};text-align:center;font-weight:${aplica?'400':'700'}">${aplica?'SÍ':'NO'}</td>
+      <td style="${B};text-align:center">${d.dias_uso}</td>
+      <td style="${B};text-align:center">${d.personas||i?.personas||''}</td>
+      <td style="${B};text-align:center">${d.ponderacion}</td>
+      <td style="${B};text-align:center">${pct}%</td>
+      <td style="${B};text-align:right;font-weight:600">${aplica?fmt(d.monto):'$ —'}</td>
+    </tr>`;
+  }).join('');
+  const subPct=adm&&totPond>0?Math.round(Number(adm.ponderacion)/totPond*100):0;
+  const node=document.createElement('div');
+  node.style.cssText='position:fixed;left:-10000px;top:0;width:1080px;background:#FFFFFF;padding:28px;font-family:"DM Sans",sans-serif';
+  node.innerHTML=`
+    <table style="border-collapse:collapse;width:auto;margin-bottom:14px">
+      <tr><td style="background:#1A1917;color:#fff;font-weight:700;font-size:16px;padding:8px 18px;border:1px solid #1A1917">Servicio de ${NOM[svc.tipo]||svc.tipo}</td>
+          <td style="background:#1A1917;color:#fff;font-weight:700;font-size:16px;padding:8px 18px;border:1px solid #1A1917;text-align:right">${fmt(svc.total)}</td></tr>
+      <tr><td style="padding:4px 18px;font-size:13px">Inicio Periodo:</td><td style="padding:4px 18px;font-size:13px;text-align:right;font-weight:600">${fdC(svc.periodo_ini)}</td></tr>
+      <tr><td style="padding:4px 18px;font-size:13px">Fin de Periodo:</td><td style="padding:4px 18px;font-size:13px;text-align:right;font-weight:600">${fdC(svc.periodo_fin)}</td></tr>
+      <tr><td style="padding:4px 18px;font-size:13px">Días de servicio:</td><td style="padding:4px 18px;font-size:13px;text-align:right;font-weight:600">${svc.dias_servicio}</td></tr>
+    </table>
+    <table style="border-collapse:collapse;width:100%">
+      <thead><tr>
+        <th style="${TH}">Departamento</th><th style="${TH}">Inquilino</th><th style="${TH}">¿Corresponde uso?</th>
+        <th style="${TH}">Días de uso</th><th style="${TH}">Personas</th><th style="${TH}">Ponderación</th><th style="${TH}">%</th><th style="${TH}">$ Pagar</th>
+      </tr></thead>
+      <tbody>
+        ${filas}
+        ${adm?`<tr>
+          <td colspan="5" style="${B};font-weight:700">${SUBSIDIO_LBL[svc.subsidio_modo||'adeudo']}</td>
+          <td style="${B};text-align:center;font-weight:700">${adm.ponderacion}</td>
+          <td style="${B};text-align:center;font-weight:700">${subPct}%</td>
+          <td style="${B};text-align:right;font-weight:700">${fmt(adm.monto)}</td>
+        </tr>`:''}
+        <tr>
+          <td colspan="5" style="${B};font-weight:700;background:#F1EFE8">TOTAL</td>
+          <td style="${B};text-align:center;font-weight:700;background:#F1EFE8">${totPond}</td>
+          <td style="${B};text-align:center;font-weight:700;background:#F1EFE8">100%</td>
+          <td style="${B};text-align:right;font-weight:700;background:#F1EFE8">${fmt(svc.total)}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;font-size:11.5px;color:#55514A">${(svc.subsidio_modo||'adeudo')==='dueno'?'La parte no usada del período la aporta la administración; cada inquilino paga únicamente sus días de uso × personas.':'Cada inquilino paga únicamente sus días de uso × personas. La parte marcada como subsidio corresponde a los departamentos que salieron o no tuvieron uso en el período.'} · Generado con InmoPagos · ${new Date().toLocaleDateString('es-MX')}</div>`;
+  document.body.appendChild(node);
+  try{
+    const canvas=await html2canvas(node,{scale:2,backgroundColor:'#FFFFFF'});
+    canvas.toBlob(blob=>{
+      if(!blob){toast('No se pudo generar la imagen','ti-alert-triangle');return}
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`servicio_${svc.tipo}_${MESES[svc.mes||0].toLowerCase()}${svc.anio||''}.png`;
+      a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+      toast('Imagen descargada · lista para WhatsApp','ti-photo-down');
+    },'image/png');
+  }catch(e){toast('Error al generar imagen: '+(e.message||e),'ti-alert-triangle');}
+  finally{node.remove();}
 }
 
 async function elimServicio(){
@@ -2291,13 +2511,34 @@ async function generarTodosPDF(){
 // ═══════════════════════════════════════
 //  CRUD PAGOS
 // ═══════════════════════════════════════
+// Llena el selector de contratos según el depto elegido (default = vigente).
+function pobContratosPago(selId){
+  const inmId=document.getElementById('fp-dep').value;
+  const sel=document.getElementById('fp-contrato');if(!sel)return;
+  if(!inmId){sel.innerHTML='<option value="">—</option>';return}
+  const cs=contratosDe(inmId);
+  const vig=contratoVigente(inmId);
+  if(!cs.length){
+    // Sin contratos migrados: una sola opción "actual" (contrato_id vacío)
+    sel.innerHTML=`<option value="">Actual${vig&&vig.inquilino?` — ${vig.inquilino}`:''}</option>`;return;
+  }
+  const t=hoyISO();
+  const def=selId!==undefined?selId:(vig&&vig.id?vig.id:'');
+  sel.innerHTML=cs.map(c=>{
+    const et=etiquetaContrato(inmId,c.id);
+    const activo=(!c.fecha_salida||c.fecha_salida>=t);
+    const estado=activo?'vigente':`salió ${fdS(c.fecha_salida)}`;
+    return `<option value="${c.id}"${c.id===def?' selected':''}>${et} · ${c.inquilino||'—'} (${estado})</option>`;
+  }).join('');
+}
 function abrirPago(inmId){
   editPagoId=null;
   document.getElementById('mp-ttl').textContent='Registrar pago';
   document.getElementById('btn-del-p').style.display='none';
   const sel=document.getElementById('fp-dep');
   sel.innerHTML='<option value="">Seleccionar...</option>'+inmuebles.map(i=>`<option value="${i.id}"${i.id===inmId?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
-  if(inmId){const i=getInm(inmId);if(i){document.getElementById('fp-mto').value=i.renta;document.getElementById('fp-con').value='renta'}}
+  pobContratosPago();
+  if(inmId){const c=contratoVigente(inmId)||getInm(inmId);if(c){document.getElementById('fp-mto').value=c.renta||'';document.getElementById('fp-con').value='renta'}}
   else{document.getElementById('fp-mto').value='';document.getElementById('fp-con').value='renta'}
   document.getElementById('fp-pag').value='';
   document.getElementById('fp-venc').value=new Date().toISOString().split('T')[0];
@@ -2308,16 +2549,21 @@ function abrirEditPago(id){
   editPagoId=id;const p=pagos.find(x=>x.id===id);if(!p)return;
   document.getElementById('mp-ttl').textContent='Editar pago';document.getElementById('btn-del-p').style.display='inline-flex';
   const sel=document.getElementById('fp-dep');sel.innerHTML=inmuebles.map(i=>`<option value="${i.id}"${i.id===p.inmueble_id?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
+  pobContratosPago(p.contrato_id||'');
   document.getElementById('fp-con').value=p.concepto;document.getElementById('fp-mto').value=p.monto;document.getElementById('fp-pag').value=p.pagado;document.getElementById('fp-venc').value=p.vencimiento;document.getElementById('fp-fpag').value=p.fecha_pago||'';document.getElementById('fp-not').value=p.notas||'';
   openM('m-pago');
 }
 async function guardarPago(){
   const inmueble_id=document.getElementById('fp-dep').value,monto=parseFloat(document.getElementById('fp-mto').value)||0,pagado=Math.min(parseFloat(document.getElementById('fp-pag').value)||0,monto),vencimiento=document.getElementById('fp-venc').value;
   if(!inmueble_id||!monto||!vencimiento){toast('Completa los campos requeridos','ti-alert-triangle');return}
-  const d={workspace_id:CW.id,inmueble_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null};
-  const {data:savedPago,error}=editPagoId
-    ? await sb.from('pagos').update(d).eq('id',editPagoId).select().single()
-    : await sb.from('pagos').insert(d).select().single();
+  const contrato_id=(document.getElementById('fp-contrato')?.value)||null;
+  const d={workspace_id:CW.id,inmueble_id,contrato_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null};
+  const doSave=(row)=>editPagoId
+    ? sb.from('pagos').update(row).eq('id',editPagoId).select().single()
+    : sb.from('pagos').insert(row).select().single();
+  let {data:savedPago,error}=await doSave(d);
+  // Compat: si la columna contrato_id aún no existe en la BD, reintenta sin ella
+  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_,...d2}=d;({data:savedPago,error}=await doSave(d2));}
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
   if(editPagoId){const idx=pagos.findIndex(x=>x.id===editPagoId);if(idx!==-1)pagos[idx]=savedPago;}
   else{pagos.unshift(savedPago);}
@@ -2330,27 +2576,169 @@ async function elimPago(){if(!confirm('¿Eliminar este pago?'))return;await sb.f
 // ═══════════════════════════════════════
 //  CRUD INMUEBLES
 // ═══════════════════════════════════════
+// Lee los campos de inquilino/contrato del formulario m-inm
+function contratoFieldsFromForm(){
+  return {
+    inquilino:document.getElementById('fi-inq').value.trim(),
+    tel:document.getElementById('fi-tel').value||null,
+    email:document.getElementById('fi-em').value||null,
+    renta:parseFloat(document.getElementById('fi-ren').value)||0,
+    dia:parseInt(document.getElementById('fi-dia').value)||1,
+    personas:parseInt(document.getElementById('fi-per').value)||1,
+    fecha_inicio_contrato:document.getElementById('fi-fini').value||null,
+    fecha_termino_contrato:document.getElementById('fi-fter').value||null,
+    fecha_salida:document.getElementById('fi-fsal').value||null,
+    notas:document.getElementById('fi-not').value||null
+  };
+}
+// Actualiza (o materializa) el contrato del espacio que se está editando. No bloqueante:
+// si la tabla `contratos` aún no existe, no rompe el guardado del inmueble.
+async function upsertContratoVigente(inmId,cf){
+  try{
+    const cs=contratosDe(inmId);
+    if(!cs.length){
+      const {data,error}=await sb.from('contratos').insert({workspace_id:CW.id,inmueble_id:inmId,...cf}).select().single();
+      if(error)throw error;if(data)contratos.push(data);return;
+    }
+    const t=hoyISO(),vig=cs.filter(c=>!c.fecha_salida||c.fecha_salida>=t);
+    const target=vig.length?vig[vig.length-1]:cs[cs.length-1];
+    const {data,error}=await sb.from('contratos').update(cf).eq('id',target.id).select().single();
+    if(error)throw error;if(data){const k=contratos.findIndex(x=>x.id===data.id);if(k>=0)contratos[k]=data;else contratos.push(data);}
+  }catch(e){console.warn('contratos sync (no bloqueante):',e.message||e);}
+}
 function abrirInm(id){
-  editInmId=id;document.getElementById('mi-ttl').textContent=id?'Editar departamento':'Agregar departamento';document.getElementById('btn-del-i').style.display=id?'inline-flex':'none';
-  if(id){const i=getInm(id);if(!i)return;document.getElementById('fi-num').value=i.num;document.getElementById('fi-pis').value=i.piso||'';document.getElementById('fi-inq').value=i.inquilino;document.getElementById('fi-tel').value=i.tel||'';document.getElementById('fi-em').value=i.email||'';document.getElementById('fi-ren').value=i.renta||'';document.getElementById('fi-dia').value=i.dia||'';document.getElementById('fi-per').value=i.personas||1;document.getElementById('fi-fini').value=i.fecha_inicio_contrato||'';document.getElementById('fi-fter').value=i.fecha_termino_contrato||'';document.getElementById('fi-fsal').value=i.fecha_salida||'';document.getElementById('fi-not').value=i.notas||''}
+  editInmId=id;nuevoContratoInm=null;
+  document.getElementById('mi-ttl').textContent=id?'Editar departamento':'Agregar departamento';
+  document.getElementById('btn-del-i').style.display=id?'inline-flex':'none';
+  const bs=document.getElementById('btn-salida-i');if(bs)bs.style.display=(id&&!estaDesocupado(id))?'inline-flex':'none';
+  document.getElementById('fi-num').readOnly=false;
+  if(id){const i=getInm(id);const c=contratoVigente(id)||contratoSintetico(i)||{};if(!i)return;
+    document.getElementById('fi-num').value=i.num;document.getElementById('fi-pis').value=i.piso||'';
+    document.getElementById('fi-inq').value=c.inquilino||'';document.getElementById('fi-tel').value=c.tel||'';document.getElementById('fi-em').value=c.email||'';
+    document.getElementById('fi-ren').value=c.renta||'';document.getElementById('fi-dia').value=c.dia||'';document.getElementById('fi-per').value=c.personas||1;
+    document.getElementById('fi-fini').value=c.fecha_inicio_contrato||'';document.getElementById('fi-fter').value=c.fecha_termino_contrato||'';document.getElementById('fi-fsal').value=c.fecha_salida||'';
+    document.getElementById('fi-not').value=i.notas||''}
   else['fi-num','fi-pis','fi-inq','fi-tel','fi-em','fi-ren','fi-dia','fi-fini','fi-fter','fi-fsal','fi-not'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('fi-per').value=document.getElementById('fi-per').value||1;
+  openM('m-inm');
+}
+// Asignar un nuevo inquilino/contrato a un espacio (normalmente desocupado)
+function abrirNuevoContrato(inmId){
+  const inm=getInm(inmId);if(!inm)return;
+  editInmId=inmId;nuevoContratoInm=inmId;
+  document.getElementById('mi-ttl').textContent=`Nuevo contrato · Depto. ${inm.num}`;
+  document.getElementById('btn-del-i').style.display='none';
+  const bs=document.getElementById('btn-salida-i');if(bs)bs.style.display='none';
+  ['fi-inq','fi-tel','fi-em','fi-ren','fi-dia','fi-fter','fi-fsal','fi-not'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('fi-num').value=inm.num;document.getElementById('fi-num').readOnly=true;
+  document.getElementById('fi-pis').value=inm.piso||'';
+  document.getElementById('fi-per').value=1;
+  document.getElementById('fi-fini').value=hoyISO();
   openM('m-inm');
 }
 async function guardarInm(){
   const num=document.getElementById('fi-num').value.trim(),inq=document.getElementById('fi-inq').value.trim();
   if(!num||!inq){toast('Número e inquilino son obligatorios','ti-alert-triangle');return}
-  const d={workspace_id:CW.id,num,piso:document.getElementById('fi-pis').value||null,inquilino:inq,tel:document.getElementById('fi-tel').value||null,email:document.getElementById('fi-em').value||null,renta:parseFloat(document.getElementById('fi-ren').value)||0,dia:parseInt(document.getElementById('fi-dia').value)||1,personas:parseInt(document.getElementById('fi-per').value)||1,fecha_inicio_contrato:document.getElementById('fi-fini').value||null,fecha_termino_contrato:document.getElementById('fi-fter').value||null,fecha_salida:document.getElementById('fi-fsal').value||null,notas:document.getElementById('fi-not').value||null};
+  const cf=contratoFieldsFromForm();
+  // ── Modo: nuevo contrato en un espacio existente ──
+  if(nuevoContratoInm){
+    const inmId=nuevoContratoInm;
+    // Materializar al inquilino saliente como contrato (si el espacio aún no tiene filas)
+    try{
+      if(!contratosDe(inmId).length){
+        const inm=getInm(inmId);
+        if(inm&&inm.inquilino){
+          const {data}=await sb.from('contratos').insert({workspace_id:CW.id,inmueble_id:inmId,inquilino:inm.inquilino,tel:inm.tel,email:inm.email,renta:inm.renta,dia:inm.dia,personas:inm.personas,fecha_inicio_contrato:inm.fecha_inicio_contrato,fecha_termino_contrato:inm.fecha_termino_contrato,fecha_salida:inm.fecha_salida||hoyISO(),notas:inm.notas}).select().single();
+          if(data)contratos.push(data);
+        }
+      }
+      const nuevo={...cf,fecha_salida:null};
+      const {data,error}=await sb.from('contratos').insert({workspace_id:CW.id,inmueble_id:inmId,...nuevo}).select().single();
+      if(error)throw error;if(data)contratos.push(data);
+    }catch(e){toast('Error al crear contrato: '+(e.message||e),'ti-alert-triangle');return;}
+    // Espejar el inmueble al nuevo inquilino y reocupar (limpiar salida)
+    const d={num,piso:document.getElementById('fi-pis').value||null,...cf,fecha_salida:null};
+    const {data:savedInm,error}=await sb.from('inmuebles').update(d).eq('id',inmId).select().single();
+    if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+    const idx=inmuebles.findIndex(x=>x.id===inmId);if(idx!==-1)inmuebles[idx]=savedInm;
+    nuevoContratoInm=null;closeM('m-inm');toast('Contrato registrado · espacio ocupado');
+    renderInm();refresh();return;
+  }
+  // ── Modo: editar o crear departamento (mirror del vigente) ──
+  const d={workspace_id:CW.id,num,piso:document.getElementById('fi-pis').value||null,...cf};
   const {data:savedInm,error}=editInmId
     ? await sb.from('inmuebles').update(d).eq('id',editInmId).select().single()
     : await sb.from('inmuebles').insert(d).select().single();
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
-  if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;}
-  else{inmuebles.push(savedInm);inmuebles.sort((a,b)=>a.num.localeCompare(b.num));}
+  let inmId;
+  if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;inmId=editInmId;}
+  else{inmuebles.push(savedInm);inmuebles.sort((a,b)=>a.num.localeCompare(b.num));inmId=savedInm.id;}
+  await upsertContratoVigente(inmId,cf);
   closeM('m-inm');toast(editInmId?'Departamento actualizado':'Departamento agregado');
   renderInm();refresh();
 }
-async function elimInm(){if(!confirm('¿Eliminar este departamento y todos sus pagos?'))return;await sb.from('pagos').delete().eq('inmueble_id',editInmId);await sb.from('inmuebles').delete().eq('id',editInmId);closeM('m-inm');toast('Eliminado','ti-trash')}
+// Registrar salida del inquilino vigente → libera el espacio (mirror + contrato)
+async function registrarSalidaVigente(){
+  const inmId=editInmId;if(!inmId)return;
+  const c=contratoVigente(inmId);if(!c){toast('El espacio ya está desocupado','ti-info-circle');return}
+  const fecha=document.getElementById('fi-fsal').value||hoyISO();
+  if(!confirm(`¿Registrar la salida de ${c.inquilino||'el inquilino'} el ${fd(fecha)}? El espacio quedará desocupado.`))return;
+  try{
+    if(c.id){const {data}=await sb.from('contratos').update({fecha_salida:fecha}).eq('id',c.id).select().single();if(data){const k=contratos.findIndex(x=>x.id===data.id);if(k>=0)contratos[k]=data;}}
+    else{const {data}=await sb.from('contratos').insert({workspace_id:CW.id,inmueble_id:inmId,inquilino:c.inquilino,tel:c.tel,email:c.email,renta:c.renta,dia:c.dia,personas:c.personas,fecha_inicio_contrato:c.fecha_inicio_contrato,fecha_termino_contrato:c.fecha_termino_contrato,fecha_salida:fecha,notas:c.notas}).select().single();if(data)contratos.push(data);}
+  }catch(e){console.warn('contratos salida (no bloqueante):',e.message||e);}
+  const {data:savedInm,error}=await sb.from('inmuebles').update({fecha_salida:fecha}).eq('id',inmId).select().single();
+  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  const idx=inmuebles.findIndex(x=>x.id===inmId);if(idx!==-1)inmuebles[idx]=savedInm;
+  closeM('m-inm');toast('Salida registrada · espacio desocupado','ti-door-exit');
+  renderInm();refresh();
+}
+async function elimInm(){if(!confirm('¿Eliminar este departamento y todos sus pagos e historial de contratos?'))return;await sb.from('pagos').delete().eq('inmueble_id',editInmId);await sb.from('contratos').delete().eq('inmueble_id',editInmId);await sb.from('inmuebles').delete().eq('id',editInmId);closeM('m-inm');toast('Eliminado','ti-trash')}
+
+// ═══════════════════════════════════════
+//  HISTORIAL DE CONTRATOS
+// ═══════════════════════════════════════
+let histInmId=null;
+function abrirHistorial(inmId){histInmId=inmId;renderHist(inmId);openM('m-hist');}
+function histNuevoContrato(){if(!histInmId)return;const id=histInmId;closeM('m-hist');abrirNuevoContrato(id);}
+function renderHist(inmId){
+  const inm=getInm(inmId);if(!inm)return;
+  document.getElementById('mhist-ttl').textContent=`Historial · Depto. ${inm.num}`;
+  const cs=historialContratos(inmId);const t=hoyISO();
+  // orden descendente para mostrar (más reciente arriba)
+  const orden=[...cs].reverse();
+  const body=document.getElementById('mhist-body');
+  if(!cs.length||(cs.length===1&&cs[0]._sintetico&&!cs[0].inquilino)){
+    body.innerHTML=`<div style="padding:36px 24px;text-align:center;color:#9D9B96;font-size:13px">Este espacio aún no tiene contratos registrados.</div>`;return;
+  }
+  body.innerHTML=orden.map(c=>{
+    const et=etiquetaContrato(inmId,c.id);
+    const activo=(!c.fecha_salida||c.fecha_salida>=t);
+    const ps=pagosDeContrato(inmId,c.id);
+    const totCobrado=ps.reduce((s,p)=>s+Math.min(Number(p.pagado),Number(p.monto)),0);
+    const totPend=ps.reduce((s,p)=>s+Math.max(0,Number(p.monto)-Number(p.pagado)),0);
+    const chip=activo?`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:#E1F5EE;color:#085041"><i class="ti ti-circle-check" style="font-size:10px"></i>Vigente</span>`:`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:#EDEBFE;color:#4B3F9E"><i class="ti ti-door-exit" style="font-size:10px"></i>Finalizado</span>`;
+    const rango=`${c.fecha_inicio_contrato?fd(c.fecha_inicio_contrato):'—'} → ${c.fecha_salida?fd(c.fecha_salida):(c.fecha_termino_contrato?fd(c.fecha_termino_contrato)+' (término)':'—')}`;
+    const filasPagos=ps.length?ps.slice().sort((a,b)=>new Date(b.vencimiento)-new Date(a.vencimiento)).map(p=>{
+      const est=getEstado(p),col={pagado:'#1D9E75',parcial:'#378ADD',vencido:'#E24B4A',pendiente:'#9D9B96'}[est];
+      return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-top:1px solid #F1EFE8"><span style="flex:1;color:#55514A">${p.concepto} · vence ${fdS(p.vencimiento)}</span><span style="font-family:'DM Mono',monospace">${fmt0(p.pagado)}/${fmt0(p.monto)}</span><span style="color:${col};font-size:10.5px;font-weight:600;text-transform:uppercase;min-width:60px;text-align:right">${est}</span></div>`;
+    }).join(''):`<div style="font-size:12px;color:#9D9B96;padding:6px 0">Sin pagos registrados a este contrato.</div>`;
+    return `<div style="border:1px solid #E2E0D8;border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:30px;height:30px;border-radius:8px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0">${inm.num}-${et}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700">${c.inquilino||'—'}</div><div style="font-size:11.5px;color:#9D9B96">${rango}</div></div>
+        ${chip}
+      </div>
+      <div style="display:flex;gap:16px;font-size:11.5px;color:#55514A;margin:6px 0 2px">
+        <span>Renta <b style="font-family:'DM Mono',monospace">${fmt0(c.renta)}</b></span>
+        <span>Cobrado <b style="font-family:'DM Mono',monospace;color:#1D9E75">${fmt0(totCobrado)}</b></span>
+        ${totPend>0?`<span>Pendiente <b style="font-family:'DM Mono',monospace;color:#E24B4A">${fmt0(totPend)}</b></span>`:''}
+        ${c.tel?`<span style="margin-left:auto">${c.tel}</span>`:''}
+      </div>
+      <div style="margin-top:6px">${filasPagos}</div>
+    </div>`;
+  }).join('');
+}
 
 // ═══════════════════════════════════════
 //  MIEMBROS
@@ -2441,9 +2829,18 @@ function tiempoRel(iso){
 // Donut de servicios del mes visible (multi-segmento agua/luz/gas) — solo lectura
 function renderSvcDonut(){
   const cont=document.getElementById('svc-donut');if(!cont)return;
-  // Agrega TODOS los servicios registrados (el anillo no depende del cursor de mes).
-  const svcMes=servicios;
-  if(!svcMes.length){cont.style.display='none';return;}
+  if(!servicios.length){cont.style.display='none';return;}
+  // Fuente del anillo: todas las facturas, o solo las seleccionadas con "En gráfica"
+  const svcMes=svcSeleccion?servicios.filter(s=>svcSeleccion.has(s.id)):servicios;
+  if(!svcMes.length){
+    cont.style.display='block';cont.className='';
+    cont.innerHTML=`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:34px 28px;text-align:center;color:#9D9B96;font-size:13px;margin-bottom:20px">
+      <i class="ti ti-chart-donut-3" style="font-size:26px;opacity:.4;display:block;margin-bottom:8px"></i>
+      Ninguna factura seleccionada para la gráfica.
+      <button onclick="limpiarSvcSel()" style="border:none;background:none;color:#1D9E75;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;margin-left:4px">Ver todas</button>
+    </div>`;
+    return;
+  }
   const TIP={agua:{c:'#378ADD',ico:'ti-droplet',nom:'Agua'},luz:{c:'#BA7517',ico:'ti-bolt',nom:'Luz'},gas:{c:'#E24B4A',ico:'ti-flame',nom:'Gas'}};
   const acc={},cnt={};
   svcMes.forEach(s=>{acc[s.tipo]=(acc[s.tipo]||0)+Number(s.total);cnt[s.tipo]=(cnt[s.tipo]||0)+1;});
@@ -2476,8 +2873,11 @@ function renderSvcDonut(){
     </div>
     <div class="svcd-legs">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;padding:0 12px">
-        <span style="font-size:11px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.07em">Reparto por servicio · todos los periodos</span>
+        <span style="font-size:11px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.07em">Reparto por servicio · ${svcSeleccion?`${svcMes.length} factura${svcMes.length===1?'':'s'} seleccionada${svcMes.length===1?'':'s'}`:'todos los periodos'}</span>
+        <span style="display:inline-flex;gap:6px">
+        ${svcSeleccion?`<button onclick="limpiarSvcSel()" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" style="display:inline-flex;align-items:center;gap:5px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s">Ver todas <i class="ti ti-x" style="font-size:11px"></i></button>`:''}
         ${svcTipoFilter&&TIP[svcTipoFilter]?`<button onclick="setSvcFilter(null)" data-hs="background:#FCEBEB;color:#791F1F;border-color:#F3D2D2" style="display:inline-flex;align-items:center;gap:5px;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s">Filtrando: ${TIP[svcTipoFilter].nom} <i class="ti ti-x" style="font-size:11px"></i></button>`:''}
+        </span>
       </div>
       ${legs}
       <div class="svcd-ins">
@@ -2488,7 +2888,7 @@ function renderSvcDonut(){
     </div>
     <div class="svcd-note">
       <div style="display:flex;align-items:center;gap:6px;font-weight:600;color:#1A1917;margin-bottom:4px"><i class="ti ti-scale" style="font-size:14px;color:#1D9E75"></i>Cómo se reparte</div>
-      Cada depto paga según su <strong style="color:#1A1917">ponderación</strong>: días de uso en el periodo × personas que habitan. Nadie subsidia a nadie.
+      Cada depto paga según su <strong style="color:#1A1917">ponderación</strong>: días de uso en el periodo × personas que habitan. La parte de los que salieron o no aplican queda en la fila de <strong style="color:#1A1917">subsidio</strong> (adeudo del que salió o aportación del dueño).
     </div>
   </div>`;
   // Count-up del centro
@@ -2509,6 +2909,14 @@ function renderSvcDonut(){
   });
 }
 function setSvcFilter(t){svcTipoFilter=t;renderSvcList();}
+// Selección de facturas para la gráfica (solo presentación, no toca datos)
+function toggleSvcSel(id){
+  if(svcSeleccion===null)svcSeleccion=new Set(servicios.map(s=>s.id)); // partir de "todas"
+  if(svcSeleccion.has(id))svcSeleccion.delete(id);else svcSeleccion.add(id);
+  if(svcSeleccion.size===servicios.length)svcSeleccion=null; // todas marcadas → volver a "todos los periodos"
+  renderSvcList();
+}
+function limpiarSvcSel(){svcSeleccion=null;renderSvcList();}
 function renderDashboard(){
   if(!document.getElementById('sec-inicio'))return;
   // Saludo
@@ -2541,7 +2949,7 @@ function renderDashboard(){
   const deptosSvc=new Set();svcMes.forEach(s=>svcDet.forEach(d=>{if(d.servicio_id===s.id&&Number(d.monto)>0)deptosSvc.add(d.inmueble_id);}));
   // Ocupación: inquilinos sin salida o con salida futura
   const hoy=new Date();hoy.setHours(0,0,0,0);
-  const activos=inmuebles.filter(i=>!i.fecha_salida||new Date(i.fecha_salida+'T00:00:00')>=hoy).length;
+  const activos=inmuebles.filter(i=>!estaDesocupado(i.id)).length;
   const TILE=(bg,delay)=>`border:none;text-align:left;background:${bg};border-radius:14px;padding:16px 18px;cursor:pointer;font-family:inherit;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) ${delay} both`;
   document.getElementById('dash-tiles').innerHTML=`
     <button onclick="setTab('alertas')" data-hs="transform:translateY(-3px);box-shadow:0 10px 26px rgba(226,75,74,.18)" data-as="transform:scale(.97)" style="${TILE('#FCEBEB','.1s')}">
