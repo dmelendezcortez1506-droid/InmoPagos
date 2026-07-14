@@ -1306,6 +1306,13 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   </div>
 </div></div>
 
+<!-- Deuda del inquilino -->
+<div class="overlay" id="m-deuda"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-cash" style="color:var(--red)"></i><span id="mdeuda-ttl">Deuda del inquilino</span></h3><button class="mc" onclick="closeM('m-deuda')"><i class="ti ti-x"></i></button></div>
+  <div id="mdeuda-body" style="max-height:60vh;overflow:auto"></div>
+  <div class="mf"><button class="btn primary" onclick="closeM('m-deuda')">Cerrar</button></div>
+</div></div>
+
 <!-- Nuevo Servicio -->
 <div class="overlay" id="m-new-svc"><div class="modal lg">
   <div class="mh"><h3><i class="ti ti-bolt" style="color:var(--amber)"></i><span id="sv-modal-ttl">Registrar servicio</span></h3><button class="mc" onclick="closeM('m-new-svc')"><i class="ti ti-x"></i></button></div>
@@ -1838,6 +1845,86 @@ function renderPagos(){
 async function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}await ensureAutoPagos(vY,vM);renderStats();renderPagos();renderEC()}
 
 // ═══════════════════════════════════════
+//  DEUDA DEL INQUILINO ACTUAL
+//  Todo lo NO cobrado del contrato vigente (todos los meses): rentas atrasadas,
+//  servicios, depósito y saldos de parciales. Las deudas de inquilinos que ya
+//  salieron viven en su historial de contratos, no aquí.
+// ═══════════════════════════════════════
+function deudaInm(inmId){
+  const vig=contratoVigente(inmId);
+  if(!vig)return{total:0,items:[],futuros:[],hayVencido:false,hayTol:false};
+  const hoy=hoyISO();
+  const pend=pagos.filter(p=>{
+    if(p.inmueble_id!==inmId||p.concepto==='devolucion_deposito')return false;
+    const saldo=Number(p.monto)-Number(p.pagado);
+    if(saldo<=0.005)return false;
+    if(vig.id){
+      if(p.contrato_id)return p.contrato_id===vig.id;
+      // pagos viejos sin contrato_id: solo si caen dentro del contrato vigente
+      return !vig.fecha_inicio_contrato||p.vencimiento>=vig.fecha_inicio_contrato;
+    }
+    return !p.contrato_id;
+  }).sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
+  // Deuda real = cargos EXIGIBLES (su día de pago ya llegó). Los futuros (p.ej. renta
+  // generada por adelantado al navegar meses) solo informan el chip "Paga en N días".
+  const items=pend.filter(p=>p.vencimiento<=hoy);
+  const futuros=pend.filter(p=>p.vencimiento>hoy);
+  const total=items.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
+  const ests=items.map(getEstado);
+  return{total,items,futuros,hayVencido:ests.includes('vencido'),hayTol:ests.includes('tolerancia')};
+}
+// Próximo día de pago de renta del contrato (para el chip cuando no debe nada)
+function diasProximoPago(vig){
+  const t=new Date();t.setHours(0,0,0,0);
+  const dia=Math.max(1,parseInt(vig.dia)||1);
+  let prox=new Date(t.getFullYear(),t.getMonth(),Math.min(dia,new Date(t.getFullYear(),t.getMonth()+1,0).getDate()));
+  if(prox<t)prox=new Date(t.getFullYear(),t.getMonth()+1,Math.min(dia,new Date(t.getFullYear(),t.getMonth()+2,0).getDate()));
+  return dB(t,prox);
+}
+// ── Modal de deuda: desglose de todo lo que debe el inquilino actual, con cobro por pago ──
+let deudaInmIdAbierto=null;
+function abrirDeuda(inmId){deudaInmIdAbierto=inmId;renderDeuda(inmId);openM('m-deuda');}
+function renderDeuda(inmId){
+  const inm=getInm(inmId);if(!inm)return;
+  const vig=contratoVigente(inmId);
+  document.getElementById('mdeuda-ttl').textContent=`Deuda de ${vig?.inquilino||inm.inquilino||'—'} · Depto. ${inm.num}`;
+  const d=deudaInm(inmId);
+  const body=document.getElementById('mdeuda-body');
+  if(!d.items.length){
+    body.innerHTML=`<div style="padding:42px 24px;text-align:center"><div style="width:56px;height:56px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><i class="ti ti-circle-check" style="font-size:26px;color:#1D9E75"></i></div><div style="font-size:14.5px;font-weight:600">No debe nada</div><div style="font-size:12.5px;color:#9D9B96;margin-top:3px">Todos los cargos de este inquilino están cobrados.</div></div>`;
+    return;
+  }
+  const t0=new Date();t0.setHours(0,0,0,0);
+  const BD={vencido:{bg:'#FCEBEB',c:'#791F1F',lbl:'Vencido'},tolerancia:{bg:'#FDF0DB',c:'#8A5A00',lbl:'En tolerancia'},pendiente:{bg:'#FAEEDA',c:'#633806',lbl:'Pendiente'},parcial:{bg:'#E6F1FB',c:'#0C447C',lbl:'Parcial'}};
+  const filas=d.items.map(p=>{
+    const est=getEstado(p),b=BD[est]||BD.pendiente;
+    const saldo=Number(p.monto)-Number(p.pagado);
+    const v=new Date(p.vencimiento+'T00:00:00');
+    const con=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'';
+    const dv=dB(t0,v);
+    const cuando=dv===0?'hoy':dv>0?`en ${dv} día${dv===1?'':'s'}`:`hace ${Math.abs(dv)} día${Math.abs(dv)===1?'':'s'}`;
+    return`<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #EEECE4">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:600">${con} <span style="font-weight:400;color:#9D9B96">· ${MESES[v.getMonth()]} ${v.getFullYear()}</span></div>
+        <div style="font-size:11.5px;color:#9D9B96">Día de pago ${fdS(p.vencimiento)} (${cuando})${Number(p.pagado)>0?` · abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`:''}</div>
+      </div>
+      <span style="display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:${b.bg};color:${b.c};white-space:nowrap">${b.lbl}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:13.5px;font-weight:600;min-width:80px;text-align:right">${fmt(saldo)}</span>
+      <button onclick="cobrarDeuda('${p.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;font-size:11.5px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:7px;cursor:pointer;transition:all .15s"><i class="ti ti-check" style="font-size:12px"></i>Cobrar</button>
+    </div>`;
+  }).join('');
+  body.innerHTML=`
+    <div style="background:#1A1917;border-radius:12px;padding:16px 20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em">Deuda total acumulada</div><div style="font-size:11.5px;color:rgba(255,255,255,.45);margin-top:2px">${d.items.length} cargo${d.items.length===1?'':'s'} sin cobrar · todos los meses</div></div>
+      <div style="font-size:24px;font-weight:500;color:${d.hayVencido?'#FF8A88':'#fff'};font-family:'DM Mono',monospace">${fmt(d.total)}</div>
+    </div>${filas}`;
+}
+async function cobrarDeuda(pagoId){
+  await marcarPagado(pagoId); // marca, celebra y refresca las vistas de fondo
+  if(deudaInmIdAbierto)renderDeuda(deudaInmIdAbierto); // el modal se actualiza al momento
+}
+
+// ═══════════════════════════════════════
 //  RENDER INMUEBLES
 // ═══════════════════════════════════════
 function renderInm(){
@@ -1852,12 +1939,26 @@ function renderInm(){
     const barC=pct===100?'#1D9E75':pct>=50?'#BA7517':'#E24B4A';
     const pctC=pct===100?'#1D9E75':tv?'#E24B4A':'#6B6963';
     const desoc=estaDesocupado(i.id),vig=contratoVigente(i.id),nHist=historialContratos(i.id).length;
+    // Chip dinámico: qué tan cerca está el pago pendiente más urgente (renta o servicio),
+    // respetando la tolerancia del usuario. Si no debe nada → días al próximo día de pago.
+    const deuda=desoc?{total:0,items:[],hayVencido:false}:deudaInm(i.id);
     let chipBg,chipC,chipIco,chipLbl,chipAnim='none';
     if(desoc){chipBg='#EDEBFE';chipC='#4B3F9E';chipIco='ti-door-exit';chipLbl='Desocupado';}
-    else if(tv){chipBg='#FCEBEB';chipC='#791F1F';chipIco='ti-alert-triangle';chipLbl='Vencido';chipAnim='pulseVenc 2.6s ease-in-out infinite';}
-    else if(tm>0&&pct===100){chipBg='#E1F5EE';chipC='#085041';chipIco='ti-circle-check';chipLbl='Al día';}
-    else if(tm>0){chipBg='#FAEEDA';chipC='#633806';chipIco='ti-clock';chipLbl='En proceso';}
-    else{chipBg='#F1EFE8';chipC='#6B6963';chipIco='ti-minus';chipLbl='Sin cargos';}
+    else if(deuda.items.length){
+      const t0=new Date();t0.setHours(0,0,0,0);
+      const worst=deuda.items[0]; // el más antiguo (ya vienen ordenados por vencimiento)
+      const est=getEstado(worst),d=dB(t0,new Date(worst.vencimiento+'T00:00:00'));
+      if(est==='vencido'){const dd=Math.abs(d);chipBg='#FCEBEB';chipC='#791F1F';chipIco='ti-alert-triangle';chipLbl=`Vencido hace ${dd} día${dd===1?'':'s'}`;chipAnim='pulseVenc 2.6s ease-in-out infinite';}
+      else if(est==='tolerancia'){const quedan=getTolerancia()-Math.abs(d);chipBg='#FDF0DB';chipC='#8A5A00';chipIco='ti-hourglass';chipLbl=`En tolerancia · queda${quedan===1?'':'n'} ${quedan} día${quedan===1?'':'s'}`;}
+      else if(d===0){chipBg='#FAEEDA';chipC='#633806';chipIco='ti-bell-ringing';chipLbl='Hoy es día de pago';}
+      else{chipBg='#F1EFE8';chipC='#6B6963';chipIco='ti-calendar-time';chipLbl=`Paga en ${d} día${d===1?'':'s'}`;}
+    }
+    else{
+      // Sin deuda exigible: contar días hacia el próximo cargo real (si ya está generado) o al día de pago del contrato
+      const t0=new Date();t0.setHours(0,0,0,0);
+      const dNext=deuda.futuros.length?dB(t0,new Date(deuda.futuros[0].vencimiento+'T00:00:00')):(vig?diasProximoPago(vig):null);
+      chipBg='#E1F5EE';chipC='#085041';chipIco='ti-circle-check';chipLbl=`Al día${dNext!=null?` · paga en ${dNext} día${dNext===1?'':'s'}`:''}`;
+    }
     const inqNombre=desoc?'Espacio disponible':(vig?.inquilino||i.inquilino||'—');
     const delay=(0.08+idx*0.06).toFixed(2)+'s';
     return`<div data-hs="transform:translateY(-3px);box-shadow:0 10px 30px rgba(26,25,23,.09),0 2px 8px rgba(26,25,23,.05);border-color:#CBC9C0" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s,border-color .18s">
@@ -1867,8 +1968,9 @@ function renderInm(){
         <div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:500;font-family:'DM Mono',monospace${desoc?';color:#9D9B96':''}">${desoc?'—':fmt0(vig?.renta||i.renta)}</div><div style="font-size:11px;color:#9D9B96">${desoc?'sin renta':'/ mes'}</div></div>
       </div>
       ${tm>0?`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#9D9B96;margin-bottom:5px"><span>Cobranza ${MESES[vM].slice(0,3).toLowerCase()}</span><span style="font-family:'DM Mono',monospace;color:${pctC}">${pct}%</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden;margin-bottom:14px"><div style="height:100%;border-radius:4px;background:${barC};width:${pct}%;transform-origin:left;animation:growBar .8s cubic-bezier(.16,1,.3,1) ${delay} both"></div></div>`:'<div style="height:2px;margin-bottom:12px"></div>'}
-      <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #EEECE4">
+      <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #EEECE4;flex-wrap:wrap">
         <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${chipBg};color:${chipC};animation:${chipAnim}"><i class="ti ${chipIco}" style="font-size:11px"></i>${chipLbl}</span>
+        ${deuda.total>0.005?`<button title="Ver deuda del inquilino" onclick="abrirDeuda('${i.id}')" data-hs="transform:scale(1.04);filter:brightness(.96)" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:1px solid ${deuda.hayVencido?'#F3D2D2':'#F0DFC0'};background:${deuda.hayVencido?'#FCEBEB':'#FDF0DB'};color:${deuda.hayVencido?'#791F1F':'#8A5A00'};cursor:pointer;transition:all .15s"><i class="ti ti-cash" style="font-size:11px"></i>Debe ${fmt0(deuda.total)}</button>`:''}
         <div style="margin-left:auto;display:flex;gap:6px">
           ${desoc?`<button title="Asignar nuevo inquilino" onclick="abrirNuevoContrato('${i.id}')" data-hs="background:#EDEBFE;color:#4B3F9E;border-color:#CFC8FB" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-user-plus" style="font-size:15px"></i></button>`:`<button title="Enviar recordatorio" onclick="abrirRecordatorio('${i.id}')" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>`}
           <button title="Ver historial de contratos" onclick="abrirHistorial('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-history" style="font-size:15px"></i></button>
@@ -1887,12 +1989,12 @@ function renderInm(){
 // ═══════════════════════════════════════
 function renderAl(){
   const t=new Date();t.setHours(0,0,0,0);const al=[];const tol=getTolerancia();
-  const subT=document.getElementById('al-sub');if(subT)subT.textContent=`Pagos vencidos y próximos a vencer · tolerancia de ${tol} día${tol===1?'':'s'}`;
+  const subT=document.getElementById('al-sub');if(subT)subT.textContent=`Avisos desde el día de pago, en tolerancia y vencidos · tolerancia de ${tol} día${tol===1?'':'s'}`;
   pagos.forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),i=getInm(p.inmueble_id),est=getEstado(p),nm=i?.num||'?',d=dB(t,v);
     if(est==='vencido'){const dd=Math.abs(d);al.push({type:'venc',icon:'ti-alert-triangle',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vencido hace ${dd} día${dd!==1?'s':''} · vencía ${fd(p.vencimiento)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'pendiente',pri:0})}
     else if(est==='tolerancia'){const dd=Math.abs(d);al.push({type:'prox',icon:'ti-hourglass',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`En tolerancia · día de pago hace ${dd} día${dd!==1?'s':''} (${tol} de gracia)`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});}
-    else if(est==='pendiente'&&d>=0&&d<=3)al.push({type:'prox',icon:'ti-clock',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vence ${d===0?'hoy':d===1?'mañana':`en ${d} días`}`,monto:Number(p.monto),montoSub:'por cobrar',pri:1});
+    else if(est==='pendiente'&&d===0)al.push({type:'prox',icon:'ti-bell-ringing',inmId:i?.id||'',titulo:`Depto. ${nm} — Hoy es día de pago`,sub:`${p.concepto} · vence hoy${getTolerancia()>0?` · después corren ${getTolerancia()} días de tolerancia`:''}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});
     else if(est==='parcial')al.push({type:'parc',icon:'ti-percentage',inmId:i?.id||'',titulo:`Depto. ${nm} — pago parcial`,sub:`Abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'restante',pri:2});
   });
   const mesAct=new Date();
@@ -3128,7 +3230,7 @@ function contarAlertas(){
     const v=new Date(p.vencimiento+'T00:00:00'),est=getEstado(p),d=dB(t,v);
     if(est==='vencido')n++;
     else if(est==='tolerancia')n++;
-    else if(est==='pendiente'&&d>=0&&d<=3)n++;
+    else if(est==='pendiente'&&d===0)n++;
     else if(est==='parcial')n++;
   });
   const mesAct=new Date();
