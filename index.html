@@ -1010,7 +1010,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
       <select id="fe" onchange="renderPagos()"><option value="">Todos los estados</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option><option value="tolerancia">En tolerancia</option><option value="vencido">Vencido</option><option value="parcial">Parcial</option></select>
       <select id="fc" onchange="renderPagos()"><option value="">Todos los conceptos</option><option value="renta">Renta</option><option value="mantenimiento">Mant.</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="servicios">Servicios</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select>
     </div>
-    <div id="pagos-list" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden"><div style="text-align:center;padding:2rem"><span class="spinner"></span></div></div>
+    <div id="pagos-list" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow-x:auto"><div style="text-align:center;padding:2rem"><span class="spinner"></span></div></div>
   </div>
 
   <!-- INMUEBLES -->
@@ -1311,6 +1311,18 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div class="mh"><h3><i class="ti ti-cash" style="color:var(--red)"></i><span id="mdeuda-ttl">Deuda del inquilino</span></h3><button class="mc" onclick="closeM('m-deuda')"><i class="ti ti-x"></i></button></div>
   <div id="mdeuda-body" style="max-height:60vh;overflow:auto"></div>
   <div class="mf"><button class="btn primary" onclick="closeM('m-deuda')">Cerrar</button></div>
+</div></div>
+
+<!-- Estado de cuenta · elegir qué pagos entran al PDF -->
+<div class="overlay" id="m-ecsel"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-file-invoice" style="color:var(--teal)"></i><span id="ecsel-ttl">Elegir pagos</span></h3><button class="mc" onclick="closeM('m-ecsel')"><i class="ti ti-x"></i></button></div>
+  <div id="ecsel-head"></div>
+  <div id="ecsel-body" style="max-height:44vh;overflow:auto;margin-top:12px"></div>
+  <div class="mf">
+    <button class="btn" onclick="closeM('m-ecsel')">Cancelar</button>
+    <button class="btn" id="ecsel-prev" onclick="ecselGenerar(false)"><i class="ti ti-eye" style="font-size:15px"></i>Vista previa</button>
+    <button class="btn primary" id="ecsel-dl" onclick="ecselGenerar(true)"><i class="ti ti-download" style="font-size:15px"></i>Descargar PDF</button>
+  </div>
 </div></div>
 
 <!-- Nuevo Servicio -->
@@ -1818,7 +1830,7 @@ function renderPagos(){
   const GT='display:grid;grid-template-columns:76px minmax(150px,1.5fr) minmax(90px,1fr) 105px 105px 145px 135px 100px;align-items:center;column-gap:12px';
   const BADGE={pagado:{bg:'#EAF3DE',c:'#3B6D11',ico:'ti-check',lbl:'Pagado',anim:'none'},pendiente:{bg:'#FAEEDA',c:'#633806',ico:'ti-clock',lbl:'Pendiente',anim:'none'},tolerancia:{bg:'#FDF0DB',c:'#8A5A00',ico:'ti-hourglass',lbl:'En tolerancia',anim:'none'},vencido:{bg:'#FCEBEB',c:'#791F1F',ico:'ti-alert-triangle',lbl:'Vencido',anim:'pulseVenc 2.2s ease-in-out infinite'},parcial:{bg:'#E6F1FB',c:'#0C447C',ico:'ti-percentage',lbl:'Parcial',anim:'none'}};
   const th='font-size:11px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.06em';
-  const head=`<div style="${GT};background:#FAF9F5;border-bottom:1px solid #E2E0D8;padding:${padTh}"><span style="${th}">Depto.</span><span style="${th}">Inquilino</span><span style="${th}">Concepto</span><span style="${th};text-align:right">Monto</span><span style="${th};text-align:right">Pagado</span><span style="${th}">Vencimiento</span><span style="${th}">Estado</span><span></span></div>`;
+  const head=`<div style="${GT};background:#FAF9F5;border-bottom:1px solid #E2E0D8;padding:${padTh}"><span style="${th}">Depto.</span><span style="${th}">Inquilino</span><span style="${th}">Concepto</span><span style="${th};text-align:right">Monto</span><span style="${th};text-align:right">Pagado</span><span style="${th}">Vencimiento</span><span style="${th}">Estado</span><span style="position:sticky;right:0;background:#FAF9F5;box-shadow:-7px 0 9px -7px rgba(0,0,0,.09)"></span></div>`;
   const rows=list.map((p,idx)=>{
     const i=getInm(p.inmueble_id),est=getEstado(p),b=BADGE[est];
     const v=new Date(p.vencimiento+'T00:00:00'),dv=Math.round((v-t)/86400000);
@@ -1840,7 +1852,7 @@ function renderPagos(){
       <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12.5px;color:${pagC}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</span>
       <span style="color:${vencC};font-size:12.5px">${vencF}</span>
       <span><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;background:${b.bg};color:${b.c};animation:${b.anim}"><i class="ti ${b.ico}" style="font-size:11px"></i>${b.lbl}</span></span>
-      <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end">${accion}</span>
+      <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end;position:sticky;right:0;background:#fff;box-shadow:-7px 0 9px -7px rgba(0,0,0,.09)">${accion}</span>
     </div>`;
   }).join('');
   cont.innerHTML=`<div style="overflow-x:auto"><div style="min-width:950px;font-size:${fs}">${head}${rows}</div></div>`;
@@ -1925,6 +1937,103 @@ function renderDeuda(inmId){
 async function cobrarDeuda(pagoId){
   await marcarPagado(pagoId); // marca, celebra y refresca las vistas de fondo
   if(deudaInmIdAbierto)renderDeuda(deudaInmIdAbierto); // el modal se actualiza al momento
+}
+
+// ═══════════════════════════════════════
+//  ESTADO DE CUENTA · SELECCIÓN DE PAGOS PARA EL PDF
+// ═══════════════════════════════════════
+// Todos los pagos del inquilino ACTUAL del depto (pendientes, cobrados y futuros).
+// Mismo criterio de pertenencia que deudaInm, pero sin filtrar por saldo ni exigibilidad.
+function pagosInquilinoActual(inmId){
+  const vig=contratoVigente(inmId);
+  if(!vig)return{vig:null,lista:[]};
+  const lista=pagos.filter(p=>{
+    if(p.inmueble_id!==inmId||p.concepto==='devolucion_deposito')return false;
+    if(vig.id){
+      if(p.contrato_id)return p.contrato_id===vig.id;
+      // pagos viejos sin contrato_id: solo si caen dentro del contrato vigente
+      return !vig.fecha_inicio_contrato||p.vencimiento>=vig.fecha_inicio_contrato;
+    }
+    return !p.contrato_id;
+  }).sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
+  return{vig,lista};
+}
+// Descripción legible de un pago (concepto + período) para la tabla del PDF y la lista
+function descPago(p,inm){
+  const v=new Date(p.vencimiento+'T00:00:00');
+  const per=`${MESES[v.getMonth()]} ${v.getFullYear()}`;
+  const NS={agua:'Agua',luz:'Luz',gas:'Gas'};
+  if(p.concepto==='renta')return{desc:`Renta Departamento #${inm.num}`,per,cant:'1 Mensualidad'};
+  if(p.concepto==='deposito')return{desc:'Depósito en garantía',per,cant:''};
+  if(NS[p.concepto]||p.servicio_id){const t=NS[p.concepto]||(p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'Servicio');return{desc:`Servicio de ${t}`,per,cant:''};}
+  const c=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'Cargo';
+  return{desc:c,per,cant:''};
+}
+let ecselInmId=null, ecselSel=new Set();
+function abrirECSel(inmId){
+  const inm=getInm(inmId);if(!inm)return;
+  const {vig,lista}=pagosInquilinoActual(inmId);
+  if(!vig){toast('Este depto está desocupado','ti-alert-triangle');return}
+  ecselInmId=inmId;
+  // Default: premarcar los adeudos exigibles (los mismos que salen en "Debe $X")
+  const hoy=hoyISO();
+  ecselSel=new Set(lista.filter(p=>{const saldo=Number(p.monto)-Number(p.pagado);return saldo>0.005&&p.vencimiento<=hoy}).map(p=>p.id));
+  document.getElementById('ecsel-ttl').textContent=`Estado de cuenta · ${vig.inquilino||inm.inquilino||'—'} · Depto. ${inm.num}`;
+  renderECSel();
+  openM('m-ecsel');
+}
+function renderECSel(){
+  const inm=getInm(ecselInmId);if(!inm)return;
+  const {lista}=pagosInquilinoActual(ecselInmId);
+  const body=document.getElementById('ecsel-body');
+  const prev=document.getElementById('ecsel-prev'),dl=document.getElementById('ecsel-dl');
+  if(!lista.length){
+    document.getElementById('ecsel-head').innerHTML='';
+    body.innerHTML=`<div style="padding:36px 24px;text-align:center;color:#9D9B96"><i class="ti ti-file-off" style="font-size:30px;opacity:.4;display:block;margin-bottom:10px"></i><div style="font-size:13.5px">Este inquilino no tiene cargos registrados.</div></div>`;
+    [prev,dl].forEach(b=>{if(b){b.disabled=true;b.style.opacity='.5';b.style.cursor='not-allowed';}});
+    return;
+  }
+  const hoy=hoyISO();
+  const BD={vencido:{bg:'#FCEBEB',c:'#791F1F',lbl:'Vencido'},tolerancia:{bg:'#FDF0DB',c:'#8A5A00',lbl:'En tolerancia'},pendiente:{bg:'#FAEEDA',c:'#633806',lbl:'Pendiente'},parcial:{bg:'#E6F1FB',c:'#0C447C',lbl:'Parcial'},pagado:{bg:'#E1F5EE',c:'#085041',lbl:'Pagado'}};
+  body.innerHTML=lista.map(p=>{
+    const est=getEstado(p),b=BD[est]||BD.pendiente;
+    const saldo=Number(p.monto)-Number(p.pagado);
+    const d=descPago(p,inm);
+    const marc=ecselSel.has(p.id);
+    const futuro=p.vencimiento>hoy;
+    const sub=Number(p.pagado)>0&&saldo>0.005?`abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`:est==='pagado'?'Ya pagado':`Vence ${fdS(p.vencimiento)}`;
+    return`<label style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid #EEECE4;cursor:pointer">
+      <input type="checkbox" ${marc?'checked':''} onchange="toggleECSel('${p.id}')" style="width:17px;height:17px;accent-color:#1D9E75;cursor:pointer;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:600">${d.desc} <span style="font-weight:400;color:#9D9B96">· ${d.per}</span></div>
+        <div style="font-size:11.5px;color:#9D9B96">${sub}${futuro?' · próximo':''}</div>
+      </div>
+      <span style="display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:${b.bg};color:${b.c};white-space:nowrap">${b.lbl}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:13.5px;font-weight:600;min-width:80px;text-align:right">${fmt(saldo)}</span>
+    </label>`;
+  }).join('');
+  actualizarTotalECSel();
+}
+function toggleECSel(pagoId){
+  if(ecselSel.has(pagoId))ecselSel.delete(pagoId);else ecselSel.add(pagoId);
+  actualizarTotalECSel();
+}
+function actualizarTotalECSel(){
+  const {lista}=pagosInquilinoActual(ecselInmId);
+  const sel=lista.filter(p=>ecselSel.has(p.id));
+  const total=sel.reduce((s,p)=>s+Math.max(0,Number(p.monto)-Number(p.pagado)),0);
+  document.getElementById('ecsel-head').innerHTML=`<div style="background:#1A1917;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em">Total seleccionado</div><div style="font-size:11.5px;color:rgba(255,255,255,.45);margin-top:2px">${sel.length} de ${lista.length} cargo${lista.length===1?'':'s'}</div></div>
+    <div style="font-size:24px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt(total)}</div>
+  </div>`;
+  const dis=sel.length===0;
+  [document.getElementById('ecsel-prev'),document.getElementById('ecsel-dl')].forEach(b=>{if(b){b.disabled=dis;b.style.opacity=dis?'.5':'1';b.style.cursor=dis?'not-allowed':'pointer';}});
+}
+function ecselGenerar(download){
+  const {lista}=pagosInquilinoActual(ecselInmId);
+  const sel=lista.filter(p=>ecselSel.has(p.id));
+  if(!sel.length){toast('Selecciona al menos un pago','ti-alert-triangle');return}
+  generarPDF(ecselInmId,download,sel);
 }
 
 // ═══════════════════════════════════════
@@ -2490,9 +2599,14 @@ function recalcAllSvc(){
       sumUsada+=pond;
     });
     const persRef=enModal?pers:(vig?.pers||partes.salidos[0]?.pers||inm.personas||1);
-    const pondCompleta=diasTotal*persRef;
+    // Deptos SIN ninguna ocupación en el período (100% vacíos, o el inquilino entró después /
+    // se fue antes) salen del reparto: no aportan ponderación ni inflan el subsidio. Solo
+    // cuentan los que estuvieron al menos parte del período; su parte no usada (transición
+    // = entró tarde / se fue antes) sí sigue yendo al subsidio.
+    const tuvoOcupacion=(vig&&vig.aplica)||partes.salidos.length>0;
+    const pondCompleta=tuvoOcupacion?diasTotal*persRef:0;
     sumCompleta+=pondCompleta;sumUsada+=pondUsada;
-    rows.push({idx,inm,contratoId:vig?.c?.id||null,aplica:(vig?vig.aplica:false)&&(!enModal||manualOn),diasUso:enModal?(manualOn?dias:0):0,pers,pondUsada,pondCompleta,motivo:vig?.motivo||'',visible:enModal,hayVig:!!(vig&&vig.aplica),vigNombre:vig?.c?.inquilino||inm.inquilino||'',tuvoSalidos:partes.salidos.length>0});
+    rows.push({idx,inm,contratoId:vig?.c?.id||null,aplica:(vig?vig.aplica:false)&&(!enModal||manualOn),diasUso:enModal?(manualOn?dias:0):0,pers,pondUsada,pondCompleta,tuvoOcupacion,motivo:vig?.motivo||'',visible:enModal,hayVig:!!(vig&&vig.aplica),vigNombre:vig?.c?.inquilino||inm.inquilino||'',tuvoSalidos:partes.salidos.length>0});
   });
   // Montos BASE (antes del apoyo). El subsidio se calcula sobre estos → el apoyo nunca lo toca.
   let sumMto=0;
@@ -2528,7 +2642,13 @@ function recalcAllSvc(){
       if(/desde/i.test(r.motivo))motivo=`${nom} · días antes de entrar`;
       else if(/Sali[oó]/i.test(r.motivo))motivo=`${nom} · días tras su salida`;
       else motivo=`${nom} · días sin ocupar`;
-    }else if(r.tuvoSalidos)motivo='Días sin inquilino tras la salida';
+    }else if(r.tuvoSalidos){
+      // Días vacíos tras la salida de un inquilino del historial → mostramos su nombre
+      // (el de salida más reciente del depto), igual que "Diego · días tras su salida".
+      const sd=salidos.filter(s=>s.inm.id===r.inm.id).slice().sort((a,b)=>(a.fsalStr||'')<(b.fsalStr||'')?-1:1);
+      const nomS=(sd.length?sd[sd.length-1].nombre:'—').split(' ')[0];
+      motivo=`${nomS} · días tras su salida`;
+    }
     else motivo='Sin inquilino en el período';
     const pct=sumCompleta>0?noUsada/sumCompleta:0;
     subRows.push({num:r.inm.num,motivo,pond:noUsada,pct,monto:pct*total});
@@ -2807,18 +2927,26 @@ function renderEC(){
   const l2=document.getElementById('ec-mes-lbl2');if(l2)l2.textContent=lbl;
   const el=document.getElementById('l-ec');
   if(!inmuebles.length){el.innerHTML=`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:64px 32px;text-align:center;color:#9D9B96"><i class="ti ti-file-invoice" style="font-size:34px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:13.5px">Sin departamentos registrados.</div></div>`;return}
-  const mc=MESES[vM].slice(0,3).toLowerCase();
   el.innerHTML=inmuebles.map(inm=>{
-    const pagosMes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&p.inmueble_id===inm.id});
-    const renta=pagosMes.filter(p=>p.concepto==='renta').reduce((s,p)=>s+Number(p.monto),0);
+    const vig=contratoVigente(inm.id);
+    const desoc=!vig;
+    const rentaMensual=Number((vig&&vig.renta)||inm.renta||0);
     const svcs=getSvcMonto(inm.id,vM,vY);
-    const totalEC=renta+svcs;
-    return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:14px;transition:box-shadow .18s,transform .18s cubic-bezier(.16,1,.3,1)">
+    // Lo que realmente debe el inquilino actual (todos los meses exigibles), no solo el mes visible
+    const deuda=desoc?{total:0,hayVencido:false}:deudaInm(inm.id);
+    const inqui=(vig&&vig.inquilino)||inm.inquilino||'—';
+    const totalCol=deuda.total>0.005
+      ? `<div style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:${deuda.hayVencido?'#E24B4A':'#8A5A00'}">${fmt(deuda.total)}</div><div style="font-size:10.5px;color:#9D9B96">debe hoy</div>`
+      : `<div style="font-size:16px;font-weight:500;font-family:'DM Mono',monospace;color:#1D9E75">${fmt(0)}</div><div style="font-size:10.5px;color:#9D9B96">${desoc?'desocupado':'al día'}</div>`;
+    return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:box-shadow .18s,transform .18s cubic-bezier(.16,1,.3,1)">
       <div style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${inm.num}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${inm.inquilino}</div><div style="font-size:12px;color:#9D9B96">Renta ${fmt(renta)} · Servicios ${fmt(svcs)}</div></div>
-      <div style="text-align:right;margin-right:6px"><div style="font-size:16px;font-weight:500;font-family:'DM Mono',monospace">${fmt(totalEC)}</div><div style="font-size:10.5px;color:#9D9B96">total ${mc}</div></div>
-      <button onclick="verEC('${inm.id}')" data-hs="background:#F1EFE8" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-eye" style="font-size:13px"></i>Ver</button>
-      <button onclick="generarPDF('${inm.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-file-type-pdf" style="font-size:13px"></i>PDF</button>
+      <div style="flex:1;min-width:140px"><div style="font-size:14px;font-weight:600">${inqui}</div><div style="font-size:12px;color:#9D9B96">Renta ${fmt(rentaMensual)} · Servicios ${fmt(svcs)}</div></div>
+      <div style="text-align:right;margin-right:6px">${totalCol}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button onclick="abrirECSel('${inm.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-list-check" style="font-size:13px"></i>Elegir pagos</button>
+        <button onclick="verEC('${inm.id}')" data-hs="background:#F1EFE8" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-eye" style="font-size:13px"></i>Ver</button>
+        <button onclick="generarPDF('${inm.id}')" data-hs="background:#F1EFE8" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-file-type-pdf" style="font-size:13px"></i>PDF</button>
+      </div>
     </div>`;
   }).join('');
   mo(el);
@@ -2873,7 +3001,7 @@ async function guardarConfig(){
 // ═══════════════════════════════════════
 //  GENERACIÓN DE PDF (Estado de Cuenta)
 // ═══════════════════════════════════════
-function generarPDF(inmId,download=true){
+function generarPDF(inmId,download=true,selPagos=null){
   const {jsPDF}=window.jspdf;
   const inm=getInm(inmId);if(!inm)return;
   const cfg=CW.cfg||{};
@@ -2884,21 +3012,34 @@ function generarPDF(inmId,download=true){
   const scott=cfg.cuenta_scotiabank||'';
   const oxxo=cfg.tarjeta_oxxo||'';
 
-  // Datos del mes
-  const pagosMes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&p.inmueble_id===inmId});
-  const renta=pagosMes.find(p=>p.concepto==='renta');
-  const rentaMonto=renta?Number(renta.monto):Number(inm.renta);
-  const svcsDelMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
-  const svcItems=[];
-  svcsDelMes.forEach(s=>{
-    const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
-    if(d&&Number(d.monto)>0)svcItems.push({tipo:s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1),monto:Number(d.monto)});
-  });
-  const totalSvcs=svcItems.reduce((s,i)=>s+i.monto,0);
-  const totalEC=rentaMonto+totalSvcs;
-
-  // Fecha de vencimiento (día de pago del depto en el mes siguiente)
-  const fechaVenc=`${MESES[vM]} ${inm.dia||'18'}/${vY}`;
+  // Conceptos de la tabla: por pagos seleccionados (nuevo) o renta+servicios del mes visible (directo)
+  let filasPDF=[],totalEC=0,fechaVenc='';
+  if(Array.isArray(selPagos)){
+    // Una fila por pago seleccionado; el importe es el SALDO pendiente (lo que falta por pagar)
+    filasPDF=selPagos.map(p=>{
+      const dd=descPago(p,inm);
+      const saldo=Math.max(0,Number(p.monto)-Number(p.pagado));
+      return{desc:dd.per?`${dd.desc} — ${dd.per}`:dd.desc,cant:dd.cant,monto:saldo};
+    });
+    totalEC=filasPDF.reduce((s,f)=>s+f.monto,0);
+    const meses=new Set(selPagos.map(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()+'-'+v.getFullYear()}));
+    const vmin=selPagos.map(p=>p.vencimiento).filter(Boolean).sort()[0];
+    fechaVenc=meses.size>1?'Varios periodos':(vmin?fd(vmin):'—');
+  }else{
+    // Datos del mes visible (flujo directo, sin cambios)
+    const pagosMes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&p.inmueble_id===inmId});
+    const renta=pagosMes.find(p=>p.concepto==='renta');
+    const rentaMonto=renta?Number(renta.monto):Number(inm.renta);
+    const svcsDelMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
+    filasPDF=[{desc:`Renta Departamento #${inm.num}`,cant:'1 Mensualidad',monto:rentaMonto}];
+    svcsDelMes.forEach(s=>{
+      const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
+      if(d&&Number(d.monto)>0)filasPDF.push({desc:`Servicio de ${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)} — ${MESES[vM]}`,cant:'',monto:Number(d.monto)});
+    });
+    totalEC=filasPDF.reduce((s,f)=>s+f.monto,0);
+    // Fecha de vencimiento (día de pago del depto en el mes siguiente)
+    fechaVenc=`${MESES[vM]} ${inm.dia||'18'}/${vY}`;
+  }
 
   // Crear PDF
   const doc=new jsPDF({unit:'mm',format:'a4'});
@@ -2943,27 +3084,21 @@ function generarPDF(inmId,download=true){
   doc.text('Total',W-M-2,ty,{align:'right'});
   doc.setDrawColor(200,160,160);doc.setLineWidth(0.3);doc.line(M,ty+2,W-M,ty+2);
 
-  // Fila renta
+  // Filas de la tabla (una por concepto). Salta de página si se llena la hoja.
   let tr=ty+11;
   doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(50,50,50);
-  doc.text(`Renta Departamento #${inm.num}`,M+2,tr);
-  doc.text('1 Mensualidad',W/2-10,tr,{align:'center'});
-  doc.text(fmt(rentaMonto),W-M-30,tr,{align:'right'});
-  doc.text(fmt(rentaMonto),W-M-2,tr,{align:'right'});
-  doc.setDrawColor(220,220,220);doc.line(M,tr+3,W-M,tr+3);tr+=12;
-
-  // Servicios agrupados
-  if(svcItems.length>0){
-    svcItems.forEach(sv=>{
-      doc.text(`Servicio de ${sv.tipo} — ${MESES[vM]}`,M+2,tr);
-      doc.text('',W/2-10,tr,{align:'center'});
-      doc.text(fmt(sv.monto),W-M-30,tr,{align:'right'});
-      doc.text(fmt(sv.monto),W-M-2,tr,{align:'right'});
-      doc.setDrawColor(220,220,220);doc.line(M,tr+3,W-M,tr+3);tr+=12;
-    });
-  }
+  filasPDF.forEach(f=>{
+    if(tr>270){doc.addPage();tr=25;}
+    const desc=doc.splitTextToSize(f.desc,95);
+    doc.text(desc,M+2,tr);
+    doc.text(f.cant||'',W/2-10,tr,{align:'center'});
+    doc.text(fmt(f.monto),W-M-30,tr,{align:'right'});
+    doc.text(fmt(f.monto),W-M-2,tr,{align:'right'});
+    doc.setDrawColor(220,220,220);doc.line(M,tr+3,W-M,tr+3);tr+=Math.max(12,desc.length*6);
+  });
 
   // ── TOTAL ──
+  if(tr>250){doc.addPage();tr=25;}
   const totY=tr+8;
   doc.setFillColor(240,240,240);doc.rect(W-M-70,totY-7,72,12,'F');
   doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
@@ -2972,7 +3107,8 @@ function generarPDF(inmId,download=true){
   doc.text(fmt(totalEC),W-M-2,totY,{align:'right'});
 
   // ── CÓMO PAGAR ──
-  const py=totY+20;
+  let py=totY+20;
+  if(py>245){doc.addPage();py=30;}
   doc.setFillColor(255,240,240);doc.rect(M-2,py-8,W-2*(M-2),8,'F');
   doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(200,50,50);
   doc.text('¿CÓMO PAGAR?',M,py-1);
