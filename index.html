@@ -668,6 +668,15 @@ tbody tr:hover td{background:var(--hover)}
 .fin-fg input:focus,.fin-fg select:focus,.fin-fg textarea:focus{border-color:#A855F7!important;box-shadow:0 0 0 3px rgba(168,85,247,.18)!important}
 .fin-bar{height:100%;border-radius:4px 4px 2px 2px;transform-origin:bottom;animation:barUp .7s cubic-bezier(.16,1,.3,1) both}
 .fin-check{width:17px;height:17px;accent-color:#A855F7;cursor:pointer}
+/* Card portal "Finanzas de todos tus negocios" (selector de negocios, tema claro → modo morado) */
+.ws-fin-card{display:none;width:100%;align-items:center;gap:12px;padding:14px 15px;margin-top:10px;border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;color:#EDEBFA;background:linear-gradient(135deg,#1E1838,#0B0A12);border:1px solid rgba(139,92,246,.4);transition:transform .15s,box-shadow .2s,border-color .2s}
+.ws-fin-card:hover{transform:translateY(-1px);border-color:rgba(168,85,247,.65);box-shadow:0 8px 30px rgba(124,58,237,.35)}
+.ws-fin-card .fin-gem{flex-shrink:0}
+/* Dropdown multi-select de negocios (header del modo Finanzas global) */
+#fin-ws-menu{background:#131022;border:1px solid rgba(139,92,246,.35);box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(139,92,246,.15)}
+.fin-ws-opt{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;font-family:inherit;font-size:12.5px;color:#EDEBFA;padding:9px 12px;border-radius:9px;cursor:pointer;transition:background .15s;text-align:left}
+.fin-ws-opt:hover{background:rgba(139,92,246,.12)}
+.fin-ws-opt .fin-check{pointer-events:none}
 #fin-app ::-webkit-scrollbar-thumb{background:#2A2344;border:2px solid #08070E}
 @keyframes finGlow{0%,100%{box-shadow:0 0 14px rgba(139,92,246,.5),inset 0 0 8px rgba(255,255,255,.25)}50%{box-shadow:0 0 26px rgba(168,85,247,.85),inset 0 0 10px rgba(255,255,255,.35)}}
 @keyframes finSheen{0%,60%{left:-80%}85%,100%{left:130%}}
@@ -863,6 +872,14 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <h2 style="font-size:17px;font-weight:600;margin-bottom:4px">Tus negocios</h2>
   <p style="font-size:13px;color:var(--tx2);margin-bottom:1.5rem">Selecciona un negocio o crea/únete a uno nuevo</p>
   <div id="ws-list"></div>
+  <button id="ws-fin-card" class="ws-fin-card" onclick="finOpenGlobal()">
+    <span class="fin-gem"><i class="ti ti-chart-pie-4" style="color:#fff;font-size:16px"></i></span>
+    <span style="flex:1;min-width:0">
+      <strong style="font-size:14px;font-weight:600;display:block">Finanzas de todos tus negocios</strong>
+      <span style="font-size:12px;color:#8E89A8">Cascada, gastos e impuestos consolidados</span>
+    </span>
+    <i class="ti ti-chevron-right" style="color:#A78BFA;flex-shrink:0"></i>
+  </button>
   <div class="divider">o</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
     <button class="btn" style="justify-content:center" onclick="openM('m-cws')"><i class="ti ti-plus"></i>Crear nuevo</button>
@@ -1119,8 +1136,8 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     </div>
     <div id="fin-menu" class="mode-menu" role="menu">
       <button class="mode-opt" role="menuitem" onclick="finToggle()">
-        <span class="mode-tag" style="background:rgba(29,158,117,.15);color:#6EE7B7;border:1px solid rgba(29,158,117,.35)">GESTIÓN</span>
-        <span class="mode-desc">Volver a cobranza, pagos y departamentos</span>
+        <span class="mode-tag" id="fin-menu-back-tag" style="background:rgba(29,158,117,.15);color:#6EE7B7;border:1px solid rgba(29,158,117,.35)">GESTIÓN</span>
+        <span class="mode-desc" id="fin-menu-back-desc">Volver a cobranza, pagos y departamentos</span>
       </button>
       <button class="mode-opt" role="menuitem" onclick="closeModeMenus()">
         <span style="display:flex;align-items:center;justify-content:space-between;width:100%"><span class="mode-tag" style="background:rgba(139,92,246,.2);color:#C4B5FD;border:1px solid rgba(139,92,246,.45)">FINANZAS</span><i class="ti ti-check" style="color:#A855F7;font-size:14px"></i></span>
@@ -1129,6 +1146,10 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     </div>
     <div style="flex:1"></div>
     <select id="fin-prop" class="fin-sel" onchange="finProp=this.value;finRenderAll()" title="Propiedad"></select>
+    <button id="fin-ws-btn" class="fin-sel" style="display:none;align-items:center;gap:7px" title="Negocios" onclick="finWSMenuToggle(event)">
+      <i class="ti ti-buildings" style="font-size:13px;color:#A78BFA"></i><span id="fin-ws-lbl">Todos los negocios</span><i class="ti ti-selector" style="font-size:12px;color:#8E89A8"></i>
+    </button>
+    <div id="fin-ws-menu" class="mode-menu" role="menu"></div>
     <div class="fin-seg" id="fin-seg">
       <button data-seg="mes" class="on" onclick="finSetSeg('mes')">MES</button>
       <button data-seg="trim" onclick="finSetSeg('trim')">TRIM</button>
@@ -1164,9 +1185,10 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     </div>
     <div id="fga-virt-note" style="display:none;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.35);color:#C4B5FD;border-radius:10px;padding:9px 12px;font-size:12px;margin-bottom:14px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+      <div class="fin-fg" id="fga-ws-wrap" style="display:none;grid-column:1/-1"><label>Negocio *</label><select id="fga-ws" onchange="finWSFormChange('g')"></select></div>
       <div class="fin-fg" style="grid-column:1/-1"><label>Propiedad *</label><select id="fga-prop"></select></div>
       <div class="fin-fg" style="grid-column:1/-1"><label>Categoría *</label><select id="fga-cat"></select>
-        <button onclick="finOpenCats()" style="border:none;background:none;color:#A78BFA;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;padding:2px 0 0;text-align:left;text-decoration:underline">Administrar categorías…</button></div>
+        <button id="fga-cats-link" onclick="finOpenCats()" style="border:none;background:none;color:#A78BFA;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;padding:2px 0 0;text-align:left;text-decoration:underline">Administrar categorías…</button></div>
       <div class="fin-fg"><label>Monto *</label><input type="number" id="fga-monto" step="0.01" min="0" placeholder="0.00"></div>
       <div class="fin-fg"><label>Fecha *</label><input type="date" id="fga-fecha"></div>
       <div class="fin-fg" style="grid-column:1/-1"><label>Descripción</label><input type="text" id="fga-desc" placeholder="Opcional"></div>
@@ -1187,6 +1209,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
       <button class="fin-ib" onclick="finCloseOv('fm-imp')" title="Cerrar"><i class="ti ti-x"></i></button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+      <div class="fin-fg" id="fim-ws-wrap" style="display:none;grid-column:1/-1"><label>Negocio *</label><select id="fim-ws" onchange="finWSFormChange('i')"></select></div>
       <div class="fin-fg" style="grid-column:1/-1"><label>Propiedad *</label><select id="fim-prop"></select></div>
       <div class="fin-fg"><label>Monto pagado *</label><input type="number" id="fim-monto" step="0.01" min="0" placeholder="0.00"></div>
       <div class="fin-fg"><label>Fecha de pago *</label><input type="date" id="fim-fecha"></div>
@@ -1607,6 +1630,8 @@ async function cargarWS(){
   show('s-workspace');
   const {data}=await sb.from('memberships').select('role,workspaces(id,nombre,invite_code)').eq('user_id',CU.id);
   const el=document.getElementById('ws-list');
+  finWS=(data||[]).map(m=>({id:m.workspaces.id,nombre:m.workspaces.nombre}));
+  document.getElementById('ws-fin-card').style.display=finWS.length?'flex':'none';
   if(!data?.length){el.innerHTML=`<p style="font-size:13px;color:var(--tx2);padding:1rem 0">Sin negocios. Crea uno o únete con un código.</p>`;return}
   el.innerHTML=data.map(m=>`<div class="ws-item" onclick="entrarWS('${m.workspaces.id}','${m.workspaces.nombre}','${m.workspaces.invite_code}','${m.role}')">
     <div class="ws-av">${m.workspaces.nombre.slice(0,2).toUpperCase()}</div>
@@ -3932,6 +3957,22 @@ let fM=new Date().getMonth(),fY=new Date().getFullYear(),fQ=Math.floor(new Date(
 let finRA='',finRB='';
 let editGastoId=null,editImpId=null,editVirt=null; // editVirt={base,m,y} instancia recurrente
 const FIN_CATC=['#A855F7','#22D3EE','#F59E0B','#34D399','#F472B6','#818CF8','#FB7185','#FBBF24'];
+// ── Modo global (finanzas de todos los negocios, desde el selector) ──
+// Dataset paralelo: NUNCA pisa los arrays por-workspace (pagos, gastosOp,
+// impuestosPag, gastoCats, inmuebles) que usan s-app y los sync de apoyo.
+let finGlobal=false,finGLoaded=false;
+let finWS=[];                                  // [{id,nombre}] negocios del usuario (memberships)
+let finGSel=new Set();                         // ids seleccionados; Set vacío = TODOS
+let finGData={pagos:[],gastos:[],imps:[],cats:[],inms:[]};
+function finWSok(w){return !finGSel.size||finGSel.has(w);}
+function finDSPagos(){return finGlobal?finGData.pagos.filter(p=>finWSok(p.workspace_id)):pagos;}
+function finDSGastos(){return finGlobal?finGData.gastos.filter(g=>finWSok(g.workspace_id)):gastosOp;}
+function finDSImps(){return finGlobal?finGData.imps.filter(i=>finWSok(i.workspace_id)):impuestosPag;}
+function finDSCats(){return finGlobal?finGData.cats:gastoCats;}  // pool completo: resolución por id
+function finGetInm(id){return finGlobal?finGData.inms.find(i=>i.id===id):getInm(id);}
+function finWSName(id){return finWS.find(w=>w.id===id)?.nombre||'—';}
+function finRowLoc(r){const n=finGetInm(r.inmueble_id)?.num||'—';return finGlobal?`${finWSName(r.workspace_id)} · ${n}`:n;}
+function finWSLbl(){if(!finGSel.size)return'Todos los negocios';const a=finWS.filter(w=>finGSel.has(w.id));return a.length===1?a[0].nombre:a.length+' negocios';}
 function finF(n){n=Number(n)||0;return(n<0?'−$':'$')+Math.abs(Math.round(n)).toLocaleString('es-MX');}
 function finUUID(){return (crypto&&crypto.randomUUID)?crypto.randomUUID():'l'+Date.now()+Math.random().toString(36).slice(2,8);}
 
@@ -3962,6 +4003,15 @@ function finWipe(toDark,midCb){
 // ── Toggle del modo (botón junto al nombre del negocio) ──
 async function finToggle(){
   if(finBusy)return;finBusy=true;closeModeMenus();
+  if(finGlobal){ // cerrar el modo global: vuelve al selector de negocios (screen activa debajo)
+    finWipe(false,()=>{
+      finOn=false;finGlobal=false;
+      document.getElementById('fin-app').style.display='none';
+      finUIGlobal(false);
+    });
+    setTimeout(()=>{finBusy=false;},1200);
+    return;
+  }
   const toFin=!finOn;
   if(toFin&&!finLoaded){try{await (finLoadP||finLoad());}catch(e){}}
   finWipe(toFin,()=>{
@@ -3970,6 +4020,83 @@ async function finToggle(){
     if(toFin){document.getElementById('fin-wsn').textContent=(CW?.nombre||'').toUpperCase();finFillSelects();finRenderAll();}
   });
   setTimeout(()=>{finBusy=false;},1200);
+}
+
+// ── Modo global: apertura desde el selector de negocios ──
+async function finOpenGlobal(){
+  if(finBusy)return;finBusy=true;
+  try{await finGLoad();}
+  catch(e){finBusy=false;toast('No se pudieron cargar las finanzas consolidadas: '+(e.message||e),'ti-alert-triangle');return;}
+  finGlobal=true;finGSel=new Set();finProp='';
+  finWipe(true,()=>{
+    finOn=true;
+    document.getElementById('fin-app').style.display='flex';
+    document.getElementById('fin-wsn').textContent='TODOS LOS NEGOCIOS';
+    finUIGlobal(true);finFillSelects();finWSMenuRender();finRenderAll();
+  });
+  setTimeout(()=>{finBusy=false;},1200);
+}
+// Alterna la UI entre modo por-negocio y modo global
+function finUIGlobal(on){
+  document.getElementById('fin-prop').style.display=on?'none':'';
+  document.getElementById('fin-ws-btn').style.display=on?'inline-flex':'none';
+  document.getElementById('fga-ws-wrap').style.display=on?'flex':'none';
+  document.getElementById('fim-ws-wrap').style.display=on?'flex':'none';
+  document.getElementById('fga-cats-link').style.display=on?'none':'';
+  const tag=document.getElementById('fin-menu-back-tag'),desc=document.getElementById('fin-menu-back-desc');
+  tag.textContent=on?'SALIR':'GESTIÓN';
+  desc.textContent=on?'Volver a tus negocios':'Volver a cobranza, pagos y departamentos';
+}
+
+// ── Modo global: multi-select de negocios (todos / uno / combinación) ──
+function finWSMenuToggle(ev){
+  const btn=document.getElementById('fin-ws-btn'),m=document.getElementById('fin-ws-menu');
+  const r=btn.getBoundingClientRect();
+  m.style.top=(r.bottom+8)+'px';
+  m.style.left='auto';m.style.right=Math.max(12,innerWidth-r.right)+'px';
+  toggleModeMenu('fin-ws-menu',ev);
+}
+function finWSMenuRender(){
+  const m=document.getElementById('fin-ws-menu');
+  const row=(id,nom,chk)=>`<button class="fin-ws-opt" data-id="${id}" onclick="finWSSel(this.dataset.id)">
+    <input type="checkbox" class="fin-check" tabindex="-1" ${chk?'checked':''}>
+    <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+  </button>`;
+  m.innerHTML=row('','◈ Todos los negocios',!finGSel.size)+finWS.map(w=>row(w.id,'',finGSel.has(w.id))).join('');
+  // nombres via textContent (nunca interpolar HTML: pueden traer comillas/etiquetas)
+  const spans=m.querySelectorAll('.fin-ws-opt span');
+  spans[0].textContent='◈ Todos los negocios';
+  finWS.forEach((w,k)=>{spans[k+1].textContent=w.nombre;});
+}
+function finWSSel(id){
+  if(!id)finGSel.clear();
+  else{
+    finGSel.has(id)?finGSel.delete(id):finGSel.add(id);
+    if(!finGSel.size||finGSel.size===finWS.length)finGSel.clear(); // vacío o todos ≡ "Todos"
+  }
+  finWSMenuRender();
+  document.getElementById('fin-ws-lbl').textContent=finWSLbl();
+  document.getElementById('fin-wsn').textContent=finWSLbl().toUpperCase();
+  finRenderAll();
+}
+
+// ── Modo global: cascada Negocio → Propiedad/Categoría en los formularios ──
+function finWSFormOpts(sel){
+  const el=document.getElementById(sel);
+  el.innerHTML='<option value="">Seleccionar negocio…</option>'+finWS.map(w=>`<option value="${w.id}"></option>`).join('');
+  [...el.options].slice(1).forEach((o,k)=>{o.textContent=finWS[k].nombre;});
+  // si el filtro tiene exactamente un negocio, preseleccionarlo
+  if(finGSel.size===1)el.value=[...finGSel][0];
+}
+function finWSFormChange(kind){
+  const wsId=document.getElementById(kind==='g'?'fga-ws':'fim-ws').value;
+  const inms=finGData.inms.filter(i=>i.workspace_id===wsId);
+  const req='<option value="">Seleccionar propiedad…</option>'+inms.map(i=>`<option value="${i.id}">${i.num} — ${i.inquilino}</option>`).join('');
+  document.getElementById(kind==='g'?'fga-prop':'fim-prop').innerHTML=req;
+  if(kind==='g'){
+    const cats=finGData.cats.filter(c=>c.workspace_id===wsId);
+    document.getElementById('fga-cat').innerHTML=cats.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  }
 }
 
 // ── Carga de datos (Supabase → fallback localStorage) ──
@@ -3998,12 +4125,28 @@ async function finLoad(){
     }
     if(!gastoCats.length)await finSeedCats();
     finLSave();finLoaded=true;
-    if(finOn)finRenderAll();
+    if(finOn&&!finGlobal)finRenderAll();
   })();
   return finLoadP;
 }
+// ── Carga consolidada (modo global): datos de TODOS los negocios ──
+// Sin fallback localStorage ni seed de categorías: si falla, no se abre la vista.
+async function finGLoad(){
+  finGLoaded=false;
+  const ids=finWS.map(w=>w.id);
+  const [p,g,i,c,n]=await Promise.all([
+    sb.from('pagos').select('*').in('workspace_id',ids).order('vencimiento',{ascending:false}),
+    sb.from('gastos_operacion').select('*').in('workspace_id',ids).order('fecha',{ascending:false}),
+    sb.from('impuestos_pagados').select('*').in('workspace_id',ids).order('fecha',{ascending:false}),
+    sb.from('gasto_categorias').select('*').in('workspace_id',ids).order('nombre'),
+    sb.from('inmuebles').select('*').in('workspace_id',ids).order('num')
+  ]);
+  if(p.error||g.error||i.error||c.error||n.error)throw(p.error||g.error||i.error||c.error||n.error);
+  finGData={pagos:p.data||[],gastos:g.data||[],imps:i.data||[],cats:c.data||[],inms:n.data||[]};
+  finGLoaded=true;
+}
 // CRUD genérico sobre las 3 tablas (reactividad inmediata, como el resto de la app)
-function finArr(t){return t==='gastos_operacion'?gastosOp:t==='impuestos_pagados'?impuestosPag:gastoCats;}
+function finArr(t){const G=finGlobal;return t==='gastos_operacion'?(G?finGData.gastos:gastosOp):t==='impuestos_pagados'?(G?finGData.imps:impuestosPag):(G?finGData.cats:gastoCats);}
 async function finIns(t,row){
   if(finLocal){row={...row,id:finUUID(),created_at:new Date().toISOString()};finArr(t).unshift(row);finLSave();return row;}
   const {data,error}=await sb.from(t).insert(row).select().single();if(error)throw error;finArr(t).unshift(data);return data;
@@ -4055,9 +4198,9 @@ function finNav(d){
 // hasta recurrente_fin; un override (origen_id) de ese mes lo sustituye
 // sin duplicar; anulado=true elimina solo esa instancia.
 function finGastosMes(propId,m,y){
-  const out=[];
-  const ovDe=(baseId)=>gastosOp.find(o=>o.origen_id===baseId&&(()=>{const d=new Date(o.fecha+'T00:00:00');return d.getMonth()===m&&d.getFullYear()===y;})());
-  gastosOp.forEach(g=>{
+  const out=[],GS=finDSGastos();
+  const ovDe=(baseId)=>GS.find(o=>o.origen_id===baseId&&(()=>{const d=new Date(o.fecha+'T00:00:00');return d.getMonth()===m&&d.getFullYear()===y;})());
+  GS.forEach(g=>{
     if(propId&&g.inmueble_id!==propId)return;
     const f=new Date(g.fecha+'T00:00:00'),gm=f.getMonth(),gy=f.getFullYear();
     const same=(gm===m&&gy===y);
@@ -4080,7 +4223,7 @@ function finCalc(){
   const ms=finMeses(),prop=finProp||null;
   const inMs=d=>{const v=new Date(d+'T00:00:00');return ms.some(x=>v.getMonth()===x.m&&v.getFullYear()===x.y);};
   // 1) Facturación (ya existe en la app; excluye depósitos y devoluciones)
-  const pl=pagos.filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito'&&(!prop||p.inmueble_id===prop)&&inMs(p.vencimiento));
+  const pl=finDSPagos().filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito'&&(!prop||p.inmueble_id===prop)&&inMs(p.vencimiento));
   const fact=pl.reduce((s,p)=>s+Number(p.monto),0);
   // 2) Gastos de operación (con recurrencias expandidas)
   let gl=[];ms.forEach(x=>gl.push(...finGastosMes(prop,x.m,x.y)));
@@ -4088,7 +4231,7 @@ function finCalc(){
   // 3) Utilidad = Facturación − Gastos (calculada, nunca editable)
   const util=fact-gTot;
   // 4) Impuestos (captura manual)
-  const il=impuestosPag.filter(p=>(!prop||p.inmueble_id===prop)&&inMs(p.fecha));
+  const il=finDSImps().filter(p=>(!prop||p.inmueble_id===prop)&&inMs(p.fecha));
   const iTot=il.reduce((s,x)=>s+Number(x.monto),0);
   // 5) Utilidad neta = Utilidad − Impuestos
   const neta=util-iTot;
@@ -4097,6 +4240,15 @@ function finCalc(){
 
 // ── Render principal ──
 function finFillSelects(){
+  if(finGlobal){ // los selects de los modales se pueblan en cascada al elegir negocio
+    finWSFormOpts('fga-ws');finWSFormOpts('fim-ws');
+    const ph='<option value="">Elige primero el negocio…</option>';
+    document.getElementById('fga-prop').innerHTML=ph;document.getElementById('fim-prop').innerHTML=ph;
+    document.getElementById('fga-cat').innerHTML='<option value="">Elige primero el negocio…</option>';
+    if(document.getElementById('fga-ws').value)finWSFormChange('g');
+    if(document.getElementById('fim-ws').value)finWSFormChange('i');
+    return;
+  }
   const ops='<option value="">◈ Consolidado — todas</option>'+inmuebles.map(i=>`<option value="${i.id}">${i.num} — ${i.inquilino}</option>`).join('');
   document.getElementById('fin-prop').innerHTML=ops;document.getElementById('fin-prop').value=finProp;
   const req='<option value="">Seleccionar propiedad…</option>'+inmuebles.map(i=>`<option value="${i.id}">${i.num} — ${i.inquilino}</option>`).join('');
@@ -4110,7 +4262,7 @@ function finRenderAll(){
   finRenderCascade(C);finRenderTrend();finRenderGastos(C);finRenderImps(C);
 }
 function finRenderCascade(C){
-  const propLbl=finProp?(getInm(finProp)?.num||''):'Consolidado';
+  const propLbl=finGlobal?finWSLbl():(finProp?(getInm(finProp)?.num||''):'Consolidado');
   const node=(id,lbl,val,sub,color,glow)=>`<button class="fin-node" onclick="finDrawer('${id}')" style="${glow?`border-color:rgba(168,85,247,.55);box-shadow:0 0 34px rgba(124,58,237,.3)`:''}">
     <div class="fin-lbl" style="display:flex;align-items:center;gap:6px">${lbl}</div>
     <div class="fv" id="fin-v-${id}" style="color:${color}">$0</div>
@@ -4148,9 +4300,9 @@ function finRenderTrend(){
   const arr=[];for(let k=5;k>=0;k--){let m=last.m-k,y=last.y;while(m<0){m+=12;y--;}
     const sm=[{m,y}];const inM=d=>{const v=new Date(d+'T00:00:00');return v.getMonth()===m&&v.getFullYear()===y;};
     const prop=finProp||null;
-    const f=pagos.filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito'&&(!prop||p.inmueble_id===prop)&&inM(p.vencimiento)).reduce((s,p)=>s+Number(p.monto),0);
+    const f=finDSPagos().filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito'&&(!prop||p.inmueble_id===prop)&&inM(p.vencimiento)).reduce((s,p)=>s+Number(p.monto),0);
     const g=finGastosMes(prop,m,y).reduce((s,x)=>s+Number(x.monto),0);
-    const i=impuestosPag.filter(p=>(!prop||p.inmueble_id===prop)&&inM(p.fecha)).reduce((s,x)=>s+Number(x.monto),0);
+    const i=finDSImps().filter(p=>(!prop||p.inmueble_id===prop)&&inM(p.fecha)).reduce((s,x)=>s+Number(x.monto),0);
     arr.push({lbl:MESES[m].slice(0,3),neta:f-g-i});}
   const maxA=Math.max(1,...arr.map(a=>Math.abs(a.neta)));
   const hasNeg=arr.some(a=>a.neta<0);
@@ -4176,20 +4328,20 @@ function finRenderTrend(){
     </div>
   </div>`;
 }
-function finCatColor(catId){const k=Math.max(0,gastoCats.findIndex(c=>c.id===catId));return FIN_CATC[k%FIN_CATC.length];}
-function finCatNombre(g){const c=gastoCats.find(x=>x.id===g.categoria_id);return c?c.nombre:(g.categoria||'Sin categoría');}
+function finCatColor(catId){const k=Math.max(0,finDSCats().findIndex(c=>c.id===catId));return FIN_CATC[k%FIN_CATC.length];}
+function finCatNombre(g){const c=finDSCats().find(x=>x.id===g.categoria_id);return c?c.nombre:(g.categoria||'Sin categoría');}
 function finRenderGastos(C){
   // resumen por categoría
   const por={};C.gl.forEach(g=>{const n=finCatNombre(g);por[n]=(por[n]||0)+Number(g.monto);});
   const chips=Object.entries(por).map(([n,v],i2)=>`<span class="fin-chip" style="border-color:${FIN_CATC[i2%FIN_CATC.length]}55;color:#EDEBFA"><span style="width:7px;height:7px;border-radius:2px;background:${FIN_CATC[i2%FIN_CATC.length]}"></span>${n} · <b style="font-family:'DM Mono',monospace">${finF(v)}</b></span>`).join(' ');
   const rows=[...C.gl].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).map((g,i2)=>{
-    const inm=getInm(g.inmueble_id);const col=finCatColor(g.categoria_id);
+    const col=finCatColor(g.categoria_id);
     const virt=g._inst==='virtual';
     const act=virt?`finEditGasto('${g.id}',${g._vm},${g._vy})`:`finEditGasto('${g.id}')`;
     return`<div class="fin-row" style="animation-delay:${Math.min(i2*.04,.4)}s;cursor:pointer" onclick="${act}">
       <span style="width:9px;height:9px;border-radius:3px;background:${col};box-shadow:0 0 8px ${col}88;flex-shrink:0"></span>
       <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${finCatNombre(g)}${g.descripcion?` <span style="color:#8E89A8;font-weight:400">· ${g.descripcion}</span>`:''}</div>
-      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${inm?.num||'—'} · ${fdS(g.fecha)}${g.es_recurrente||virt?' · <i class="ti ti-repeat" style="font-size:10px"></i> recurrente':''}${g._inst==='override'?' · editado':''}${virt?' · auto':''}</div></div>
+      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${finRowLoc(g)} · ${fdS(g.fecha)}${g.es_recurrente||virt?' · <i class="ti ti-repeat" style="font-size:10px"></i> recurrente':''}${g._inst==='override'?' · editado':''}${virt?' · auto':''}</div></div>
       <span style="font-family:'DM Mono',monospace;font-weight:500;font-size:13px">${fmt(g.monto)}</span>
       <button class="fin-ib" title="Editar" onclick="event.stopPropagation();${act}"><i class="ti ti-pencil" style="font-size:13px"></i></button>
     </div>`;}).join('');
@@ -4198,7 +4350,7 @@ function finRenderGastos(C){
     <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid rgba(139,92,246,.15);flex-wrap:wrap">
       <div style="flex:1;min-width:150px"><div class="fin-lbl" style="color:#A78BFA">Sección 1 · Gastos de operación</div>
       <div style="font-size:15px;font-weight:700;margin-top:2px;font-family:'DM Mono',monospace">${finF(C.gTot)} <span style="font-size:10px;color:#8E89A8">${finPerLbl()}</span></div></div>
-      <button class="fin-btn ghost" onclick="finOpenCats()" title="Catálogo de categorías"><i class="ti ti-category-2" style="font-size:14px"></i></button>
+      ${finGlobal?'':'<button class="fin-btn ghost" onclick="finOpenCats()" title="Catálogo de categorías"><i class="ti ti-category-2" style="font-size:14px"></i></button>'}
       <button class="fin-btn" onclick="finNuevoGasto()"><i class="ti ti-plus" style="font-size:14px"></i>Nuevo gasto</button>
     </div>
     ${chips?`<div style="display:flex;gap:7px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid rgba(139,92,246,.12)">${chips}</div>`:''}
@@ -4207,11 +4359,10 @@ function finRenderGastos(C){
 }
 function finRenderImps(C){
   const rows=[...C.il].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).map((x,i2)=>{
-    const inm=getInm(x.inmueble_id);
     return`<div class="fin-row" style="animation-delay:${Math.min(i2*.04,.4)}s;cursor:pointer" onclick="finEditImp('${x.id}')">
       <span style="width:9px;height:9px;border-radius:3px;background:#FBBF24;box-shadow:0 0 8px #FBBF2488;flex-shrink:0"></span>
       <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px">${x.concepto||'Impuesto'}</div>
-      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${inm?.num||'—'} · ${fdS(x.fecha)}</div></div>
+      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${finRowLoc(x)} · ${fdS(x.fecha)}</div></div>
       <span style="font-family:'DM Mono',monospace;font-weight:500;font-size:13px">${fmt(x.monto)}</span>
       <button class="fin-ib" title="Editar" onclick="event.stopPropagation();finEditImp('${x.id}')"><i class="ti ti-pencil" style="font-size:13px"></i></button>
     </div>`;}).join('');
@@ -4233,9 +4384,9 @@ function finDrawer(kind){
   const [ttl,sub,col]=T[kind];
   const line=(l,v,c,b)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px ${b?'solid':'dashed'} rgba(139,92,246,.2);font-size:${b?'14px':'12.5px'};${b?'font-weight:700':''}"><span style="color:${b?'#EDEBFA':'#8E89A8'}">${l}</span><span style="font-family:'DM Mono',monospace;color:${c||'#EDEBFA'}">${typeof v==='number'?fmt(v):v}</span></div>`;
   let body='';
-  if(kind==='fact')body=C.pl.map(p=>{const i=getInm(p.inmueble_id);return line(`${i?.num||'—'} · ${p.concepto} · ${fdS(p.vencimiento)}`,Number(p.monto));}).join('')+line('Total facturación',C.fact,'#C4B5FD',1);
-  else if(kind==='gastos')body=C.gl.map(g=>line(`${getInm(g.inmueble_id)?.num||'—'} · ${finCatNombre(g)}${g._inst==='virtual'?' ↻':''} · ${fdS(g.fecha)}`,Number(g.monto))).join('')+line('Total gastos',C.gTot,'#F0ABFC',1);
-  else if(kind==='imp')body=C.il.map(x=>line(`${getInm(x.inmueble_id)?.num||'—'} · ${x.concepto||'Impuesto'} · ${fdS(x.fecha)}`,Number(x.monto))).join('')+line('Total impuestos',C.iTot,'#FBBF24',1);
+  if(kind==='fact')body=C.pl.map(p=>line(`${finRowLoc(p)} · ${p.concepto} · ${fdS(p.vencimiento)}`,Number(p.monto))).join('')+line('Total facturación',C.fact,'#C4B5FD',1);
+  else if(kind==='gastos')body=C.gl.map(g=>line(`${finRowLoc(g)} · ${finCatNombre(g)}${g._inst==='virtual'?' ↻':''} · ${fdS(g.fecha)}`,Number(g.monto))).join('')+line('Total gastos',C.gTot,'#F0ABFC',1);
+  else if(kind==='imp')body=C.il.map(x=>line(`${finRowLoc(x)} · ${x.concepto||'Impuesto'} · ${fdS(x.fecha)}`,Number(x.monto))).join('')+line('Total impuestos',C.iTot,'#FBBF24',1);
   else if(kind==='util')body=line('Facturación',C.fact,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,col,1)+`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">Valor calculado — no es editable. Se recalcula automáticamente al cambiar la facturación o cualquier gasto del periodo.${C.util<0?' <b style="color:#FB7185">Utilidad negativa</b>: hubo más gastos que facturación (p. ej. vacancia).':''}</p>`;
   else body=line('Facturación',C.fact,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,C.util<0?'#FB7185':'#6EE7B7',1)+line('− Impuestos',-C.iTot,'#FBBF24')+line('= Utilidad neta',C.neta,col,1)+`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">Lo que realmente queda después de gastos operativos e impuestos. Calculado en cascada estricta; nunca editable.</p>`;
   d.innerHTML=`
@@ -4265,8 +4416,9 @@ function finNuevoGasto(){
   finOpenOv('fm-gasto');
 }
 function finEditGasto(id,vm,vy){
-  const g=gastosOp.find(x=>x.id===id);if(!g)return;
+  const g=finArr('gastos_operacion').find(x=>x.id===id);if(!g)return;
   finFillSelects();
+  if(finGlobal){document.getElementById('fga-ws').value=g.workspace_id;finWSFormChange('g');}
   const virt=(vm!==undefined);
   editGastoId=virt?null:id;editVirt=virt?{base:id,m:vm,y:vy}:null;
   document.getElementById('fmg-ttl').lastChild.textContent=virt?'Editar instancia recurrente':'Editar gasto';
@@ -4287,10 +4439,12 @@ function finEditGasto(id,vm,vy){
 }
 async function finSaveGasto(){
   const prop=document.getElementById('fga-prop').value,monto=parseFloat(document.getElementById('fga-monto').value)||0,fecha=document.getElementById('fga-fecha').value;
+  const wsId=finGlobal?document.getElementById('fga-ws').value:CW.id;
+  if(finGlobal&&!wsId){toast('Selecciona el negocio','ti-alert-triangle');return;}
   if(!prop||!monto||!fecha){toast('Propiedad, monto y fecha son obligatorios','ti-alert-triangle');return;}
   const catId=document.getElementById('fga-cat').value||null;
-  const cat=gastoCats.find(c=>c.id===catId);
-  const row={workspace_id:CW.id,inmueble_id:prop,categoria_id:catId,categoria:cat?(cat.clave||cat.nombre):null,monto,fecha,descripcion:document.getElementById('fga-desc').value||null,es_recurrente:document.getElementById('fga-rec').checked,recurrente_fin:document.getElementById('fga-rfin').value?document.getElementById('fga-rfin').value+'-01':null};
+  const cat=finDSCats().find(c=>c.id===catId);
+  const row={workspace_id:wsId,inmueble_id:prop,categoria_id:catId,categoria:cat?(cat.clave||cat.nombre):null,monto,fecha,descripcion:document.getElementById('fga-desc').value||null,es_recurrente:document.getElementById('fga-rec').checked,recurrente_fin:document.getElementById('fga-rfin').value?document.getElementById('fga-rfin').value+'-01':null};
   try{
     if(editVirt){await finIns('gastos_operacion',{...row,es_recurrente:false,recurrente_fin:null,origen_id:editVirt.base});toast('Instancia del mes actualizada');}
     else if(editGastoId){await finUpd('gastos_operacion',editGastoId,row);toast('Gasto actualizado');}
@@ -4302,14 +4456,14 @@ async function finDelGasto(){
   try{
     if(editVirt){
       if(!confirm('¿Eliminar solo la instancia de este mes?'))return;
-      const g=gastosOp.find(x=>x.id===editVirt.base);
+      const g=finArr('gastos_operacion').find(x=>x.id===editVirt.base);
       const dias=new Date(editVirt.y,editVirt.m+1,0).getDate();
-      await finIns('gastos_operacion',{workspace_id:CW.id,inmueble_id:g.inmueble_id,categoria_id:g.categoria_id,categoria:g.categoria,monto:0,fecha:`${editVirt.y}-${String(editVirt.m+1).padStart(2,'0')}-01`,origen_id:editVirt.base,anulado:true});
+      await finIns('gastos_operacion',{workspace_id:finGlobal?g.workspace_id:CW.id,inmueble_id:g.inmueble_id,categoria_id:g.categoria_id,categoria:g.categoria,monto:0,fecha:`${editVirt.y}-${String(editVirt.m+1).padStart(2,'0')}-01`,origen_id:editVirt.base,anulado:true});
       toast('Instancia del mes eliminada','ti-trash');
     }else{
-      const g=gastosOp.find(x=>x.id===editGastoId);
+      const g=finArr('gastos_operacion').find(x=>x.id===editGastoId);
       if(!confirm(g&&g.es_recurrente?'¿Eliminar este gasto recurrente y todas sus repeticiones?':'¿Eliminar este gasto?'))return;
-      if(g&&g.es_recurrente){const ovs=gastosOp.filter(o=>o.origen_id===g.id);for(const o of ovs)await finDelRow('gastos_operacion',o.id);}
+      if(g&&g.es_recurrente){const ovs=finArr('gastos_operacion').filter(o=>o.origen_id===g.id);for(const o of ovs)await finDelRow('gastos_operacion',o.id);}
       await finDelRow('gastos_operacion',editGastoId);
       toast('Gasto eliminado','ti-trash');
     }
@@ -4318,7 +4472,7 @@ async function finDelGasto(){
 }
 async function finEndRec(){
   if(!editVirt)return;
-  const g=gastosOp.find(x=>x.id===editVirt.base);if(!g)return;
+  const g=finArr('gastos_operacion').find(x=>x.id===editVirt.base);if(!g)return;
   const f=new Date(g.fecha+'T00:00:00');
   try{
     if(editVirt.y===f.getFullYear()&&editVirt.m===f.getMonth())await finUpd('gastos_operacion',g.id,{es_recurrente:false,recurrente_fin:null});
@@ -4339,8 +4493,9 @@ function finNuevoImp(){
   finOpenOv('fm-imp');
 }
 function finEditImp(id){
-  const x=impuestosPag.find(r=>r.id===id);if(!x)return;
+  const x=finArr('impuestos_pagados').find(r=>r.id===id);if(!x)return;
   finFillSelects();editImpId=id;
+  if(finGlobal){document.getElementById('fim-ws').value=x.workspace_id;finWSFormChange('i');}
   document.getElementById('fmi-ttl').lastChild.textContent='Editar impuesto';
   document.getElementById('fim-del').style.display='inline-flex';
   document.getElementById('fim-prop').value=x.inmueble_id||'';
@@ -4350,8 +4505,10 @@ function finEditImp(id){
 }
 async function finSaveImp(){
   const prop=document.getElementById('fim-prop').value,monto=parseFloat(document.getElementById('fim-monto').value)||0,fecha=document.getElementById('fim-fecha').value;
+  const wsId=finGlobal?document.getElementById('fim-ws').value:CW.id;
+  if(finGlobal&&!wsId){toast('Selecciona el negocio','ti-alert-triangle');return;}
   if(!prop||!monto||!fecha){toast('Propiedad, monto y fecha son obligatorios','ti-alert-triangle');return;}
-  const row={workspace_id:CW.id,inmueble_id:prop,monto,fecha,concepto:document.getElementById('fim-conc').value||null};
+  const row={workspace_id:wsId,inmueble_id:prop,monto,fecha,concepto:document.getElementById('fim-conc').value||null};
   try{
     if(editImpId){await finUpd('impuestos_pagados',editImpId,row);toast('Impuesto actualizado');}
     else{await finIns('impuestos_pagados',row);toast('Impuesto registrado');}
@@ -4365,10 +4522,10 @@ async function finDelImp(){
 }
 
 // ── Catálogo de categorías (extensible, regla del spec) ──
-function finOpenCats(){finRenderCats();finOpenOv('fm-cats');}
+function finOpenCats(){if(finGlobal){toast('Administra las categorías dentro de cada negocio','ti-info-circle');return;}finRenderCats();finOpenOv('fm-cats');}
 function finRenderCats(){
-  document.getElementById('fmc-list').innerHTML=gastoCats.map((c,i2)=>{
-    const used=gastosOp.some(g=>g.categoria_id===c.id);
+  document.getElementById('fmc-list').innerHTML=finArr('gasto_categorias').map((c,i2)=>{
+    const used=finArr('gastos_operacion').some(g=>g.categoria_id===c.id);
     return`<div style="display:flex;align-items:center;gap:9px;padding:8px 11px;background:#0C0A16;border:1px solid rgba(139,92,246,.22);border-radius:9px;font-size:12.5px">
       <span style="width:9px;height:9px;border-radius:3px;background:${FIN_CATC[i2%FIN_CATC.length]}"></span>
       <span style="flex:1">${c.nombre}${c.clave==='servicio_facturacion'?' <span class="fin-chip" style="font-size:9px;padding:1px 6px" title="Costo del servicio que emite las facturas de renta">servicio_facturacion</span>':''}</span>
