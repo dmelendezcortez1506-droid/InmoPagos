@@ -1328,7 +1328,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div class="card"><div class="tw"><table>
     <thead><tr><th>Depto.</th><th>Inquilino</th><th>¿Aplica?</th><th>Días de uso</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ a pagar</th></tr></thead>
     <tbody id="sv-rows"></tbody>
-    <tfoot><tr style="background:var(--sf2)">
+    <tfoot><tr id="sv-adm-row" style="background:var(--sf2)">
       <td colspan="5" id="sv-adm-lbl" style="font-weight:600;padding:10px 14px">Subsidio Administración y Deptos que salieron</td>
       <td id="sv-adm-pond" style="padding:10px 14px;font-weight:600"></td>
       <td id="sv-adm-pct" style="padding:10px 14px;font-weight:600"></td>
@@ -2492,7 +2492,7 @@ function recalcAllSvc(){
     const persRef=enModal?pers:(vig?.pers||partes.salidos[0]?.pers||inm.personas||1);
     const pondCompleta=diasTotal*persRef;
     sumCompleta+=pondCompleta;sumUsada+=pondUsada;
-    rows.push({idx,inm,contratoId:vig?.c?.id||null,aplica:(vig?vig.aplica:false)&&(!enModal||manualOn),diasUso:enModal?(manualOn?dias:0):0,pers,pondUsada,pondCompleta,motivo:vig?.motivo||'',visible:enModal});
+    rows.push({idx,inm,contratoId:vig?.c?.id||null,aplica:(vig?vig.aplica:false)&&(!enModal||manualOn),diasUso:enModal?(manualOn?dias:0):0,pers,pondUsada,pondCompleta,motivo:vig?.motivo||'',visible:enModal,hayVig:!!(vig&&vig.aplica),vigNombre:vig?.c?.inquilino||inm.inquilino||'',tuvoSalidos:partes.salidos.length>0});
   });
   // Montos BASE (antes del apoyo). El subsidio se calcula sobre estos → el apoyo nunca lo toca.
   let sumMto=0;
@@ -2515,6 +2515,38 @@ function recalcAllSvc(){
   document.getElementById('sv-adm-pond').textContent=subPond;
   document.getElementById('sv-adm-pct').textContent=Math.round(subPct*100)+'%';
   document.getElementById('sv-adm-mto').textContent=fmt(subMto);
+  // ── Desglose del subsidio: QUIÉN forma ese % (deptos vacíos + días no ocupados de cada
+  // depto). Solo administración; nunca aparece en la foto. La suma cuadra exacto con el subsidio.
+  const subRows=[];
+  rows.forEach(r=>{
+    const salPond=salidos.filter(s=>s.inm.id===r.inm.id).reduce((a,s)=>a+s.pondUsada,0);
+    const noUsada=r.pondCompleta-(r.pondUsada+salPond);
+    if(noUsada<=0.0001)return;
+    const nom=(r.vigNombre||'—').split(' ')[0];
+    let motivo;
+    if(r.hayVig){
+      if(/desde/i.test(r.motivo))motivo=`${nom} · días antes de entrar`;
+      else if(/Sali[oó]/i.test(r.motivo))motivo=`${nom} · días tras su salida`;
+      else motivo=`${nom} · días sin ocupar`;
+    }else if(r.tuvoSalidos)motivo='Días sin inquilino tras la salida';
+    else motivo='Sin inquilino en el período';
+    const pct=sumCompleta>0?noUsada/sumCompleta:0;
+    subRows.push({num:r.inm.num,motivo,pond:noUsada,pct,monto:pct*total});
+  });
+  const admRow=document.getElementById('sv-adm-row');
+  if(admRow){
+    admRow.parentElement.querySelectorAll('.sv-subsi-row').forEach(x=>x.remove());
+    subRows.slice().reverse().forEach(s=>{
+      const tr=document.createElement('tr');
+      tr.className='sv-subsi-row';tr.style.background='#F7F5EF';
+      tr.innerHTML=`<td style="padding:5px 14px 5px 22px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx3)">${s.num}</td>
+        <td colspan="4" style="padding:5px 14px;font-size:11px;color:var(--tx3)"><i class="ti ti-corner-down-right" style="font-size:11px;vertical-align:-1px;opacity:.55"></i> ${s.motivo}</td>
+        <td style="padding:5px 14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx3)">${s.pond}</td>
+        <td style="padding:5px 14px;font-size:11px;color:var(--tx3)">${Math.round(s.pct*100)}%</td>
+        <td style="padding:5px 14px;font-size:11px;color:var(--tx3)">${fmt(s.monto)}</td>`;
+      admRow.insertAdjacentElement('afterend',tr);
+    });
+  }
   // Sección "Salieron pero les toca" (solo administración; el PNG no la muestra)
   const hdr=document.getElementById('sv-salidos-hdr');
   if(hdr){
@@ -2540,7 +2572,7 @@ function recalcAllSvc(){
     if(apoyo>0){document.getElementById('sv-apoyo-pct').textContent=(total>0?Math.round(apoyo/total*100):0)+'%';document.getElementById('sv-apoyo-mto').textContent='−'+fmt(apoyo);}}
   document.getElementById('sv-tot-pond').textContent=sumCompleta;
   document.getElementById('sv-tot-mto').textContent=fmt(total);
-  svcCalc={rows,salidos,subsidio:{pond:subPond,pct:subPct,monto:subMto},apoyo,sumMto,sumCompleta,total};
+  svcCalc={rows,salidos,subRows,subsidio:{pond:subPond,pct:subPct,monto:subMto},apoyo,sumMto,sumCompleta,total};
 }
 
 document.getElementById('sv-total').addEventListener('input',recalcAllSvc);
