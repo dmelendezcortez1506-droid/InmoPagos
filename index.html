@@ -433,6 +433,8 @@ tbody tr:hover td{background:var(--hover)}
 .atab.active{background:var(--teal)}
 .ws-item{border-radius:12px;transition:transform .15s,box-shadow .15s,border-color .15s}
 .ws-item:hover{transform:translateY(-1px);box-shadow:var(--sh2);border-color:var(--bd2)}
+.ws-item.ws-bloq{cursor:not-allowed;background:var(--sf2)}
+.ws-item.ws-bloq:hover{transform:none;box-shadow:none;border-color:var(--bd)}
 
 /* ── TOAST ── */
 .toast{border-radius:10px;animation:toastIn .28s cubic-bezier(.34,1.56,.64,1);box-shadow:0 12px 30px rgba(26,25,23,.28)}
@@ -685,6 +687,33 @@ tbody tr:hover td{background:var(--hover)}
 @keyframes finScan{0%{transform:translateY(-110%)}100%{transform:translateY(1200%)}}
 @media(max-width:900px){.fin-main{padding:18px 14px 60px}.fin-drawer{width:100%}}
 
+/* ── Plan Premium: candados, muro de pago y modal de upgrade ── */
+.plan-chip{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(90deg,#7C3AED,#A855F7);color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;font-weight:800;letter-spacing:.07em;font-family:'DM Mono',monospace;line-height:1.5}
+#fin-app.locked .fin-main,#fin-app.locked .fin-hd{filter:blur(5px);pointer-events:none;user-select:none}
+/* El fondo se deja translúcido a propósito: la gracia es que alcance a ver su
+   propia cascada detrás de la oferta. Tapársela por completo no vende nada. */
+.pay-ov{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(120% 90% at 50% 0%,rgba(19,16,34,.40),rgba(10,8,20,.78));overflow-y:auto}
+#fin-app.locked .pay-ov{display:flex}
+.pay-card{width:100%;max-width:460px;background:#151228;border:1px solid rgba(139,92,246,.42);border-radius:18px;padding:28px;box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 60px rgba(124,58,237,.22);text-align:center;animation:payIn .34s cubic-bezier(.2,.9,.3,1) both}
+@keyframes payIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.pay-card h3{margin:14px 0 6px;font-size:19px;font-weight:800;color:#F4F2FF;letter-spacing:-.01em}
+.pay-card .pay-sub{margin:0 0 20px;font-size:13px;color:#A5A0C0;line-height:1.55}
+.pay-list{list-style:none;margin:0 0 22px;padding:0;text-align:left;display:grid;gap:9px}
+.pay-list li{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:#D6D1EE;line-height:1.45}
+.pay-list i{color:#A855F7;font-size:15px;flex-shrink:0;margin-top:1px}
+.pay-price{display:flex;align-items:baseline;justify-content:center;gap:7px;margin-bottom:4px}
+.pay-price b{font-size:31px;font-weight:800;color:#fff;letter-spacing:-.02em}
+.pay-price span{font-size:12.5px;color:#8E89A8}
+.pay-anual{font-size:11.5px;color:#6EE7B7;margin-bottom:20px;font-weight:600}
+.pay-btn{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:11px;padding:12px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;background:linear-gradient(90deg,#7C3AED,#A855F7);color:#fff;transition:transform .15s,box-shadow .15s}
+.pay-btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(124,58,237,.45)}
+.pay-btn.ghost{background:none;border:1px solid rgba(139,92,246,.35);color:#A5A0C0;margin-top:9px;font-weight:600}
+.pay-btn.ghost:hover{box-shadow:none;color:#D6D1EE}
+.pay-btn.alt{background:none;border:1px solid rgba(168,85,247,.55);color:#C4B5FD}
+.pay-btn.alt:hover{box-shadow:0 8px 24px rgba(124,58,237,.25);color:#EDE9FE}
+.up-hero{display:flex;align-items:center;gap:13px;background:linear-gradient(90deg,#F5F2FF,#FAF8FF);border:1px solid #DDD6FE;border-radius:12px;padding:14px;margin-bottom:16px}
+.up-gem{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -811,7 +840,12 @@ CREATE POLICY "inm" ON inmuebles FOR ALL USING (workspace_id IN (SELECT workspac
 CREATE POLICY "con" ON contratos FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
 CREATE POLICY "pag" ON pagos FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
 CREATE POLICY "svc" ON servicios FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));</div></div></div>
+CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
+
+-- NOTA: este script es el de instalación desde cero y NO refleja el esquema
+-- actual en producción (faltan clientes, contratos, gastos, y las políticas
+-- reales usan es_miembro_del_workspace). Para la colaboración por código, corre
+-- además migracion_colaboradores.sql.</div></div></div>
     <div class="step"><div class="sn">4</div><div><b>Copia URL y Anon Key</b>Project Settings → API</div></div>
   </div>
   <div class="fg2"><label>Supabase Project URL</label><input type="url" id="cfg-url" placeholder="https://xxxx.supabase.co"></div>
@@ -825,8 +859,8 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <div id="s-bloqueado" class="screen">
 <div class="blq-card">
   <i class="ti ti-lock blq-icon"></i>
-  <h2>Tu suscripción ha vencido</h2>
-  <p>Para seguir usando InmoPagos y administrar tus inmuebles, realiza el pago de tu mensualidad. En cuanto lo hagamos efectivo, tu acceso se reactiva al instante.</p>
+  <h2 id="blq-ttl">Tu suscripción ha vencido</h2>
+  <p id="blq-sub">Para seguir usando InmoPagos y administrar tus inmuebles, realiza el pago de tu mensualidad. En cuanto lo hagamos efectivo, tu acceso se reactiva al instante.</p>
   <div class="blq-box">
     <h3>Datos para pago</h3>
     <div class="blq-row"><strong>Beneficiario</strong><span id="blq-cobrador">—</span></div>
@@ -836,6 +870,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div class="blq-row"><strong>Tarjeta OXXO</strong><span id="blq-oxxo">—</span></div>
   </div>
   <p style="font-size:13px;color:var(--tx3);margin-bottom:1.25rem">Después de pagar, envía tu comprobante por WhatsApp o Instagram y activamos tu cuenta en minutos.</p>
+  <button class="btn primary" id="blq-pagar" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px;display:none"><i class="ti ti-credit-card"></i>Pagar en línea</button>
   <button class="btn primary" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px" onclick="contactarWhatsApp()"><i class="ti ti-brand-whatsapp"></i>Enviar comprobante por WhatsApp</button>
   <button class="btn" style="width:100%;justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i>Cerrar sesión</button>
 </div>
@@ -875,7 +910,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <button id="ws-fin-card" class="ws-fin-card" onclick="finOpenGlobal()">
     <span class="fin-gem"><i class="ti ti-chart-pie-4" style="color:#fff;font-size:16px"></i></span>
     <span style="flex:1;min-width:0">
-      <strong style="font-size:14px;font-weight:600;display:block">Finanzas de todos tus negocios</strong>
+      <strong style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px">Finanzas de todos tus negocios<span class="plan-chip" id="wsfin-lock" style="display:none"><i class="ti ti-lock" style="font-size:9px"></i>PREMIUM</span></strong>
       <span style="font-size:12px;color:#8E89A8">Cascada, gastos e impuestos consolidados</span>
     </span>
     <i class="ti ti-chevron-right" style="color:#A78BFA;flex-shrink:0"></i>
@@ -900,7 +935,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <div style="font-size:11px;color:#9D9B96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-wsn">InmoPagos</div>
       </div>
     </div>
-    <button class="mode-btn fin-pill" id="mode-btn" style="width:100%;justify-content:center;margin-top:12px" title="Cambiar al modo Finanzas" aria-haspopup="menu" onclick="toggleModeMenu('mode-menu',event)"><i class="ti ti-chart-pie" style="font-size:15px"></i>Modo Finanzas<i class="ti ti-selector" style="font-size:12px;opacity:.65"></i></button>
+    <button class="mode-btn fin-pill" id="mode-btn" style="width:100%;justify-content:center;margin-top:12px" title="Cambiar al modo Finanzas" aria-haspopup="menu" onclick="toggleModeMenu('mode-menu',event)"><i class="ti ti-chart-pie" style="font-size:15px"></i>Modo Finanzas<span class="plan-chip" id="mode-lock" style="display:none"><i class="ti ti-lock" style="font-size:9px"></i>PREMIUM</span><i class="ti ti-selector" style="font-size:12px;opacity:.65"></i></button>
     <div id="mode-menu" class="mode-menu" role="menu">
       <button class="mode-opt" role="menuitem" onclick="closeModeMenus()">
         <span style="display:flex;align-items:center;justify-content:space-between;width:100%"><span class="mode-tag" style="background:#E1F5EE;color:#085041;border:1px solid #BFE8D8">GESTIÓN</span><i class="ti ti-check" style="color:#1D9E75;font-size:14px"></i></span>
@@ -940,6 +975,12 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 </aside><span id="sb-fecha" style="display:none"></span>
 
 <main class="main">
+  <!-- Aviso de prueba gratuita -->
+  <div id="trial-bar" style="display:none;align-items:center;gap:11px;border:1px solid #F2E3C2;background:#FEF6E7;color:#6B4E12;border-radius:11px;padding:11px 14px;margin-bottom:18px;font-size:13px">
+    <i class="ti ti-clock-hour-4" style="font-size:18px;flex-shrink:0"></i>
+    <span id="trial-txt" style="flex:1;min-width:0"></span>
+    <button class="btn primary" style="flex-shrink:0;padding:7px 13px;font-size:12.5px" onclick="pedirPremium('finanzas')"><i class="ti ti-crown"></i>Activar mi plan</button>
+  </div>
   <!-- INICIO / RESUMEN -->
   <div id="sec-inicio">
     <div style="margin-bottom:24px">
@@ -1125,6 +1166,25 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <!-- ══════════ MODO FINANZAS: wipe de transición + app alterna ══════════ -->
 <div id="fin-wipe"></div>
 <div id="fin-app" aria-label="InmoPagos Finanzas">
+  <!-- Muro de pago: se muestra sobre la cascada difuminada cuando no hay Premium -->
+  <div class="pay-ov" id="fin-paywall" role="dialog" aria-modal="true" aria-label="Finanzas es parte del plan Premium">
+    <div class="pay-card">
+      <span class="fin-gem" style="width:46px;height:46px;margin:0 auto;display:flex"><i class="ti ti-chart-pie-4" style="color:#fff;font-size:22px"></i></span>
+      <h3>Finanzas es del plan Premium</h3>
+      <p class="pay-sub">Ya sabes cuánto cobras. Finanzas te dice cuánto <em style="color:#C4B5FD;font-style:normal;font-weight:600">te queda</em> — por propiedad y por mes.</p>
+      <ul class="pay-list">
+        <li><i class="ti ti-arrows-down"></i>Cascada de rentabilidad: facturación → gastos → utilidad → impuestos → utilidad neta</li>
+        <li><i class="ti ti-repeat"></i>Gastos recurrentes que se repiten solos, con ajustes de un mes sin romper la serie</li>
+        <li><i class="ti ti-receipt-tax"></i>Impuestos capturados por inmueble</li>
+        <li><i class="ti ti-building"></i>Finanzas consolidadas de todos tus negocios en una sola vista</li>
+      </ul>
+      <div class="pay-price"><b id="pay-precio">$1,899</b><span>MXN / mes</span></div>
+      <p class="pay-anual" id="pay-anual">o <strong>$18,990</strong> al año — te ahorras 2 meses</p>
+      <button class="pay-btn" onclick="pedirPremium('finanzas')"><i class="ti ti-brand-whatsapp" style="font-size:16px"></i>Quiero Premium</button>
+      <button class="pay-btn alt" id="pay-link" style="display:none;margin-top:9px" onclick="LINK_PAGO&&window.open(LINK_PAGO,'_blank')"><i class="ti ti-credit-card" style="font-size:16px"></i>Pagar en línea</button>
+      <button class="pay-btn ghost" onclick="finCerrarPaywall()">Volver</button>
+    </div>
+  </div>
   <header class="fin-hd">
     <div class="fin-logo">
       <span class="fin-gem"><i class="ti ti-chart-pie-4" style="color:#fff;font-size:16px"></i></span>
@@ -1246,6 +1306,21 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div class="fg2"><label>Nombre *</label><input type="text" id="wn" placeholder="Ej: Departamentos Girasol"></div>
   <div class="err" id="cws-err"></div>
   <div class="mf"><button class="btn" onclick="closeM('m-cws')">Cancelar</button><button class="btn primary" onclick="crearWS()"><i class="ti ti-check"></i>Crear</button></div>
+</div></div>
+
+<!-- Llegaste al límite de tu plan -->
+<div class="overlay" id="m-upgrade"><div class="modal sm">
+  <div class="mh"><h3><i class="ti ti-crown" style="color:#7C3AED"></i>Llegaste al límite de tu plan</h3><button class="mc" onclick="closeM('m-upgrade')"><i class="ti ti-x"></i></button></div>
+  <div class="up-hero">
+    <span class="up-gem"><i class="ti ti-chart-pie-4" style="color:#fff;font-size:19px"></i></span>
+    <div style="min-width:0">
+      <strong style="font-size:13.5px;display:block;color:#3B1E85">Plan Premium</strong>
+      <span style="font-size:12px;color:#6B6963" id="up-lim">3 negocios · departamentos ilimitados</span>
+    </div>
+  </div>
+  <p style="font-size:13.5px;color:var(--tx2);line-height:1.55;margin:0 0 4px" id="up-txt"></p>
+  <p style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin:10px 0 0">Premium también incluye la versión Finanzas completa: <strong id="up-precio">$1,899</strong> MXN al mes, o <strong id="up-anual">$18,990</strong> al año (te ahorras 2 meses).</p>
+  <div class="mf"><button class="btn" onclick="closeM('m-upgrade')">Ahora no</button><button class="btn primary" id="up-cta"><i class="ti ti-brand-whatsapp"></i>Quiero ampliar mi plan</button></div>
 </div></div>
 
 <!-- Unirse con código -->
@@ -1431,6 +1506,18 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 // ═══════════════════════════════════════
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let sb=null,CU=null,CW=null;
+// ── Plan del cliente (se llena en verificarSuscripcion) ──
+// Mientras la migración de planes no esté aplicada, PLAN queda en 'premium' y
+// todo se comporta exactamente como antes: nadie pierde nada por desplegar
+// este archivo antes de correr el SQL.
+let PLAN='premium',TRIAL_FIN=null,PROX_COBRO=null,LINK_PAGO='',LIM_NEG=null,LIM_DEP=null,NEG_PROPIOS=0;
+const PRECIO_PREMIUM_MES='$1,899', PRECIO_PREMIUM_ANIO='$18,990';
+function esPremium(){return PLAN==='premium'||PLAN==='trial'}
+function diasDePrueba(){
+  if(PLAN!=='trial'||!TRIAL_FIN)return null;
+  const f=new Date(TRIAL_FIN+'T00:00:00'),h=new Date();h.setHours(0,0,0,0);
+  return Math.round((f-h)/86400000);
+}
 let pagos=[],pagosOmit=[],inmuebles=[],servicios=[],svcDet=[],contratos=[];
 let editPagoId=null,editInmId=null,editSvcId=null,editingSvcId=null,nuevoContratoInm=null;
 let vM=new Date().getMonth(),vY=new Date().getFullYear();
@@ -1597,14 +1684,57 @@ async function doLogout(){await sb.auth.signOut();CU=null;CW=null;show('s-auth')
 //  SUSCRIPCIÓN — verificar antes de entrar
 // ═══════════════════════════════════════
 async function verificarSuscripcion(){
+  // Todo usuario necesita su propia suscripción activa, colaborador o dueño.
+  // La colaboración exige que ambos estén al corriente: esta parte cubre al
+  // colaborador; que el dueño del negocio también lo esté se valida del lado
+  // servidor (mis_negocios / es_miembro_del_workspace).
   // Busca el registro del usuario en la tabla 'clientes' por su email
-  const {data,error}=await sb.from('clientes').select('suscripcion_activa,clabe,cuenta_scotiabank,tarjeta_oxxo,nombre_cobrador,whatsapp_admin').eq('email',CU.email).single();
+  const COLS_BASE='suscripcion_activa,clabe,cuenta_scotiabank,tarjeta_oxxo,nombre_cobrador,whatsapp_admin';
+  const COLS_PLAN=COLS_BASE+',plan,trial_fin,proximo_cobro,link_pago,limite_negocios,limite_deptos';
+  let {data,error}=await sb.from('clientes').select(COLS_PLAN).eq('email',CU.email).single();
+  if(error&&/does not exist|42703|column/i.test(error.message||'')){
+    // La migración de planes todavía no se corre: leemos el esquema viejo y
+    // tratamos a todos como premium, igual que antes. Nunca bloquear por esto.
+    ({data,error}=await sb.from('clientes').select(COLS_BASE).eq('email',CU.email).single());
+    if(data)data.plan='premium';
+  }
   // Si no existe el registro o hay error: bloquear por seguridad
   if(error||!data){mostrarBloqueado({});return false;}
-  if(data.suscripcion_activa===true) return true;
+  PLAN=data.plan||'premium';
+  TRIAL_FIN=data.trial_fin||null;
+  PROX_COBRO=data.proximo_cobro||null;
+  LINK_PAGO=data.link_pago||'';
+  LIM_NEG=(data.limite_negocios===undefined)?null:data.limite_negocios;
+  LIM_DEP=(data.limite_deptos===undefined)?null:data.limite_deptos;
+  window._adminWA=data.whatsapp_admin||'';
+  if(data.suscripcion_activa===true){
+    // La bandera está prendida, pero la vigencia manda: prueba terminada o
+    // período vencido (con 3 días de gracia) también cierran el acceso.
+    // La base de datos aplica la misma regla; esto solo evita la pantalla vacía.
+    const d=diasDePrueba();
+    if(PLAN==='trial'&&d!==null&&d<0){mostrarBloqueado(data);return false;}
+    if(PLAN!=='trial'&&PROX_COBRO){
+      const lim=new Date(PROX_COBRO+'T00:00:00');lim.setDate(lim.getDate()+3);
+      const h=new Date();h.setHours(0,0,0,0);
+      if(h>lim){mostrarBloqueado(data);return false;}
+    }
+    return true;
+  }
   mostrarBloqueado(data);return false;
 }
 function mostrarBloqueado(cfg){
+  // Copy distinto según por qué se cerró: no es lo mismo terminar la prueba
+  // que dejar vencer una suscripción que ya se estaba pagando.
+  const finPrueba=(cfg.plan==='trial');
+  document.getElementById('blq-ttl').textContent=finPrueba
+    ? 'Tu prueba gratuita terminó'
+    : 'Tu suscripción ha vencido';
+  document.getElementById('blq-sub').textContent=finPrueba
+    ? 'Tus datos siguen intactos y te esperan. Activa tu plan para volver a entrar — en cuanto confirmemos el pago, tu cuenta se reabre al instante.'
+    : 'Para seguir usando InmoPagos y administrar tus inmuebles, realiza el pago de tu mensualidad. En cuanto lo hagamos efectivo, tu acceso se reactiva al instante.';
+  const bp=document.getElementById('blq-pagar');
+  if(cfg.link_pago){bp.style.display='inline-flex';bp.onclick=()=>window.open(cfg.link_pago,'_blank');}
+  else bp.style.display='none';
   document.getElementById('blq-cobrador').textContent=cfg.nombre_cobrador||'InmoPagos';
   document.getElementById('blq-clabe').textContent=cfg.clabe||'Contacta al administrador';
   document.getElementById('blq-scott').textContent=cfg.cuenta_scotiabank||'—';
@@ -1614,10 +1744,46 @@ function mostrarBloqueado(cfg){
   show('s-bloqueado');
 }
 function contactarWhatsApp(){
+  waAdmin(`Hola, soy ${CU.email} y acabo de realizar el pago de mi mensualidad de InmoPagos. Adjunto mi comprobante. Por favor reactiva mi acceso. ¡Gracias!`);
+}
+// Abre WhatsApp con el administrador de InmoPagos y un mensaje ya escrito.
+function waAdmin(msg){
   const tel=(window._adminWA||'').replace(/[^0-9]/g,'');
   if(!tel){toast('No hay número de WhatsApp configurado','ti-alert-triangle');return}
-  const msg=encodeURIComponent(`Hola, soy ${CU.email} y acabo de realizar el pago de mi mensualidad de InmoPagos. Adjunto mi comprobante. Por favor reactiva mi acceso. ¡Gracias!`);
-  window.open(`https://wa.me/52${tel}?text=${msg}`,'_blank');
+  window.open(`https://wa.me/52${tel}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+function pedirPremium(motivo){
+  const de={
+    finanzas:'Quiero activar el plan Premium para usar la versión Finanzas.',
+    negocios:'Necesito administrar más negocios de los que incluye mi plan.',
+    deptos:'Necesito dar de alta más departamentos de los que incluye mi plan.'
+  }[motivo]||'Quiero pasar al plan Premium.';
+  waAdmin(`Hola, soy ${CU?.email||''} y uso InmoPagos. ${de} ¿Me pasan los datos para pagarlo?`);
+}
+// Pinta los candados y el aviso de prueba según el plan del cliente.
+function renderPlanUI(){
+  const bloq=!esPremium();
+  ['mode-lock','wsfin-lock'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display=bloq?'inline-flex':'none';
+  });
+  const mb=document.getElementById('mode-btn');
+  if(mb)mb.title=bloq?'Finanzas — incluida en el plan Premium':'Cambiar al modo Finanzas';
+  renderTrialBar();
+}
+// ── Aviso de prueba gratuita (solo mientras PLAN sea 'trial') ──
+function renderTrialBar(){
+  const el=document.getElementById('trial-bar');if(!el)return;
+  const d=diasDePrueba();
+  if(d===null||d<0){el.style.display='none';return}
+  const urge=d<=3;
+  el.style.display='flex';
+  el.style.background=urge?'#FCEBEB':'#FEF6E7';
+  el.style.borderColor=urge?'#F3D2D2':'#F2E3C2';
+  el.style.color=urge?'#791F1F':'#6B4E12';
+  document.getElementById('trial-txt').innerHTML=
+    (d===0?'<strong>Hoy termina tu prueba gratuita.</strong>'
+         :`<strong>Te ${d===1?'queda 1 día':'quedan '+d+' días'} de prueba gratuita.</strong>`)
+    +' Incluye la versión Finanzas completa — al terminar, se queda solo en el plan Premium.';
 }
 
 // ═══════════════════════════════════════
@@ -1627,34 +1793,85 @@ async function cargarWS(){
   // Verificar suscripción ANTES de mostrar workspaces
   const activa=await verificarSuscripcion();
   if(!activa)return;
-  show('s-workspace');
-  const {data}=await sb.from('memberships').select('role,workspaces(id,nombre,invite_code)').eq('user_id',CU.id);
+  show('s-workspace');renderPlanUI();
+  // Vía RPC: un negocio cuyo dueño dejó vencer su suscripción se sigue listando
+  // (marcado como bloqueado) aunque RLS ya no deje leer sus datos. La membresía
+  // no se borra: al renovar el dueño, el acceso vuelve solo.
+  const {data}=await sb.rpc('mis_negocios');
   const el=document.getElementById('ws-list');
-  finWS=(data||[]).map(m=>({id:m.workspaces.id,nombre:m.workspaces.nombre}));
+  const libres=(data||[]).filter(w=>!w.bloqueado);
+  finWS=libres.map(w=>({id:w.id,nombre:w.nombre}));
+  // El límite de negocios cuenta solo los propios: colaborar en el negocio de
+  // alguien más no consume tu plan, lo consume el de quien paga ese negocio.
+  NEG_PROPIOS=(data||[]).filter(w=>w.es_dueno).length;
   document.getElementById('ws-fin-card').style.display=finWS.length?'flex':'none';
   if(!data?.length){el.innerHTML=`<p style="font-size:13px;color:var(--tx2);padding:1rem 0">Sin negocios. Crea uno o únete con un código.</p>`;return}
-  el.innerHTML=data.map(m=>`<div class="ws-item" onclick="entrarWS('${m.workspaces.id}','${m.workspaces.nombre}','${m.workspaces.invite_code}','${m.role}')">
-    <div class="ws-av">${m.workspaces.nombre.slice(0,2).toUpperCase()}</div>
-    <div style="flex:1"><strong style="font-size:14px;font-weight:500;display:block">${m.workspaces.nombre}</strong><span style="font-size:12px;color:var(--tx2)">${m.role==='owner'?'Propietario':'Miembro'}</span></div>
-    <span class="ws-role ${m.role}">${m.role==='owner'?'Propietario':'Miembro'}</span>
-  </div>`).join('');
+  el.innerHTML=data.map(w=>{
+    const rol=w.role==='owner'?'Propietario':'Miembro';
+    if(w.bloqueado)return `<div class="ws-item ws-bloq" onclick="avisoWSBloqueado()">
+      <div class="ws-av"><i class="ti ti-lock" style="font-size:16px;color:var(--red)"></i></div>
+      <div style="flex:1"><strong style="font-size:14px;font-weight:500;display:block">${w.nombre}</strong><span style="font-size:12px;color:var(--red)">Suscripción del propietario vencida</span></div>
+      <span class="ws-role" style="background:var(--red-bg);color:var(--red-tx)">Sin acceso</span>
+    </div>`;
+    return `<div class="ws-item" onclick="entrarWS('${w.id}','${w.nombre}','${w.invite_code}','${w.role}')">
+      <div class="ws-av">${w.nombre.slice(0,2).toUpperCase()}</div>
+      <div style="flex:1"><strong style="font-size:14px;font-weight:500;display:block">${w.nombre}</strong><span style="font-size:12px;color:var(--tx2)">${rol}</span></div>
+      <span class="ws-role ${w.role}">${rol}</span>
+    </div>`;
+  }).join('');
+}
+function avisoWSBloqueado(){toast('El propietario debe renovar su suscripción para reactivar el acceso a este negocio','ti-lock')}
+// ── Límites del plan ──
+// El chequeo de aquí es solo para dar un mensaje decente: quien manda es el
+// trigger de la base de datos, que no se puede saltar desde la consola.
+function modalUpgrade(tipo){
+  const t={
+    negocios:`Tu plan incluye ${LIM_NEG===1?'un negocio':LIM_NEG+' negocios'}. Para administrar otro, amplía tu plan y todos tus negocios quedan en la misma cuenta.`,
+    deptos:`Tu plan incluye ${LIM_DEP} departamentos por negocio y ya los ocupaste todos. Con Premium das de alta los que necesites, sin tope.`
+  }[tipo]||'Tu plan actual no alcanza para esto.';
+  document.getElementById('up-txt').textContent=t;
+  document.getElementById('up-precio').textContent=PRECIO_PREMIUM_MES;
+  document.getElementById('up-anual').textContent=PRECIO_PREMIUM_ANIO;
+  document.getElementById('up-cta').onclick=()=>{closeM('m-upgrade');pedirPremium(tipo);};
+  openM('m-upgrade');
+}
+// ¿El error viene de un trigger de límite? Devuelve 'negocios' | 'deptos' | null
+function tipoLimite(error){
+  const m=(error&&error.message)||'';
+  if(m.includes('LIMITE_NEGOCIOS'))return 'negocios';
+  if(m.includes('LIMITE_DEPTOS'))return 'deptos';
+  return null;
 }
 async function crearWS(){
   const n=document.getElementById('wn').value.trim(),err=document.getElementById('cws-err');
   if(!n){se(err,'Ingresa un nombre');return}
+  if(LIM_NEG!==null&&NEG_PROPIOS>=LIM_NEG){closeM('m-cws');modalUpgrade('negocios');return}
   const {data:ws,error}=await sb.from('workspaces').insert({nombre:n,owner_id:CU.id}).select().single();
-  if(error){se(err,error.message);return}
+  if(error){
+    if(tipoLimite(error)){closeM('m-cws');modalUpgrade('negocios');return}
+    se(err,error.message);return;
+  }
   await sb.from('memberships').insert({workspace_id:ws.id,user_id:CU.id,role:'owner',email:CU.email});
   closeM('m-cws');toast('Negocio creado');cargarWS();
 }
 async function unirseWS(){
-  const code=document.getElementById('jcode').value.trim().toUpperCase(),err=document.getElementById('jws-err');
+  // El canje va por RPC: quien todavía no es miembro no puede leer `workspaces`
+  // ni insertar en `memberships` por RLS, así que hacerlo desde el cliente
+  // devolvía 0 filas y siempre marcaba "Código inválido".
+  const code=document.getElementById('jcode').value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase(),err=document.getElementById('jws-err');
   if(!code){se(err,'Ingresa el código');return}
-  const {data:ws}=await sb.from('workspaces').select('id,nombre').eq('invite_code',code).single();
-  if(!ws){se(err,'Código inválido');return}
-  const {data:ex}=await sb.from('memberships').select('id').eq('workspace_id',ws.id).eq('user_id',CU.id).single();
-  if(!ex)await sb.from('memberships').insert({workspace_id:ws.id,user_id:CU.id,role:'member',email:CU.email});
-  closeM('m-jws');toast('¡Te uniste a "'+ws.nombre+'"!');cargarWS();
+  const {data:r,error}=await sb.rpc('unirse_por_codigo',{codigo:code});
+  if(error){se(err,'No se pudo unir: '+error.message);return}
+  if(!r?.ok){se(err,{
+    CODIGO_INVALIDO:'Código inválido',
+    VACIO:'Ingresa el código',
+    TU_CUENTA_INACTIVA:'Tu suscripción no está activa. Renuévala para poder unirte a un negocio.',
+    DUENO_INACTIVO:'Ese negocio está inactivo: su propietario debe renovar su suscripción.'
+  }[r?.error]||'No se pudo unir');return}
+  document.getElementById('jcode').value='';
+  closeM('m-jws');
+  toast(r.ya_era_miembro?'Ya eras parte de "'+r.nombre+'"':'¡Te uniste a "'+r.nombre+'"!');
+  cargarWS();
 }
 function entrarWS(id,nombre,code,role){
   CW={id,nombre,invite_code:code,role};
@@ -1669,7 +1886,7 @@ function entrarWS(id,nombre,code,role){
   document.getElementById('sb-uname').textContent=un;document.getElementById('sb-uemail').textContent=CU.email;
   document.getElementById('sb-av').textContent=un.slice(0,1).toUpperCase();
   document.getElementById('show-code').textContent=code;
-  show('s-app');cargarTodo();suscribir();cargarConfig();
+  show('s-app');renderPlanUI();cargarTodo();suscribir();cargarConfig();
   finLoaded=false;finLoad(); // precarga del modo Finanzas (gastos/impuestos/categorías)
 }
 function goWS(){
@@ -2066,7 +2283,17 @@ function ecselGenerar(download){
 // ═══════════════════════════════════════
 function renderInm(){
   const q=(document.getElementById('si').value||'').toLowerCase(),list=inmuebles.filter(i=>!q||(i.num+i.inquilino).toLowerCase().includes(q)),el=document.getElementById('l-inm');
-  const sub=document.getElementById('inm-sub');if(sub)sub.textContent=`${inmuebles.length} unidad${inmuebles.length===1?'':'es'} · avance de cobranza de ${MESES[vM]}`;
+  const sub=document.getElementById('inm-sub');
+  if(sub){
+    sub.textContent=`${inmuebles.length} unidad${inmuebles.length===1?'':'es'} · avance de cobranza de ${MESES[vM]}`;
+    // Solo avisamos cuando ya casi se acaba el cupo: antes de eso, estorba.
+    if(LIM_DEP!==null&&inmuebles.length>=LIM_DEP-3){
+      const lleno=inmuebles.length>=LIM_DEP;
+      sub.insertAdjacentHTML('beforeend',
+        ` · <span style="color:${lleno?'#B4231F':'#8A6A12'};font-weight:600">${inmuebles.length}/${LIM_DEP} de tu plan</span>`
+        +` <button onclick="modalUpgrade('deptos')" style="border:none;background:none;padding:0;font:inherit;font-size:12.5px;color:#7C3AED;font-weight:600;cursor:pointer;text-decoration:underline">ampliar</button>`);
+    }
+  }
   if(!list.length){el.style.cssText='';el.innerHTML=`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:64px 32px;text-align:center"><div style="width:64px;height:64px;border-radius:50%;background:#F1EFE8;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><i class="ti ti-building" style="font-size:28px;color:#9D9B96"></i></div><div style="font-size:15px;font-weight:600;margin-bottom:4px">Aún no hay departamentos</div><div style="font-size:13px;color:#9D9B96;margin-bottom:20px">Agrega tu primera unidad para empezar a cobrar con orden.</div><button onclick="abrirInm(null)" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer"><i class="ti ti-plus" style="font-size:14px"></i>Agregar departamento</button></div>`;return}
   el.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px';
   const IB='display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s';
@@ -3346,11 +3573,17 @@ async function guardarInm(){
     renderInm();refresh();return;
   }
   // ── Modo: editar o crear departamento (mirror del vigente) ──
+  // El tope solo aplica al dar de alta un espacio nuevo: editar uno existente
+  // o registrar un contrato nuevo en un espacio que ya tienes nunca se bloquea.
+  if(!editInmId&&LIM_DEP!==null&&inmuebles.length>=LIM_DEP){closeM('m-inm');modalUpgrade('deptos');return}
   const d={workspace_id:CW.id,num,piso:document.getElementById('fi-pis').value||null,...cf};
   const {data:savedInm,error}=editInmId
     ? await sb.from('inmuebles').update(d).eq('id',editInmId).select().single()
     : await sb.from('inmuebles').insert(d).select().single();
-  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  if(error){
+    if(tipoLimite(error)){closeM('m-inm');modalUpgrade('deptos');return}
+    toast('Error: '+error.message,'ti-alert-triangle');return;
+  }
   let inmId;
   if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;inmId=editInmId;}
   else{inmuebles.push(savedInm);inmuebles.sort((a,b)=>a.num.localeCompare(b.num));inmId=savedInm.id;}
@@ -4000,9 +4233,65 @@ function finWipe(toDark,midCb){
   },700);
 }
 
+// ── Muro de pago de Finanzas ────────────────────────────────
+// No escondemos el modo Finanzas a quien no lo tiene: lo dejamos entrar, ve su
+// propia cascada difuminada detrás de la oferta y decide. Esconderlo no vende.
+function finPaywall(){
+  if(finBusy)return;finBusy=true;closeModeMenus();
+  document.getElementById('pay-precio').textContent=PRECIO_PREMIUM_MES;
+  document.getElementById('pay-anual').innerHTML='o <strong>'+PRECIO_PREMIUM_ANIO+'</strong> al año — te ahorras 2 meses';
+  document.getElementById('pay-link').style.display=LINK_PAGO?'inline-flex':'none';
+  finWipe(true,()=>{
+    finOn=true;
+    const app=document.getElementById('fin-app');
+    app.classList.add('locked');
+    app.style.display='flex';
+    document.getElementById('fin-wsn').textContent=(CW?.nombre||'VISTA PREVIA').toUpperCase();
+    finDemoFondo();
+  });
+  setTimeout(()=>{finBusy=false;},1200);
+}
+function finCerrarPaywall(){
+  if(finBusy)return;finBusy=true;
+  finWipe(false,()=>{
+    finOn=false;
+    const app=document.getElementById('fin-app');
+    app.classList.remove('locked');
+    app.style.display='none';
+  });
+  setTimeout(()=>{finBusy=false;},1200);
+}
+// Fondo de la vista previa: la cascada REAL con la facturación REAL del usuario
+// y gastos/impuestos de ejemplo. Ver tus propios números es lo que convence.
+function finDemoFondo(){
+  let fact=0;
+  try{fact=finCalc().fact||0;}catch(e){}
+  if(fact<=0)fact=48000;
+  const g=Math.round(fact*0.31), i=Math.round((fact-g)*0.12);
+  try{
+    finRenderCascade({ms:[],pl:new Array(Math.max(1,inmuebles.length)),fact,
+      gl:new Array(6),gTot:g,util:fact-g,il:new Array(2),iTot:i,neta:fact-g-i});
+  }catch(e){}
+  const panel=(t,filas)=>`<div class="fin-panel" style="padding:20px 24px">
+    <div class="fin-lbl" style="color:#A78BFA;margin-bottom:14px">${t}</div>
+    ${filas.map(f=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(139,92,246,.12);font-size:12.5px">
+      <span style="color:#D6D1EE">${f[0]}</span><span style="font-family:'DM Mono',monospace;color:#F0ABFC">${f[1]}</span></div>`).join('')}
+  </div>`;
+  const fmt=n=>'$'+n.toLocaleString('es-MX');
+  const t=document.getElementById('fin-trend');if(t)t.innerHTML='';
+  const cols=document.getElementById('fin-cols');
+  if(cols)cols.innerHTML=
+    panel('Gastos de operación',[['Mantenimiento',fmt(Math.round(g*.38))],['Limpieza',fmt(Math.round(g*.24))],
+      ['Contabilidad',fmt(Math.round(g*.20))],['Predial y agua',fmt(Math.round(g*.18))]])
+   +panel('Impuestos pagados',[['ISR arrendamiento',fmt(Math.round(i*.7))],['IVA',fmt(Math.round(i*.3))]]);
+}
+
 // ── Toggle del modo (botón junto al nombre del negocio) ──
 async function finToggle(){
-  if(finBusy)return;finBusy=true;closeModeMenus();
+  if(finBusy)return;
+  if(!esPremium()&&!finOn){finPaywall();return;}
+  if(!esPremium()&&finOn){finCerrarPaywall();return;}
+  finBusy=true;closeModeMenus();
   if(finGlobal){ // cerrar el modo global: vuelve al selector de negocios (screen activa debajo)
     finWipe(false,()=>{
       finOn=false;finGlobal=false;
@@ -4024,7 +4313,9 @@ async function finToggle(){
 
 // ── Modo global: apertura desde el selector de negocios ──
 async function finOpenGlobal(){
-  if(finBusy)return;finBusy=true;
+  if(finBusy)return;
+  if(!esPremium()){finPaywall();return;}
+  finBusy=true;
   try{await finGLoad();}
   catch(e){finBusy=false;toast('No se pudieron cargar las finanzas consolidadas: '+(e.message||e),'ti-alert-triangle');return;}
   finGlobal=true;finGSel=new Set();finProp='';
