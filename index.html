@@ -2746,6 +2746,23 @@ function svcAplicaInfo(inm,periodoIni,periodoFin){
   const personas=diasUso>0?Math.max(1,Math.round(pondPers/diasUso)):(Number(inm.personas)||1);
   return{aplica:diasUso>0,diasUso,diasTotal,personas,motivo,inquilino:inq||inm.inquilino||'',contratoId:domId};
 }
+// Por qué un departamento NO entra al reparto de un período. Sirve para que el recibo explique
+// el renglón en $0 ("Lucía · Salió el 5-jul") en vez de dejarlo mudo, que es como salía antes:
+// el nombre se leía del inquilino ACTUAL del depto, y si el espacio estaba desocupado hoy no
+// se imprimía nada. Prioriza a quien entró DESPUÉS del período: es el que vive ahí hoy, el que
+// recibe la foto y el que se pregunta por qué no le toca.
+function svcMotivoNoAplica(inm,periodoIni,periodoFin){
+  const cs=historialContratos(inm.id).filter(Boolean);
+  let entra=null,sale=null;
+  for(const c of cs){
+    const oc=ocupacionEfectiva(c,cs);
+    if(oc.ini&&new Date(oc.ini+'T00:00:00')>periodoFin&&(!entra||oc.ini<entra.f))entra={c,f:oc.ini};
+    if(oc.fin&&new Date(oc.fin+'T00:00:00')<periodoIni&&(!sale||oc.fin>sale.f))sale={c,f:oc.fin};
+  }
+  if(entra)return{inquilino:entra.c.inquilino||null,nota:`Inquilino desde el ${fdS(entra.f)}`};
+  if(sale)return{inquilino:sale.c.inquilino||null,nota:`Salió el ${fdS(sale.f)}`};
+  return{inquilino:null,nota:'Sin inquilino en el período'};
+}
 
 // ═══════════════════════════════════════
 //  SERVICIOS → PAGOS AUTOMÁTICOS
@@ -3053,8 +3070,15 @@ async function guardarServicio(){
     const ocup=sal.map(x=>({n:x.nombre,nota:x.fsalStr?`Salió el ${fdS(x.fsalStr)}`:''}))
       .concat(r.diasUso>0?[{n:r.vigNombre,nota:r.motivo||''}]:[]);
     const nombres=[...new Set(ocup.map(x=>x.n).filter(Boolean))];
-    const inquilino=nombres.length?nombres.join(' / '):(r.vigNombre||null);
-    const nota=ocup.length===1?(ocup[0].nota||null):(ocup.length>1?'Cambio de inquilino en el período':null);
+    let inquilino=nombres.length?nombres.join(' / '):(r.vigNombre||null);
+    let nota=ocup.length===1?(ocup[0].nota||null):(ocup.length>1?'Cambio de inquilino en el período':null);
+    // Depto que no tuvo a nadie en el período: se explica el renglón en $0 con quién fue el
+    // último (o el próximo) inquilino. Si Diego lo desmarcó a mano no se toca: ahí sí hubo
+    // ocupación y el motivo es su decisión, no un dato.
+    if(!ocup.length&&!r.tuvoOcupacion){
+      const mn=svcMotivoNoAplica(r.inm,iniDate,finDate);
+      inquilino=mn.inquilino;nota=mn.nota;
+    }
     return{servicio_id:svc.id,workspace_id:CW.id,inmueble_id:r.inm.id,dias_uso:dias,personas:persW,ponderacion:pond,porcentaje:pct,monto,es_administracion:false,inquilino,nota};
   });
   detalles.push({servicio_id:svc.id,workspace_id:CW.id,inmueble_id:null,dias_uso:0,personas:0,ponderacion:svcCalc.subsidio.pond,porcentaje:svcCalc.subsidio.pct,monto:svcCalc.subsidio.monto,es_administracion:true,inquilino:null,nota:null});
@@ -3156,15 +3180,15 @@ async function generarSvcPNG(svcId){
     const aplica=Number(d.ponderacion)>0;
     // Recibo congelado: si el detalle trae el snapshot de quién usó el servicio, se imprime ese.
     // Los servicios viejos (sin snapshot) se reconstruyen por fechas, como antes.
-    const haySnap=d.inquilino!==undefined&&d.inquilino!==null;
+    const haySnap=d.inquilino!=null||d.nota!=null;
     const info=haySnap?null:(i?svcAplicaInfo(i,pIni,pFin):{motivo:''});
-    const nombre=haySnap?d.inquilino:(aplica?(i?.inquilino||'—'):'—');
+    const nombre=haySnap?(d.inquilino||'—'):(aplica?(i?.inquilino||'—'):'—');
     const motivo=haySnap?(d.nota||''):(info?.motivo||'');
     const nota=motivo?` (${motivo})`:'';
     const pct=totPond>0?Math.round(Number(d.ponderacion)/totPond*100):0;
     return `<tr>
-      <td style="${B};font-weight:600;text-align:center">${i?.num||'?'}${!aplica&&motivo?`<span style="font-weight:400"> — ${motivo}</span>`:''}</td>
-      <td style="${B}">${nombre}${aplica&&nota?`<span style="color:#55514A;font-size:11.5px">${nota}</span>`:''}</td>
+      <td style="${B};font-weight:600;text-align:center">${i?.num||'?'}</td>
+      <td style="${B}">${nombre}${nota?`<span style="color:#55514A;font-size:11.5px">${nota}</span>`:''}</td>
       <td style="${B};text-align:center;font-weight:${aplica?'400':'700'}">${aplica?'SÍ':'NO'}</td>
       <td style="${B};text-align:center">${d.dias_uso}</td>
       <td style="${B};text-align:center">${d.personas||i?.personas||''}</td>
