@@ -2680,17 +2680,46 @@ function editarDistribucion(id){
   openM('m-new-svc');
 }
 
-// Solapamiento (en días) de UN contrato con el período del servicio. El fin de ocupación
-// efectivo del contrato es su fecha de salida real (si existe) o, en su defecto, su fecha de
-// término formal. Sin fecha de inicio → arranca al inicio del período; sin fin → llega al final.
-function svcSolapeContrato(c,periodoIni,periodoFin){
-  const finiStr=c.fecha_inicio_contrato,fterStr=c.fecha_termino_contrato,fsalStr=c.fecha_salida;
+// Suma/resta días a una fecha ISO y regresa ISO (sin tocar zona horaria)
+function diaISO(iso,delta){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+delta);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+// Ocupación EFECTIVA de un contrato dentro de su espacio. Un contrato ocupa el depto desde su
+// fecha de inicio hasta su fecha de SALIDA. `fecha_termino_contrato` NO corta la ocupación:
+// un contrato cuyo término formal venció pero que nunca registró salida sigue habitado (y sigue
+// pagando renta), así que también le tocan sus días de servicio. Sobre eso, dos saneamientos
+// con el resto de contratos del mismo espacio, para que un depto nunca facture días de más:
+//   · si un contrato quedó abierto pero ya entró otro después, se cierra la víspera de ese inicio;
+//   · el día de salida es del que SE VA, así que un contrato nunca arranca antes del día
+//     siguiente a la salida de aquel al que sustituye.
+function ocupacionEfectiva(c,cs){
+  let ini=c.fecha_inicio_contrato||null,fin=c.fecha_salida||null;
+  if(!cs||cs.length<2)return{ini,fin};
+  const i=cs.indexOf(c);            // `cs` viene en orden cronológico (contratosDe)
+  if(i<0)return{ini,fin};
+  // Fin: si quedó abierto y otro contrato lo relevó, cierra la víspera del inicio de ese.
+  // Si hubiera dos contratos capturados con el mismo inicio (duplicado), el primero se
+  // queda en cero días en vez de cobrarle dos veces al depto.
+  if(!fin){
+    const sig=cs.slice(i+1).find(x=>x&&x.fecha_inicio_contrato);
+    if(sig)fin=diaISO(sig.fecha_inicio_contrato,-1);
+  }
+  // Inicio: nunca antes del día siguiente a la salida de un contrato anterior del espacio
+  if(ini)for(let k=0;k<i;k++){
+    const x=cs[k];if(!x||!x.fecha_salida)continue;
+    const d=diaISO(x.fecha_salida,1);if(d>ini)ini=d;
+  }
+  return{ini,fin};
+}
+// Solapamiento (en días, ambos extremos inclusive) de UN contrato con el período del servicio.
+// Sin fecha de inicio → arranca al inicio del período; sin fin → llega al final.
+function svcSolapeContrato(c,periodoIni,periodoFin,cs){
+  const oc=ocupacionEfectiva(c,cs);
+  const finiStr=oc.ini,fterStr=c.fecha_termino_contrato,fsalStr=c.fecha_salida;
   const cIni=finiStr?new Date(finiStr+'T00:00:00'):null;
-  const cFinStr=fsalStr||fterStr||null,cFin=cFinStr?new Date(cFinStr+'T00:00:00'):null;
+  const cFinStr=oc.fin,cFin=cFinStr?new Date(cFinStr+'T00:00:00'):null;
   const desde=cIni?new Date(Math.max(periodoIni.getTime(),cIni.getTime())):new Date(periodoIni.getTime());
   const hasta=cFin?new Date(Math.min(periodoFin.getTime(),cFin.getTime())):new Date(periodoFin.getTime());
   const dias=hasta>=desde?Math.round((hasta-desde)/86400000)+1:0;
-  return{dias,cIni,cFin,finiStr,fterStr,fsalStr};
+  return{dias,cIni,cFin,finiStr,fterStr,fsalStr,finEfStr:cFinStr};
 }
 // ¿Le aplica el servicio a este espacio, y por cuántos días? Considera TODO el historial de
 // contratos del espacio (vigente + anteriores), no solo el mirror del inmueble: un servicio lo
@@ -2704,13 +2733,13 @@ function svcAplicaInfo(inm,periodoIni,periodoFin){
   let diasUso=0,pondPers=0,motivo='',inq='',domDias=-1,domId=null;
   cs.forEach(c=>{
     if(!c)return;
-    const s=svcSolapeContrato(c,periodoIni,periodoFin);
+    const s=svcSolapeContrato(c,periodoIni,periodoFin,cs);
     if(s.dias<=0)return;
     const pers=Number(c.personas)||Number(inm.personas)||1;
     diasUso+=s.dias;pondPers+=s.dias*pers;
     // motivo/nombre representativos = los del contrato que más días aporta al período
     if(s.dias>domDias){domDias=s.dias;inq=c.inquilino||inm.inquilino||'';domId=c.id||null;
-      if(s.fsalStr&&s.cFin&&s.cFin>=periodoIni&&s.cFin<=periodoFin)motivo=`Salió el ${fdS(s.fsalStr)}`;
+      if(s.finEfStr&&s.cFin&&s.cFin>=periodoIni&&s.cFin<=periodoFin)motivo=`Salió el ${fdS(s.finEfStr)}`;
       else if(s.cIni&&s.cIni>periodoIni)motivo=`Inquilino desde el ${fdS(s.finiStr)}`;
       else motivo='';}
   });
@@ -2773,15 +2802,15 @@ function svcPartesContrato(inm,periodoIni,periodoFin){
   const partes={vig:null,salidos:[]};
   cs.forEach(c=>{
     if(!c)return;
-    const s=svcSolapeContrato(c,periodoIni,periodoFin);
+    const s=svcSolapeContrato(c,periodoIni,periodoFin,cs);
     const esVig=vigC&&((c.id&&vigC.id===c.id)||(!c.id&&!vigC.id));
     if(esVig){
       let motivo='';
-      if(s.fsalStr&&s.cFin&&s.cFin>=periodoIni&&s.cFin<=periodoFin)motivo=`Salió el ${fdS(s.fsalStr)}`;
+      if(s.finEfStr&&s.cFin&&s.cFin>=periodoIni&&s.cFin<=periodoFin)motivo=`Salió el ${fdS(s.finEfStr)}`;
       else if(s.cIni&&s.cIni>periodoIni)motivo=`Inquilino desde el ${fdS(s.finiStr)}`;
       partes.vig={c,dias:s.dias,pers:Number(c.personas)||Number(inm.personas)||1,motivo,aplica:s.dias>0};
     }else if(s.dias>0){
-      partes.salidos.push({c,dias:s.dias,pers:Number(c.personas)||1,fsalStr:s.fsalStr||s.fterStr||null,nombre:c.inquilino||'—'});
+      partes.salidos.push({c,dias:s.dias,pers:Number(c.personas)||1,fsalStr:s.finEfStr||s.fsalStr||s.fterStr||null,nombre:c.inquilino||'—'});
     }
   });
   return partes;
@@ -2797,6 +2826,13 @@ function calcSvcRows(){
 
   const tbody=document.getElementById('sv-rows');
   if(!inmuebles.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:1rem">Agrega departamentos primero</td></tr>`;return}
+  // Período al revés: sin este aviso se guardaba un servicio con 0 días repartidos, todo el
+  // monto caía en el subsidio y no se le cobraba a nadie.
+  if(iniDate&&finDate&&finDate<iniDate){
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:#791F1F;padding:1rem;font-size:12.5px">El fin del período (${fd(finStr)}) es anterior al inicio (${fd(iniStr)}). Corrige las fechas.</td></tr>`;
+    const n0=document.getElementById('sv-ocultos-nota');if(n0)n0.textContent='';
+    recalcAllSvc();return;
+  }
 
   let ocultos=0;
   tbody.innerHTML=inmuebles.map((inm,idx)=>{
@@ -2807,11 +2843,13 @@ function calcSvcRows(){
     const vig=partes?partes.vig:(vigC?{c:vigC,dias:diasTotal,pers:vigC.personas||inm.personas||1,motivo:'',aplica:true}:null);
     const tieneSalidos=partes?partes.salidos.length>0:false;
     if(!vig||!vig.aplica){if(!tieneSalidos)ocultos++;return'';}
+    // El vigente no puede facturar días que ya se le cobraron a un inquilino que salió
+    const topeDias=Math.max(0,diasTotal-(partes?partes.salidos.reduce((a,s)=>a+s.dias,0):0));
     return`<tr id="sv-row-${idx}">
       <td><strong style="font-family:'DM Mono',monospace;font-size:12px">${inm.num}</strong></td>
       <td style="font-size:12px">${(vig.c?.inquilino||inm.inquilino||'').split(' ')[0]}${vig.motivo?`<br><span style="font-size:10px;color:var(--tx3)">${vig.motivo}</span>`:''}</td>
       <td><input type="checkbox" id="sv-aplica-${idx}" checked onchange="recalcSvc(${idx},'${inm.id}')" style="width:18px;height:18px;cursor:pointer"></td>
-      <td><input type="number" id="sv-dias-${idx}" value="${vig.dias}" min="0" max="${diasTotal}" style="width:70px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
+      <td><input type="number" id="sv-dias-${idx}" value="${Math.min(vig.dias,topeDias)}" min="0" max="${topeDias}" style="width:70px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
       <td><input type="number" id="sv-pers-${idx}" value="${vig.pers||1}" min="0" max="20" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
       <td id="sv-pond-${idx}" style="font-family:'DM Mono',monospace;font-size:13px">0</td>
       <td id="sv-pct-${idx}" style="font-size:13px">0%</td>
@@ -2841,8 +2879,15 @@ function recalcAllSvc(){
     const vig=partes.vig;
     const enModal=!!document.getElementById(`sv-aplica-${idx}`); // fila vigente visible
     const manualOn=enModal?document.getElementById(`sv-aplica-${idx}`).checked:false;
-    const dias=enModal&&manualOn?(parseInt(document.getElementById(`sv-dias-${idx}`)?.value)||0):0;
-    const pers=enModal?(parseInt(document.getElementById(`sv-pers-${idx}`)?.value)||(vig?.pers||inm.personas||1)):(vig?.pers||inm.personas||1);
+    // Días que ya tienen dueño fijo (los contratos que salieron dentro del período)
+    const diasSal=partes.salidos.reduce((a,s)=>a+s.dias,0);
+    const pondSal=partes.salidos.reduce((a,s)=>a+s.dias*s.pers,0);
+    const topeDias=Math.max(0,diasTotal-diasSal); // el vigente no puede facturar días ya cobrados a otro
+    const diasRaw=enModal&&manualOn?(parseInt(document.getElementById(`sv-dias-${idx}`)?.value)||0):0;
+    const dias=Math.max(0,Math.min(diasRaw,topeDias));
+    // Personas: se respeta el 0 escrito a mano (saca al depto del reparto); vacío → las del contrato
+    const persRaw=enModal?parseInt(document.getElementById(`sv-pers-${idx}`)?.value):NaN;
+    const pers=Number.isFinite(persRaw)?Math.max(0,persRaw):(vig?.pers||inm.personas||1);
     const pondUsada=enModal&&manualOn?dias*pers:0;
     // Partes fijas de los que salieron (solo lectura, calculadas por fechas)
     partes.salidos.forEach(s=>{
@@ -2850,13 +2895,22 @@ function recalcAllSvc(){
       salidos.push({inm,idx,contratoId:s.c.id||null,esSalido:true,nombre:s.nombre,fsalStr:s.fsalStr,diasUso:s.dias,pers:s.pers,pondUsada:pond});
       sumUsada+=pond;
     });
-    const persRef=enModal?pers:(vig?.pers||partes.salidos[0]?.pers||inm.personas||1);
+    // ── Ponderación COMPLETA del espacio = el denominador del reparto ──
+    // Es lo que habría pesado el depto ocupado TODO el período, armada contrato por contrato
+    // CON LAS PERSONAS DE CADA UNO: los días del vigente valen sus personas, los de cada salido
+    // las suyas, y los días que nadie ocupó valen las personas de referencia. Calcularla con un
+    // solo número de personas (las del vigente) hacía que numerador y denominador dejaran de
+    // hablar el mismo idioma en cuanto entraba un inquilino con otra familia, y el reparto podía
+    // sumar mucho más —o mucho menos— que la factura.
     // Deptos SIN ninguna ocupación en el período (100% vacíos, o el inquilino entró después /
-    // se fue antes) salen del reparto: no aportan ponderación ni inflan el subsidio. Solo
-    // cuentan los que estuvieron al menos parte del período; su parte no usada (transición
-    // = entró tarde / se fue antes) sí sigue yendo al subsidio.
-    const tuvoOcupacion=(vig&&vig.aplica)||partes.salidos.length>0;
-    const pondCompleta=tuvoOcupacion?diasTotal*persRef:0;
+    // se fue antes) salen del reparto: no aportan ponderación ni inflan el subsidio. Su parte no
+    // usada por transición (entró tarde / se fue antes) sí sigue yendo al subsidio.
+    const persRef=enModal?pers:(vig?.pers||partes.salidos[partes.salidos.length-1]?.pers||inm.personas||1);
+    const diasVigFis=(vig&&vig.aplica)?vig.dias:0;  // días reales por fechas, no los editados a mano
+    const pondVigFis=diasVigFis*(enModal?pers:(vig?.pers||persRef));
+    const diasOcup=Math.min(diasTotal,diasVigFis+diasSal);
+    const tuvoOcupacion=diasOcup>0;
+    const pondCompleta=tuvoOcupacion?pondVigFis+pondSal+(diasTotal-diasOcup)*persRef:0;
     sumCompleta+=pondCompleta;sumUsada+=pondUsada;
     rows.push({idx,inm,contratoId:vig?.c?.id||null,aplica:(vig?vig.aplica:false)&&(!enModal||manualOn),diasUso:enModal?(manualOn?dias:0):0,pers,pondUsada,pondCompleta,tuvoOcupacion,motivo:vig?.motivo||'',visible:enModal,hayVig:!!(vig&&vig.aplica),vigNombre:vig?.c?.inquilino||inm.inquilino||'',tuvoSalidos:partes.salidos.length>0});
   });
@@ -2953,6 +3007,7 @@ async function guardarServicio(){
   const tipo=document.getElementById('sv-tipo').value,total=parseFloat(document.getElementById('sv-total').value)||0;
   const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
   if(!total||!iniStr||!finStr){toast('Completa todos los campos requeridos','ti-alert-triangle');return}
+  if(finStr<iniStr){toast('El fin del período no puede ser anterior al inicio','ti-alert-triangle');return}
   recalcAllSvc();
   if(!svcCalc){toast('Revisa las fechas del período','ti-alert-triangle');return}
   const iniDate=new Date(iniStr+'T00:00:00'),finDate=new Date(finStr+'T00:00:00');
@@ -2992,10 +3047,23 @@ async function guardarServicio(){
     const pct=r.pct+sal.reduce((a,x)=>a+x.pct,0);
     const monto=r.monto+sal.reduce((a,x)=>a+x.monto,0);
     const persW=dias>0?Math.max(1,Math.round(pond/dias)):r.pers;
-    return{servicio_id:svc.id,workspace_id:CW.id,inmueble_id:r.inm.id,dias_uso:dias,personas:persW,ponderacion:pond,porcentaje:pct,monto};
+    // Snapshot del recibo: quién ocupó el depto en ESE período y por qué pagó lo que pagó.
+    // Queda congelado al guardar; así, regenerar la imagen meses después —cuando ya rotó el
+    // inquilino— sigue mostrando a quien de verdad usó el servicio y no a quien vive ahí hoy.
+    const ocup=sal.map(x=>({n:x.nombre,nota:x.fsalStr?`Salió el ${fdS(x.fsalStr)}`:''}))
+      .concat(r.diasUso>0?[{n:r.vigNombre,nota:r.motivo||''}]:[]);
+    const nombres=[...new Set(ocup.map(x=>x.n).filter(Boolean))];
+    const inquilino=nombres.length?nombres.join(' / '):(r.vigNombre||null);
+    const nota=ocup.length===1?(ocup[0].nota||null):(ocup.length>1?'Cambio de inquilino en el período':null);
+    return{servicio_id:svc.id,workspace_id:CW.id,inmueble_id:r.inm.id,dias_uso:dias,personas:persW,ponderacion:pond,porcentaje:pct,monto,es_administracion:false,inquilino,nota};
   });
-  detalles.push({servicio_id:svc.id,workspace_id:CW.id,inmueble_id:null,dias_uso:0,personas:0,ponderacion:svcCalc.subsidio.pond,porcentaje:svcCalc.subsidio.pct,monto:svcCalc.subsidio.monto,es_administracion:true});
-  const {data:savedDets,error:de}=await sb.from('servicio_detalles').insert(detalles).select();
+  detalles.push({servicio_id:svc.id,workspace_id:CW.id,inmueble_id:null,dias_uso:0,personas:0,ponderacion:svcCalc.subsidio.pond,porcentaje:svcCalc.subsidio.pct,monto:svcCalc.subsidio.monto,es_administracion:true,inquilino:null,nota:null});
+  let {data:savedDets,error:de}=await sb.from('servicio_detalles').insert(detalles).select();
+  // Compat: si las columnas del recibo aún no existen en la BD, reintenta sin ellas
+  if(de&&/inquilino|nota/i.test(de.message||'')){
+    const sinSnap=detalles.map(({inquilino:_i,nota:_n,...r})=>r);
+    ({data:savedDets,error:de}=await sb.from('servicio_detalles').insert(sinSnap).select());
+  }
   if(de){toast('Error en detalles: '+de.message,'ti-alert-triangle');return}
   if(savedDets) svcDet.push(...savedDets);
   // Generar/sincronizar los pagos de este servicio (cobrables de inmediato):
@@ -3059,7 +3127,7 @@ async function verServicio(id){
       <button onclick="generarSvcPNG('${svc.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-photo-down" style="font-size:14px"></i>Imagen para WhatsApp</button>
     </div>
     <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Días</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ Pagar</th></tr></thead>
-    <tbody>${det.filter(d=>Number(d.ponderacion)>0).map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((Number(d.ponderacion)/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
+    <tbody>${det.filter(d=>Number(d.ponderacion)>0).map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${d.inquilino||i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((Number(d.ponderacion)/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px">${SUB_LBL}</td><td style="font-weight:600;padding:10px 14px">${adm?adm.ponderacion:0}</td><td style="font-weight:600;padding:10px 14px">${adm?Math.round(Number(adm.porcentaje)*100):0}%</td><td style="font-weight:600;padding:10px 14px">${fmt(adm?adm.monto:0)}</td></tr>
     ${Number(svc.apoyo_admin)>0?`<tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px;color:#1D9E75"><i class="ti ti-heart-handshake"></i> Apoyo de administración</td><td style="font-weight:600;padding:10px 14px">—</td><td style="font-weight:600;padding:10px 14px">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td><td style="font-weight:600;padding:10px 14px;color:#1D9E75">−${fmt(svc.apoyo_admin)}</td></tr>`:''}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:700;padding:10px 14px">TOTAL</td><td style="font-weight:700;padding:10px 14px">${sumPond}</td><td style="font-weight:700;padding:10px 14px">100%</td><td style="font-weight:700;padding:10px 14px">${fmt(svc.total)}</td></tr>
@@ -3085,13 +3153,17 @@ async function generarSvcPNG(svcId){
   const TH=`${B};background:#DCE6F1;font-weight:700;text-align:center`;
   const filas=det.map(d=>{
     const i=getInm(d.inmueble_id);
-    const info=i?svcAplicaInfo(i,pIni,pFin):{aplica:Number(d.ponderacion)>0,motivo:''};
     const aplica=Number(d.ponderacion)>0;
-    const nombre=(i?.inquilino&&!estaDesocupado(i?.id||''))||aplica?(i?.inquilino||'—'):'—';
-    const nota=info.motivo?` (${info.motivo})`:'';
+    // Recibo congelado: si el detalle trae el snapshot de quién usó el servicio, se imprime ese.
+    // Los servicios viejos (sin snapshot) se reconstruyen por fechas, como antes.
+    const haySnap=d.inquilino!==undefined&&d.inquilino!==null;
+    const info=haySnap?null:(i?svcAplicaInfo(i,pIni,pFin):{motivo:''});
+    const nombre=haySnap?d.inquilino:(aplica?(i?.inquilino||'—'):'—');
+    const motivo=haySnap?(d.nota||''):(info?.motivo||'');
+    const nota=motivo?` (${motivo})`:'';
     const pct=totPond>0?Math.round(Number(d.ponderacion)/totPond*100):0;
     return `<tr>
-      <td style="${B};font-weight:600;text-align:center">${i?.num||'?'}${!aplica&&info.motivo?`<span style="font-weight:400"> — ${info.motivo}</span>`:''}</td>
+      <td style="${B};font-weight:600;text-align:center">${i?.num||'?'}${!aplica&&motivo?`<span style="font-weight:400"> — ${motivo}</span>`:''}</td>
       <td style="${B}">${nombre}${aplica&&nota?`<span style="color:#55514A;font-size:11.5px">${nota}</span>`:''}</td>
       <td style="${B};text-align:center;font-weight:${aplica?'400':'700'}">${aplica?'SÍ':'NO'}</td>
       <td style="${B};text-align:center">${d.dias_uso}</td>
@@ -3204,15 +3276,25 @@ function renderEC(){
   mo(el);
 }
 
+// Lo que de UN servicio le toca al inquilino ACTUAL de un espacio. `servicio_detalles` guarda
+// una sola fila fusionada por depto (vigente + los que salieron) para que la foto de WhatsApp
+// muestre un renglón por departamento; esa fila no sirve para el estado de cuenta, porque le
+// sumaría al inquilino de hoy lo que debe el anterior. Los pagos sí vienen partidos por
+// contrato, así que son la fuente correcta. Los servicios viejos, anteriores a los pagos
+// automáticos, siguen cayendo al detalle guardado.
+function svcMontoVigente(s,inmId){
+  const ps=pagos.filter(p=>p.servicio_id===s.id&&p.inmueble_id===inmId);
+  if(ps.length){
+    if(!ps.some(p=>p.contrato_id))return ps.reduce((a,p)=>a+Number(p.monto),0);
+    const vig=contratoVigente(inmId);if(!vig)return 0;
+    return ps.filter(p=>(p.contrato_id||null)===(vig.id||null)).reduce((a,p)=>a+Number(p.monto),0);
+  }
+  const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
+  return d?Number(d.monto):0;
+}
 function getSvcMonto(inmId,mes,anio){
-  // Suma de servicios del período mes/anio para este depto
-  const svcsDelMes=servicios.filter(s=>s.mes===mes&&s.anio===anio);
-  let total=0;
-  svcsDelMes.forEach(s=>{
-    const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
-    if(d)total+=Number(d.monto);
-  });
-  return total;
+  // Suma de los servicios del período mes/anio que le corresponden al inquilino actual
+  return servicios.filter(s=>s.mes===mes&&s.anio===anio).reduce((t,s)=>t+svcMontoVigente(s,inmId),0);
 }
 
 function verEC(inmId){
@@ -3285,8 +3367,8 @@ function generarPDF(inmId,download=true,selPagos=null){
     const svcsDelMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
     filasPDF=[{desc:`Renta Departamento #${inm.num}`,cant:'1 Mensualidad',monto:rentaMonto}];
     svcsDelMes.forEach(s=>{
-      const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
-      if(d&&Number(d.monto)>0)filasPDF.push({desc:`Servicio de ${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)} — ${MESES[vM]}`,cant:'',monto:Number(d.monto)});
+      const m=svcMontoVigente(s,inmId); // solo la parte del inquilino actual, no la del anterior
+      if(m>0)filasPDF.push({desc:`Servicio de ${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)} — ${MESES[vM]}`,cant:'',monto:m});
     });
     totalEC=filasPDF.reduce((s,f)=>s+f.monto,0);
     // Fecha de vencimiento (día de pago del depto en el mes siguiente)
@@ -3531,6 +3613,10 @@ function abrirInm(id){
 // Asignar un nuevo inquilino/contrato a un espacio (normalmente desocupado)
 function abrirNuevoContrato(inmId){
   const inm=getInm(inmId);if(!inm)return;
+  // Si el espacio sigue ocupado, avisar: al guardar se le registrará la salida al inquilino
+  // actual (un espacio con dos contratos abiertos duplica el cobro de servicios).
+  const vigPrev=contratoVigente(inmId);
+  if(vigPrev&&!confirm(`El depto. ${inm.num} todavía está ocupado por ${vigPrev.inquilino||'un inquilino'}.\n\nAl guardar el contrato nuevo se le registrará su salida el día anterior al inicio del nuevo. ¿Continuar?`))return;
   editInmId=inmId;nuevoContratoInm=inmId;
   document.getElementById('mi-ttl').textContent=`Nuevo contrato · Depto. ${inm.num}`;
   document.getElementById('btn-del-i').style.display='none';
@@ -3550,13 +3636,27 @@ async function guardarInm(){
   // ── Modo: nuevo contrato en un espacio existente ──
   if(nuevoContratoInm){
     const inmId=nuevoContratoInm;
-    // Materializar al inquilino saliente como contrato (si el espacio aún no tiene filas)
+    // Un espacio no puede tener dos contratos vigentes a la vez: al entrar uno nuevo, el
+    // anterior se cierra la víspera de este inicio. Sin este cierre el saliente seguía
+    // cobrando servicios en paralelo con el entrante y el depto facturaba más días de los
+    // que tiene el período (a los dos inquilinos, y encima subiéndole el recibo a los demás).
+    const iniNuevo=cf.fecha_inicio_contrato||hoyISO();
+    const cierre=diaISO(iniNuevo,-1);
+    const cierreDe=c=>(c.fecha_inicio_contrato&&cierre<c.fecha_inicio_contrato)?c.fecha_inicio_contrato:cierre;
     try{
-      if(!contratosDe(inmId).length){
+      const previos=contratosDe(inmId);
+      if(!previos.length){
+        // Materializar al inquilino saliente como contrato (el espacio aún no tiene filas)
         const inm=getInm(inmId);
         if(inm&&inm.inquilino){
-          const {data}=await sb.from('contratos').insert({workspace_id:CW.id,inmueble_id:inmId,inquilino:inm.inquilino,tel:inm.tel,email:inm.email,renta:inm.renta,dia:inm.dia,personas:inm.personas,fecha_inicio_contrato:inm.fecha_inicio_contrato,fecha_termino_contrato:inm.fecha_termino_contrato,fecha_salida:inm.fecha_salida||hoyISO(),notas:inm.notas}).select().single();
+          const {data}=await sb.from('contratos').insert({workspace_id:CW.id,inmueble_id:inmId,inquilino:inm.inquilino,tel:inm.tel,email:inm.email,renta:inm.renta,dia:inm.dia,personas:inm.personas,fecha_inicio_contrato:inm.fecha_inicio_contrato,fecha_termino_contrato:inm.fecha_termino_contrato,fecha_salida:inm.fecha_salida||cierreDe(inm),notas:inm.notas}).select().single();
           if(data)contratos.push(data);
+        }
+      }else{
+        // Cerrar cualquier contrato que siguiera abierto
+        for(const c of previos.filter(x=>!x.fecha_salida)){
+          const {data}=await sb.from('contratos').update({fecha_salida:cierreDe(c)}).eq('id',c.id).select().single();
+          if(data){const k=contratos.findIndex(x=>x.id===data.id);if(k>=0)contratos[k]=data;}
         }
       }
       const nuevo={...cf,fecha_salida:null};
