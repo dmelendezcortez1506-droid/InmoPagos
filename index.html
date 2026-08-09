@@ -1012,7 +1012,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:16px" class="dash-top">
       <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:22px 26px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
-          <div style="font-size:14px;font-weight:700">Cobranza últimos 6 meses</div>
+          <div><div style="font-size:14px;font-weight:700">Cobranza últimos 6 meses</div><div style="font-size:11.5px;color:#9D9B96;margin-top:2px">dinero que entró cada mes, por su fecha de pago</div></div>
           <div style="font-size:11.5px;color:#9D9B96"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1D9E75;margin-right:5px"></span>cerrado<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#BA7517;margin:0 5px 0 14px"></span>en curso</div>
         </div>
         <div id="dash-bars" style="display:flex;align-items:flex-end;gap:18px;height:160px"></div>
@@ -1353,14 +1353,15 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <div class="overlay" id="m-pago"><div class="modal">
   <div class="mh"><h3><i class="ti ti-receipt" style="color:var(--teal)"></i><span id="mp-ttl">Registrar pago</span></h3><button class="mc" onclick="closeM('m-pago')"><i class="ti ti-x"></i></button></div>
   <div class="fg-grid">
-    <div class="fg"><label>Departamento *</label><select id="fp-dep" onchange="pobContratosPago()"></select></div>
+    <div class="fg"><label>Departamento *</label><select id="fp-dep" onchange="pobContratosPago();refrescarVencSugerido()"></select></div>
     <div class="fg"><label>Inquilino / contrato</label><select id="fp-contrato"></select></div>
-    <div class="fg"><label>Concepto *</label><select id="fp-con"><option value="renta">Renta mensual</option><option value="servicios">Servicios (Agua+Luz+Gas)</option><option value="mantenimiento">Mantenimiento</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select></div>
+    <div class="fg"><label>Concepto *</label><select id="fp-con" onchange="refrescarVencSugerido()"><option value="renta">Renta mensual</option><option value="servicios">Servicios (Agua+Luz+Gas)</option><option value="mantenimiento">Mantenimiento</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select></div>
     <div class="fg"><label>Monto total *</label><input type="number" id="fp-mto" placeholder="0.00" step="0.01" min="0"></div>
     <div class="fg"><label>Monto pagado</label><input type="number" id="fp-pag" placeholder="0.00" step="0.01" min="0"></div>
+    <div class="fg"><label>Vence el *</label><input type="date" id="fp-venc"></div>
     <div class="fg"><label>Fecha de pago</label><input type="date" id="fp-fpag"></div>
     <div class="fg full"><label>Notas</label><textarea id="fp-not" placeholder="Observaciones..."></textarea></div>
-    <div class="fg full" style="font-size:11.5px;color:#9D9B96;margin-top:-4px">La renta y los servicios se generan automáticamente; usa este formulario para cargos sueltos. El cargo cae en el mes que estás viendo, cobrable de inmediato.</div>
+    <div class="fg full" style="font-size:11.5px;color:#9D9B96;margin-top:-4px">La renta y los servicios se generan automáticamente; usa este formulario para cargos sueltos. El vencimiento se propone según el mes que estás viendo y el día de pago del contrato — puedes cambiarlo.</div>
   </div>
   <div class="mf">
     <button class="btn danger" id="btn-del-p" style="display:none;margin-right:auto" onclick="elimPago()"><i class="ti ti-trash"></i>Eliminar</button>
@@ -1555,7 +1556,23 @@ function dB(a,b){return Math.round((b-a)/86400000)}
 //  aún no tiene filas en `contratos` (p.ej. antes de migrar), los helpers hacen
 //  FALLBACK a los campos del propio inmueble → comportamiento idéntico al actual.
 // ═══════════════════════════════════════
-function hoyISO(){return new Date().toISOString().split('T')[0]}
+// Fecha de HOY en horario LOCAL. `toISOString()` es UTC: en México (UTC−6) después de las
+// 6 de la tarde devolvía la fecha de MAÑANA, así que un cobro nocturno se guardaba con
+// fecha del día siguiente y un cargo que vencía mañana ya se contaba como exigible. Todo
+// el resto de la app compara con `new Date()` local, así que esta es la única verdad.
+function isoDe(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function hoyISO(){return isoDe(new Date())}
+// Comparador natural para números de departamento: "1, 2, 10, 11" y no "1, 10, 11, 2".
+// `num` es texto en la BD, así que tanto Postgres como localeCompare simple los ordenaban
+// alfabéticamente y la lista se desordenaba a partir de la unidad 10.
+function cmpNum(a,b){return String(a==null?'':a).localeCompare(String(b==null?'':b),'es',{numeric:true,sensitivity:'base'})}
+function ordenarInmuebles(){inmuebles.sort((a,b)=>cmpNum(a.num,b.num))}
+// Fecha en la que el dinero ENTRÓ (caja). Los pagos viejos pueden no traer fecha_pago:
+// para esos se cae al vencimiento, que es la mejor aproximación disponible.
+function fechaCobro(p){return p.fecha_pago||p.vencimiento}
+// Movimientos que cuentan como cobranza. La devolución de un depósito es dinero que SALE
+// (se registra con pagado=monto), así que sumarla a "Cobrado" inflaba la cobranza del mes.
+function esCobranza(p){return p.concepto!=='devolucion_deposito'}
 function getContrato(id){return id?contratos.find(c=>c.id===id)||null:null}
 // Contratos de un espacio, orden cronológico ascendente (más antiguo = A, luego B, C…)
 function contratosDe(inmId){
@@ -1601,6 +1618,36 @@ function pagosDeContrato(inmId,cId){
   if(cId)return pagos.filter(p=>p.contrato_id===cId);
   return pagos.filter(p=>p.inmueble_id===inmId&&!p.contrato_id);
 }
+// ¿Este pago pertenece a este contrato? Criterio ÚNICO para toda la app.
+// Con contrato_id la respuesta es exacta. Los pagos anteriores a la migración de contratos
+// no lo traen, así que se atribuyen por fecha usando la ocupación efectiva del contrato
+// (no las fechas crudas: un contrato que quedó abierto pero ya fue relevado por otro no
+// puede quedarse con los pagos del que entró después).
+function pagoEsDeContrato(p,c,cs){
+  if(!p||!c)return false;
+  if(!c.id)return !p.contrato_id;              // contrato sintético (sin migrar)
+  if(p.contrato_id)return p.contrato_id===c.id;
+  const oc=ocupacionEfectiva(c,cs||contratosDe(c.inmueble_id));
+  if(oc.ini&&p.vencimiento<oc.ini)return false;
+  if(oc.fin&&p.vencimiento>oc.fin)return false;
+  return true;
+}
+// Normaliza un teléfono a formato internacional para wa.me. Antes se anteponía "52" sin
+// mirar lo capturado: un número guardado como "+52 81 1234 5678" salía como 5252…  y el
+// enlace no abría — justo en el botón con el que un cliente avisa que ya pagó.
+function telWA(raw){
+  const t=String(raw||'').replace(/[^0-9]/g,'');
+  if(!t)return'';
+  if(t.length===10)return'52'+t;                                  // 10 dígitos → nacional MX
+  if(t.length===11&&t[0]==='1')return'52'+t.slice(1);             // 1 + 10 (formato viejo)
+  if(t.length===13&&t.startsWith('521'))return'52'+t.slice(3);    // 521 + 10 → 52 + 10
+  return t;                                                        // ya trae lada (52… u otro país)
+}
+function abrirWA(tel,msg){
+  const t=telWA(tel);
+  if(!t){toast('No hay un número de WhatsApp válido registrado','ti-alert-triangle');return false}
+  window.open(`https://wa.me/${t}?text=${encodeURIComponent(msg)}`,'_blank');return true;
+}
 
 // ── MOTION (animaciones; si el CDN no cargó, degrada a CSS sin romper nada) ──
 function mo(container){
@@ -1631,7 +1678,7 @@ function setDens(m){
 // ── Marcar un pago como cobrado (acción "Cobrar" en línea) ──
 async function marcarPagado(id){
   const p=pagos.find(x=>x.id===id);if(!p)return;
-  const d={pagado:Number(p.monto),fecha_pago:new Date().toISOString().split('T')[0]};
+  const d={pagado:Number(p.monto),fecha_pago:hoyISO()};
   const {data:saved,error}=await sb.from('pagos').update(d).eq('id',id).select().single();
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
   const idx=pagos.findIndex(x=>x.id===id);if(idx!==-1)pagos[idx]=saved;
@@ -1748,11 +1795,7 @@ function contactarWhatsApp(){
   waAdmin(`Hola, soy ${CU.email} y acabo de realizar el pago de mi mensualidad de InmoPagos. Adjunto mi comprobante. Por favor reactiva mi acceso. ¡Gracias!`);
 }
 // Abre WhatsApp con el administrador de InmoPagos y un mensaje ya escrito.
-function waAdmin(msg){
-  const tel=(window._adminWA||'').replace(/[^0-9]/g,'');
-  if(!tel){toast('No hay número de WhatsApp configurado','ti-alert-triangle');return}
-  window.open(`https://wa.me/52${tel}?text=${encodeURIComponent(msg)}`,'_blank');
-}
+function waAdmin(msg){abrirWA(window._adminWA||'',msg);}
 function pedirPremium(motivo){
   const de={
     finanzas:'Quiero activar el plan Premium para usar la versión Finanzas.',
@@ -1913,6 +1956,7 @@ async function cargarTodo(){
     sb.from('contratos').select('*').eq('workspace_id',wsId).order('created_at',{ascending:true})
   ]);
   inmuebles=ri.data||[];servicios=rs.data||[];svcDet=rd.data||[];contratos=rc.data||[];
+  ordenarInmuebles(); // `num` es texto: Postgres ordena 1,10,11,2 — aquí se reordena natural
   const _tp=rp.data||[];pagosOmit=_tp.filter(p=>p.omitido);pagos=_tp.filter(p=>!p.omitido);
   await ensureAutoPagos(vY,vM);
   refresh();
@@ -2012,13 +2056,24 @@ function suscribir(){
 // ═══════════════════════════════════════
 // Días de tolerancia configurados por el usuario (Configuración del negocio; default 3)
 function getTolerancia(){const v=CW?.cfg?.dias_tolerancia;return v==null?3:Math.max(0,parseInt(v)||0)}
+// Saldo pendiente de un cargo (nunca negativo).
+function saldoPago(p){return Math.max(0,Number(p.monto||0)-Number(p.pagado||0))}
+// ¿Abonó algo pero no lo liquidó? Se mantiene aparte del estado para poder decir
+// "Vencido · abonó $X" en vez de tener que elegir entre una etiqueta y la otra.
+function tieneAbono(p){return Number(p.pagado||0)>0.005&&saldoPago(p)>0.005}
+// Estado de un cargo. La FECHA manda sobre el abono: antes un pago parcial devolvía
+// 'parcial' para siempre, así que quien abonó $100 de $10,000 hace seis meses nunca
+// aparecía como vencido — ni en el contador, ni en rojo en su tarjeta, ni en el monto
+// vencido. El peor moroso era el más invisible. Ahora el abono es un matiz, no un estado
+// que tape el atraso. Un cargo sin saldo (incluye monto 0 y sobrepagos) queda saldado.
 function getEstado(p){
+  if(saldoPago(p)<=0.005)return'pagado';
   const t=new Date();t.setHours(0,0,0,0);const v=new Date(p.vencimiento+'T00:00:00');
-  if(Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0)return'pagado';
-  if(Number(p.pagado)>0&&Number(p.pagado)<Number(p.monto))return'parcial';
-  if(v>=t)return'pendiente';
+  const abono=tieneAbono(p);
+  if(v>=t)return abono?'parcial':'pendiente';
   const lim=new Date(v.getTime());lim.setDate(lim.getDate()+getTolerancia());
-  return t<=lim?'tolerancia':'vencido';
+  if(t<=lim)return abono?'parcial':'tolerancia';
+  return'vencido';
 }
 
 // ═══════════════════════════════════════
@@ -2026,27 +2081,35 @@ function getEstado(p){
 // ═══════════════════════════════════════
 function renderStats(){
   const t=new Date();t.setHours(0,0,0,0);
-  const mes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY});
+  // La devolución de un depósito se registra con pagado=monto: contarla como cobranza
+  // inflaba a la vez lo Esperado y lo Cobrado del mes con dinero que en realidad SALIÓ.
+  const mes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return esCobranza(p)&&v.getMonth()===vM&&v.getFullYear()===vY});
   const esp=mes.reduce((s,p)=>s+Number(p.monto),0),cob=mes.reduce((s,p)=>s+Number(p.pagado),0);
-  const venc=pagos.filter(p=>getEstado(p)==='vencido');
-  const pendArr=mes.filter(p=>{const e=getEstado(p);return e==='pendiente'||e==='tolerancia'}),pend=pendArr.length,pct=esp>0?Math.round(cob/esp*100):0;
-  const pendMonto=pendArr.reduce((s,p)=>s+Number(p.monto),0);
-  const vencMonto=venc.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
+  // Vencidos DEL MES visible, para que la tarjeta hable del mismo periodo que las otras
+  // tres. Lo vencido de meses anteriores no se esconde: se muestra aparte como arrastre,
+  // porque antes esta tarjeta mezclaba todo el histórico y no se movía al cambiar de mes.
+  const venc=mes.filter(p=>getEstado(p)==='vencido');
+  const vencPrev=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return esCobranza(p)&&getEstado(p)==='vencido'&&(v.getFullYear()*12+v.getMonth())<(vY*12+vM)});
+  const vencPrevMonto=vencPrev.reduce((s,p)=>s+saldoPago(p),0);
+  const pendArr=mes.filter(p=>{const e=getEstado(p);return e==='pendiente'||e==='tolerancia'||e==='parcial'}),pend=pendArr.length,pct=esp>0?Math.round(cob/esp*100):0;
+  const pendMonto=pendArr.reduce((s,p)=>s+saldoPago(p),0);
+  const vencMonto=venc.reduce((s,p)=>s+saldoPago(p),0);
+  const arrastre=vencPrev.length?` · +${vencPrev.length} de meses previos (${fmt0(vencPrevMonto)})`:'';
   const g=document.getElementById('stats-grid');g.className='';
   if(densMode==='densa'){
     g.innerHTML=`<div style="display:flex;background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden">
       <div style="flex:1.4;padding:14px 20px;background:#1A1917"><div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em">Esperado</div><div style="font-size:19px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt0(esp)}</div></div>
       <div style="flex:1.4;padding:14px 20px;border-right:1px solid #EEECE4"><div style="font-size:10.5px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em">Cobrado · ${pct}%</div><div style="font-size:19px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;display:inline-block;animation:breathe 3.4s ease-in-out 1s infinite;transform-origin:left center">${fmt0(cob)}</div></div>
       <div style="flex:1;padding:14px 20px;border-right:1px solid #EEECE4"><div style="font-size:10.5px;font-weight:600;color:#633806;text-transform:uppercase;letter-spacing:.07em">Pendientes</div><div style="font-size:19px;font-weight:500;font-family:'DM Mono',monospace">${pend} <span style="font-size:11.5px;color:#9D9B96;font-family:'DM Sans',sans-serif;font-weight:400">${fmt0(pendMonto)}</span></div></div>
-      <div style="flex:1;padding:14px 20px"><div style="font-size:10.5px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>Vencidos</div><div style="font-size:19px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${venc.length} <span style="font-size:11.5px;color:#9D9B96;font-family:'DM Sans',sans-serif;font-weight:400">${fmt0(vencMonto)}</span></div></div>
+      <div style="flex:1;padding:14px 20px"><div style="font-size:10.5px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>Vencidos</div><div style="font-size:19px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${venc.length} <span style="font-size:11.5px;color:#9D9B96;font-family:'DM Sans',sans-serif;font-weight:400">${fmt0(vencMonto)}${arrastre}</span></div></div>
     </div>`;
     return;
   }
   g.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
     <div style="background:#1A1917;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.06)"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Esperado del mes</div><div style="font-size:28px;font-weight:500;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.02em">${fmt0(esp)}</div><div style="font-size:11.5px;color:rgba(255,255,255,.45);margin-top:6px">${MESES[vM]} ${vY} · ${mes.length} cargos</div></div>
     <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><i class="ti ti-circle-check" style="color:#1D9E75;font-size:13px"></i>Cobrado</div><div style="font-size:28px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;letter-spacing:-.02em;display:inline-block;animation:breathe 3.4s ease-in-out 1s infinite;transform-origin:left center">${fmt0(cob)}</div><div style="height:4px;background:#F1EFE8;border-radius:3px;overflow:hidden;margin-top:10px"><div style="height:100%;background:#1D9E75;border-radius:3px;width:${pct}%;transform-origin:left;animation:growBar .9s cubic-bezier(.16,1,.3,1) .25s both"></div></div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${pct}% del esperado</div></div>
-    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#633806;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><i class="ti ti-clock" style="color:#BA7517;font-size:13px"></i>Pendientes</div><div style="font-size:28px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em">${pend}</div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${fmt0(pendMonto)} por vencer</div></div>
-    <div style="background:#FFFFFF;border:1px solid #F3D2D2;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>Vencidos</div><div style="font-size:28px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace;letter-spacing:-.02em">${venc.length}</div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${fmt0(vencMonto)} sin cobrar</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#633806;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><i class="ti ti-clock" style="color:#BA7517;font-size:13px"></i>Pendientes</div><div style="font-size:28px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-.02em">${pend}</div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${fmt0(pendMonto)} por cobrar</div></div>
+    <div style="background:#FFFFFF;border:1px solid #F3D2D2;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>Vencidos</div><div style="font-size:28px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace;letter-spacing:-.02em">${venc.length}</div><div style="font-size:11.5px;color:#9D9B96;margin-top:6px">${fmt0(vencMonto)} sin cobrar${vencPrev.length?`<br><span style="color:#E24B4A;font-weight:600">+${vencPrev.length} de meses previos · ${fmt0(vencPrevMonto)}</span>`:''}</div></div>
   </div>`;
   mo(g.firstElementChild);
 }
@@ -2083,6 +2146,9 @@ function renderPagos(){
     else if(est==='pendiente'&&dv<=3){vencC='#BA7517';}
     const pagC=Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0?'#1D9E75':Number(p.pagado)>0?'#BA7517':'#9D9B96';
     const con=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'';
+    // Un vencido/en tolerancia con abono conserva la etiqueta de atraso (la fecha manda)
+    // pero avisa que ya abonó algo, para no perder ese matiz.
+    const bLbl=b.lbl+((est==='vencido'||est==='tolerancia')&&tieneAbono(p)?' · abonó':'');
     const cobrable=est!=='pagado';
     const accion=cobrable
       ? `<button onclick="marcarPagado('${p.id}')" title="Marcar como cobrado" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;font-size:11.5px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:7px;cursor:pointer;transition:all .15s"><i class="ti ti-check" style="font-size:12px"></i>Cobrar</button>`
@@ -2094,7 +2160,7 @@ function renderPagos(){
       <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12.5px;font-weight:500">${fmt(p.monto)}</span>
       <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12.5px;color:${pagC}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</span>
       <span style="color:${vencC};font-size:12.5px">${vencF}</span>
-      <span><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;background:${b.bg};color:${b.c};animation:${b.anim}"><i class="ti ${b.ico}" style="font-size:11px"></i>${b.lbl}</span></span>
+      <span><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;background:${b.bg};color:${b.c};animation:${b.anim}"><i class="ti ${b.ico}" style="font-size:11px"></i>${bLbl}</span></span>
       <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end;position:sticky;right:0;background:#fff;box-shadow:-7px 0 9px -7px rgba(0,0,0,.09)">${accion}</span>
     </div>`;
   }).join('');
@@ -2112,22 +2178,17 @@ function deudaInm(inmId){
   const vig=contratoVigente(inmId);
   if(!vig)return{total:0,items:[],futuros:[],hayVencido:false,hayTol:false};
   const hoy=hoyISO();
+  const cs=contratosDe(inmId);
   const pend=pagos.filter(p=>{
-    if(p.inmueble_id!==inmId||p.concepto==='devolucion_deposito')return false;
-    const saldo=Number(p.monto)-Number(p.pagado);
-    if(saldo<=0.005)return false;
-    if(vig.id){
-      if(p.contrato_id)return p.contrato_id===vig.id;
-      // pagos viejos sin contrato_id: solo si caen dentro del contrato vigente
-      return !vig.fecha_inicio_contrato||p.vencimiento>=vig.fecha_inicio_contrato;
-    }
-    return !p.contrato_id;
+    if(p.inmueble_id!==inmId||!esCobranza(p))return false;
+    if(saldoPago(p)<=0.005)return false;
+    return pagoEsDeContrato(p,vig,cs);
   }).sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
   // Deuda real = cargos EXIGIBLES (su día de pago ya llegó). Los futuros (p.ej. renta
   // generada por adelantado al navegar meses) solo informan el chip "Paga en N días".
   const items=pend.filter(p=>p.vencimiento<=hoy);
   const futuros=pend.filter(p=>p.vencimiento>hoy);
-  const total=items.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
+  const total=items.reduce((s,p)=>s+saldoPago(p),0);
   const ests=items.map(getEstado);
   return{total,items,futuros,hayVencido:ests.includes('vencido'),hayTol:ests.includes('tolerancia')};
 }
@@ -2190,15 +2251,9 @@ async function cobrarDeuda(pagoId){
 function pagosInquilinoActual(inmId){
   const vig=contratoVigente(inmId);
   if(!vig)return{vig:null,lista:[]};
-  const lista=pagos.filter(p=>{
-    if(p.inmueble_id!==inmId||p.concepto==='devolucion_deposito')return false;
-    if(vig.id){
-      if(p.contrato_id)return p.contrato_id===vig.id;
-      // pagos viejos sin contrato_id: solo si caen dentro del contrato vigente
-      return !vig.fecha_inicio_contrato||p.vencimiento>=vig.fecha_inicio_contrato;
-    }
-    return !p.contrato_id;
-  }).sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
+  const cs=contratosDe(inmId);
+  const lista=pagos.filter(p=>p.inmueble_id===inmId&&esCobranza(p)&&pagoEsDeContrato(p,vig,cs))
+    .sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
   return{vig,lista};
 }
 // Descripción legible de un pago (concepto + período) para la tabla del PDF y la lista
@@ -2299,7 +2354,7 @@ function renderInm(){
   el.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px';
   const IB='display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:7px;cursor:pointer;transition:all .15s';
   el.innerHTML=list.map((i,idx)=>{
-    const mp=pagos.filter(p=>p.inmueble_id===i.id),pm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&getEstado(p)==='pagado'}).length,tm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY}).length;
+    const mp=pagos.filter(p=>p.inmueble_id===i.id&&esCobranza(p)),pm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&getEstado(p)==='pagado'}).length,tm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY}).length;
     const tv=mp.some(p=>getEstado(p)==='vencido'),pct=tm?Math.round(pm/tm*100):0;
     const barC=pct===100?'#1D9E75':pct>=50?'#BA7517':'#E24B4A';
     const pctC=pct===100?'#1D9E75':tv?'#E24B4A':'#6B6963';
@@ -2355,7 +2410,8 @@ function renderInm(){
 function renderAl(){
   const t=new Date();t.setHours(0,0,0,0);const al=[];const tol=getTolerancia();
   const subT=document.getElementById('al-sub');if(subT)subT.textContent=`Avisos desde el día de pago, en tolerancia y vencidos · tolerancia de ${tol} día${tol===1?'':'s'}`;
-  pagos.forEach(p=>{
+  // Solo cobranza: una devolución de depósito no es un adeudo del inquilino
+  pagos.filter(esCobranza).forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),i=getInm(p.inmueble_id),est=getEstado(p),nm=i?.num||'?',d=dB(t,v);
     if(est==='vencido'){const dd=Math.abs(d);al.push({type:'venc',icon:'ti-alert-triangle',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`Vencido hace ${dd} día${dd!==1?'s':''} · vencía ${fd(p.vencimiento)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'pendiente',pri:0})}
     else if(est==='tolerancia'){const dd=Math.abs(d);al.push({type:'prox',icon:'ti-hourglass',inmId:i?.id||'',titulo:`Depto. ${nm} — ${p.concepto}`,sub:`En tolerancia · día de pago hace ${dd} día${dd!==1?'s':''} (${tol} de gracia)`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});}
@@ -2408,21 +2464,56 @@ function renderAl(){
 // ═══════════════════════════════════════
 //  RENDER REPORTE
 // ═══════════════════════════════════════
+// Periodo del reporte. Antes no había ninguno: la vista sumaba desde el inicio de los
+// tiempos, así que servía para poco a la hora de decidir algo.
+let repPer=(typeof localStorage!=='undefined'&&localStorage.getItem('ib_rep_per'))||'mes';
+function setRepPer(p){repPer=p;try{localStorage.setItem('ib_rep_per',p)}catch(e){}renderRep();}
+function repEnPeriodo(iso){
+  if(!iso)return repPer==='todo';
+  if(repPer==='todo')return true;
+  const d=new Date(iso+'T00:00:00');
+  if(repPer==='mes')return d.getMonth()===vM&&d.getFullYear()===vY;
+  if(repPer==='anio')return d.getFullYear()===vY;
+  return true;
+}
 function renderRep(){
-  const pagosOp=pagos.filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito');
+  const lbl=repPer==='mes'?`${MESES[vM]} ${vY}`:repPer==='anio'?String(vY):'Todo el histórico';
+  // Facturación y cobranza del periodo, medidas sobre el vencimiento del cargo.
+  const pagosOp=pagos.filter(p=>p.concepto!=='deposito'&&esCobranza(p)&&repEnPeriodo(p.vencimiento));
   const tg=pagosOp.reduce((s,p)=>s+Number(p.monto),0),cg=pagosOp.reduce((s,p)=>s+Number(p.pagado),0),pct=tg>0?Math.round(cg/tg*100):0;
-  const conDep=inmuebles.filter(i=>pagos.some(p=>p.inmueble_id===i.id&&p.concepto==='deposito'));
-  let profitDep=0;conDep.forEach(inm=>{const r=calcDeposito(inm);if(r&&r.estado==='retenido')profitDep+=r.totalDep;});
-  const rows=inmuebles.map(i=>{const mp=pagosOp.filter(p=>p.inmueble_id===i.id),e=mp.reduce((s,p)=>s+Number(p.monto),0),co=mp.reduce((s,p)=>s+Number(p.pagado),0),vc=mp.filter(p=>getEstado(p)==='vencido').length;return{i,e,co,p:e-co,vc}}).sort((a,b)=>b.p-a.p);
+  // Cobranza REAL del periodo: dinero que entró por su fecha de pago, sin importar de qué
+  // mes era el cargo. Es el número que se puede comparar contra el banco.
+  const caja=pagos.filter(p=>esCobranza(p)&&Number(p.pagado)>0&&repEnPeriodo(fechaCobro(p))).reduce((s,p)=>s+Number(p.pagado),0);
+  // Depósitos retenidos que son GANANCIA de verdad: solo los que se quedan por
+  // incumplimiento de contrato. Cuando la retención cubre servicios pendientes no es
+  // profit — ese dinero ya estaba facturado arriba y contarlo otra vez lo duplicaba.
+  // Y antes se sumaba `totalDep` completo aunque solo se retuviera una parte.
+  let profitDep=0,retServ=0;
+  inmuebles.forEach(inm=>depositosInm(inm).forEach(({r,devuelto})=>{
+    if(devuelto||!r.retenido)return;
+    if(r.motivo==='incumplimiento')profitDep+=r.retenido;else retServ+=r.retenido;
+  }));
+  const rows=inmuebles.map(i=>{
+    const vig=contratoVigente(i.id);
+    const mp=pagosOp.filter(p=>p.inmueble_id===i.id),e=mp.reduce((s,p)=>s+Number(p.monto),0),co=mp.reduce((s,p)=>s+Number(p.pagado),0),vc=mp.filter(p=>getEstado(p)==='vencido').length;
+    return{i,vig,e,co,p:e-co,vc};
+  }).sort((a,b)=>b.p-a.p||cmpNum(a.i.num,b.i.num));
+  const segBtn=(k,t)=>`<button onclick="setRepPer('${k}')" style="border:1px solid ${repPer===k?'#1A1917':'#E2E0D8'};background:${repPer===k?'#1A1917':'#fff'};color:${repPer===k?'#fff':'#6B6963'};border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s">${t}</button>`;
   document.getElementById('rep').innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <span style="font-size:12.5px;color:#6B6963;margin-right:2px">Periodo:</span>
+      ${segBtn('mes','Mes visible')}${segBtn('anio','Año '+vY)}${segBtn('todo','Todo')}
+      <span style="font-size:12.5px;color:#9D9B96;margin-left:auto">${lbl}</span>
+    </div>
     <div class="rep-sum">
-      <div class="sc hl"><div class="sl">Facturado (operativo)</div><div class="sv">${fmt(tg)}</div><div class="ss">sin depósitos</div></div>
+      <div class="sc hl"><div class="sl">Facturado (operativo)</div><div class="sv">${fmt(tg)}</div><div class="ss">sin depósitos · ${lbl}</div></div>
       <div class="sc"><div class="sl" style="color:var(--teal-tx)">Cobrado</div><div class="sv" style="color:var(--teal)">${fmt(cg)}</div><div class="ss">${pct}% eficiencia</div></div>
       <div class="sc"><div class="sl" style="color:var(--red-tx)">Pendiente</div><div class="sv" style="color:var(--red)">${fmt(tg-cg)}</div><div class="ss">por cobrar</div></div>
-      <div class="sc" style="border:1.5px solid var(--red)"><div class="sl" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:12px"></i>Profit Depósitos</div><div class="sv" style="color:var(--red)">${fmt(profitDep)}</div><div class="ss">retenidos por penalización</div></div>
+      <div class="sc"><div class="sl" style="color:var(--teal-tx)"><i class="ti ti-wallet" style="color:var(--teal);font-size:12px"></i>Entró en caja</div><div class="sv" style="color:var(--teal)">${fmt(caja)}</div><div class="ss">por fecha de pago real</div></div>
+      <div class="sc" style="border:1.5px solid var(--red)"><div class="sl" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:12px"></i>Depósitos retenidos</div><div class="sv" style="color:var(--red)">${fmt(profitDep)}</div><div class="ss">penalización por incumplimiento${retServ>0.005?` · ${fmt0(retServ)} cubren servicios`:''}</div></div>
     </div>
     <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Renta</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th><th>Vencidos</th></tr></thead>
-    <tbody>${rows.map(({i,e,co,p,vc})=>`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i.num}</strong></td><td>${i.inquilino}</td><td>${fmt(i.renta)}</td><td>${fmt(e)}</td><td style="color:var(--teal);font-weight:500">${fmt(co)}</td><td style="color:${p>0?'var(--red)':'var(--tx3)'}${p>0?';font-weight:500':''}">${fmt(p)}</td><td>${vc>0?`<span class="badge vencido">${vc} venc.</span>`:`<span style="color:var(--tx3)">—</span>`}</td></tr>`).join('')}</tbody></table></div></div>`;
+    <tbody>${rows.map(({i,vig,e,co,p,vc})=>`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i.num}</strong></td><td>${vig?(vig.inquilino||'—'):'<span style="color:var(--tx3);font-style:italic">Desocupado</span>'}</td><td>${vig?fmt(vig.renta):'—'}</td><td>${fmt(e)}</td><td style="color:var(--teal);font-weight:500">${fmt(co)}</td><td style="color:${p>0?'var(--red)':'var(--tx3)'}${p>0?';font-weight:500':''}">${fmt(p)}</td><td>${vc>0?`<span class="badge vencido">${vc} venc.</span>`:`<span style="color:var(--tx3)">—</span>`}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 
 // ═══════════════════════════════════════
@@ -2432,167 +2523,268 @@ let recInmId=null;
 function renderRecList(){
   const el=document.getElementById('rec-list');
   if(!inmuebles.length){el.innerHTML=`<div class="empty"><i class="ti ti-send"></i><p>Sin departamentos registrados.</p></div>`;return}
+  // Solo los espacios ocupados: a un depto desocupado no hay a quién recordarle nada,
+  // y antes se listaba con el nombre y el teléfono del inquilino que ya se fue.
+  const ocupados=inmuebles.filter(i=>!estaDesocupado(i.id));
+  if(!ocupados.length){el.innerHTML=`<div class="empty"><i class="ti ti-send"></i><p>Todos los espacios están desocupados.</p></div>`;return}
   el.innerHTML=`<p style="font-size:13px;color:var(--tx2);margin-bottom:1rem">Selecciona un departamento para generar su recordatorio personalizado.</p>`+
-  inmuebles.map(inm=>`<div class="dep-panel activo" style="cursor:pointer" onclick="abrirRecordatorio('${inm.id}')">
+  ocupados.map(inm=>{
+    const vig=contratoVigente(inm.id),d=deudaInm(inm.id);
+    const tel=vig?.tel||inm.tel;
+    return`<div class="dep-panel activo" style="cursor:pointer" onclick="abrirRecordatorio('${inm.id}')">
     <div class="dep-header">
-      <div class="dep-av">${inm.num.slice(0,3)}</div>
-      <div class="dep-info"><strong>Depto. ${inm.num} — ${inm.inquilino}</strong><span>${inm.tel||'Sin teléfono registrado'}</span></div>
+      <div class="dep-av">${String(inm.num).slice(0,3)}</div>
+      <div class="dep-info"><strong>Depto. ${inm.num} — ${vig?.inquilino||inm.inquilino||'—'}</strong><span>${tel||'Sin teléfono registrado'}${d.total>0.005?` · debe ${fmt0(d.total)}`:' · al día'}</span></div>
       <button class="btn sm primary"><i class="ti ti-send"></i>Generar</button>
     </div>
-  </div>`).join('');
+  </div>`}).join('');
+}
+// ── Contenido del recordatorio ────────────────────────────────────────────────
+// Una sola fuente para la vista previa, el WhatsApp y el "copiar texto": antes cada
+// una recalculaba por su cuenta y las tres miraban SOLO el mes calendario en curso, así
+// que a un inquilino con cuatro meses de atraso se le pedía únicamente el último. Ahora
+// se usa deudaInm(): la misma deuda exigible acumulada que muestra el botón "Debe $X".
+function recordatorioDatos(inmId){
+  const inm=getInm(inmId);if(!inm)return null;
+  const vig=contratoVigente(inmId);
+  const cfg=CW.cfg||{};
+  const d=deudaInm(inmId);
+  const lineas=d.items.map(p=>{
+    const dd=descPago(p,inm);
+    return{txt:`• ${dd.desc} (${dd.per}): ${fmt(saldoPago(p))}${tieneAbono(p)?` — abonado ${fmt(p.pagado)} de ${fmt(p.monto)}`:''}`,vencido:getEstado(p)==='vencido'};
+  });
+  return{
+    inm,vig,deuda:d,lineas,
+    tel:vig?.tel||inm.tel||'',
+    inquilino:vig?.inquilino||inm.inquilino||'',
+    empresa:cfg.empresa||CW.nombre||'InmoPagos',
+    cobrador:cfg.nombre_cobrador||'',
+    clabe:cfg.clabe||'',
+    scott:cfg.cuenta_scotiabank||'',
+    oxxo:cfg.tarjeta_oxxo||''
+  };
+}
+function recordatorioTexto(R){
+  if(!R)return'';
+  const {deuda:d,lineas}=R;
+  const enc=`${R.empresa}\n\nRecordatorio de pago\n\nEstimado/a ${R.inquilino||''},`;
+  if(d.total<=0.005){
+    const prox=d.futuros[0];
+    return`${enc}\n\nA la fecha no registramos adeudos pendientes de su parte. ${prox?`Su próximo cargo (${descPago(prox,R.inm).desc}) vence el ${fd(prox.vencimiento)}.`:''}\n\nGracias por su puntualidad.`.trim();
+  }
+  const formas=[R.cobrador?`Beneficiario: ${R.cobrador}`:'',R.clabe?`CLABE: ${R.clabe}`:'',R.clabe||R.scott?'Banco: Scotiabank':'',R.scott?`Cuenta Scotiabank: ${R.scott}`:'',R.oxxo?`Tarjeta OXXO: ${R.oxxo}`:''].filter(Boolean).join('\n');
+  const detalle=lineas.map(l=>l.txt).join('\n');
+  const plural=d.items.length===1?'el siguiente cargo':`los siguientes ${d.items.length} cargos`;
+  return`${enc}\n\nLe recordamos que tiene ${plural} pendiente${d.items.length===1?'':'s'} de pago, por un total de ${fmt(d.total)}:\n\n${detalle}\n${d.hayVencido?'\nAlgunos de estos cargos ya se encuentran vencidos.\n':''}\nDatos para su pago:\n${formas}\n\nFavor de enviar su comprobante a este número.\n\nEn caso de haber realizado su pago, favor de omitir este mensaje. Gracias por su atención.`;
 }
 function abrirRecordatorio(inmId){
   recInmId=inmId;
-  const inm=getInm(inmId);if(!inm)return;
-  const cfg=CW.cfg||{},clabe=cfg.clabe||'—',scott=cfg.cuenta_scotiabank||'—',cobrador=cfg.nombre_cobrador||CW.nombre||'',empresa=cfg.empresa||'InmoPagos';
-  const mesAct=new Date();
-  const pagosPend=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===inmId&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)!=='pagado';});
-  const totalPend=pagosPend.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
+  const R=recordatorioDatos(inmId);if(!R)return;
+  const d=R.deuda;
+  const detalle=d.items.map(p=>{
+    const dd=descPago(p,R.inm),venc=getEstado(p)==='vencido';
+    return`<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">
+      <span style="color:${venc?'#791F1F':'#55514A'}">${dd.desc} · ${dd.per}${venc?' (vencido)':''}</span>
+      <strong style="font-family:'DM Mono',monospace;white-space:nowrap">${fmt(saldoPago(p))}</strong></div>`;
+  }).join('');
   document.getElementById('rec-preview-wrap').innerHTML=`
     <div class="rec-preview">
-      <div class="rec-logo">${empresa}</div>
+      <div class="rec-logo">${R.empresa}</div>
       <div class="rec-title">Recordatorio<br>de pago</div>
+      ${R.inquilino?`<div style="font-size:13px;margin-bottom:.75rem">Para <strong>${R.inquilino}</strong> · Depto. ${R.inm.num}</div>`:''}
       <div class="rec-box">
         <div class="rec-box-title">Transferencia</div>
         <div class="rec-grid">
-          <div class="rec-field"><strong>Beneficiario</strong><span>${cobrador}</span></div>
-          <div class="rec-field"><strong>Cuenta Clabe</strong><span>${clabe}</span></div>
+          <div class="rec-field"><strong>Beneficiario</strong><span>${R.cobrador||'—'}</span></div>
+          <div class="rec-field"><strong>Cuenta Clabe</strong><span>${R.clabe||'—'}</span></div>
           <div class="rec-field"><strong>Banco</strong><span>Scotiabank</span></div>
-          <div class="rec-field"><strong>Teléfono</strong><span>${scott}</span></div>
+          <div class="rec-field"><strong>Cuenta Scotiabank</strong><span>${R.scott||'—'}</span></div>
         </div>
       </div>
-      ${totalPend>0?`<div style="background:var(--amber-bg);color:var(--amber-tx);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;margin-bottom:1rem">Saldo pendiente: ${fmt(totalPend)}</div>`:''}
-      <div class="rec-footer">No olvide enviar el comprobante al<br><strong>${scott}</strong><br><br>"En caso de haber realizado su pago,<br>favor de omitir este mensaje.<br>Gracias por su atención."</div>
+      ${d.total>0.005?`<div style="background:${d.hayVencido?'var(--red-bg,#FCEBEB)':'var(--amber-bg)'};color:${d.hayVencido?'#791F1F':'var(--amber-tx)'};border-radius:8px;padding:10px 14px;margin-bottom:1rem;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:600;margin-bottom:${d.items.length?'6px':'0'}">
+          <span>Adeudo total (${d.items.length} cargo${d.items.length===1?'':'s'})</span><span style="font-family:'DM Mono',monospace">${fmt(d.total)}</span></div>
+        ${detalle}</div>`
+      :`<div style="background:var(--teal-bg,#E1F5EE);color:#085041;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;margin-bottom:1rem">Sin adeudos pendientes</div>`}
+      <div class="rec-footer">No olvide enviar el comprobante a este número.<br><br>"En caso de haber realizado su pago,<br>favor de omitir este mensaje.<br>Gracias por su atención."</div>
     </div>`;
   openM('m-rec');
 }
 function abrirWhatsApp(){
-  const inm=getInm(recInmId);if(!inm||!inm.tel){toast('El departamento no tiene teléfono registrado','ti-alert-triangle');return}
-  const cfg=CW.cfg||{},empresa=cfg.empresa||'InmoPagos',cobrador=cfg.nombre_cobrador||'',clabe=cfg.clabe||'';
-  const telefono=inm.tel.replace(/[^0-9]/g,'');
-  const mesAct=new Date();
-  const pagosPend=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===recInmId&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)!=='pagado'});
-  const totalPend=pagosPend.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
-  const msg=encodeURIComponent(`${empresa}
-
-Recordatorio de pago
-
-Estimado/a ${inm.inquilino},
-
-Le recordamos que tiene un saldo pendiente de ${fmt(totalPend)} correspondiente al mes de ${MESES[mesAct.getMonth()]}.
-
-Datos para transferencia:
-Beneficiario: ${cobrador}
-CLABE: ${clabe}
-Banco: Scotiabank
-
-Favor de enviar su comprobante a este número.
-
-En caso de haber realizado su pago, favor de omitir este mensaje. Gracias por su atención.`);
-  window.open(`https://wa.me/52${telefono}?text=${msg}`,'_blank');
+  const R=recordatorioDatos(recInmId);if(!R)return;
+  if(!telWA(R.tel)){toast('El departamento no tiene un teléfono válido registrado','ti-alert-triangle');return}
+  abrirWA(R.tel,recordatorioTexto(R));
 }
 function copiarRecordatorio(){
-  const inm=getInm(recInmId);if(!inm)return;
-  const cfg=CW.cfg||{},empresa=cfg.empresa||'InmoPagos',cobrador=cfg.nombre_cobrador||'',clabe=cfg.clabe||'';
-  const mesAct=new Date();
-  const pagosPend=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===recInmId&&v.getMonth()===mesAct.getMonth()&&v.getFullYear()===mesAct.getFullYear()&&getEstado(p)!=='pagado'});
-  const totalPend=pagosPend.reduce((s,p)=>s+Number(p.monto)-Number(p.pagado),0);
-  const txt=`${empresa}
-
-Recordatorio de pago
-
-Estimado/a ${inm.inquilino},
-
-Tiene un saldo pendiente de ${fmt(totalPend)} (${MESES[mesAct.getMonth()]}).
-
-Beneficiario: ${cobrador}
-CLABE: ${clabe}
-Banco: Scotiabank
-
-Favor de enviar comprobante.
-
-En caso de haber pagado, omitir este mensaje. Gracias.`;
-  navigator.clipboard?.writeText(txt).then(()=>toast('Texto copiado','ti-copy'));
+  const R=recordatorioDatos(recInmId);if(!R)return;
+  navigator.clipboard?.writeText(recordatorioTexto(R)).then(()=>toast('Texto copiado','ti-copy'));
 }
 
 // ═══════════════════════════════════════
 //  DEPÓSITOS
 // ═══════════════════════════════════════
-let devDepInmId=null;
-function calcDeposito(inm){
-  const deps=pagos.filter(p=>p.inmueble_id===inm.id&&p.concepto==='deposito');
-  const totalDep=deps.reduce((s,p)=>s+Number(p.monto),0);
-  if(totalDep===0)return null;
-  const fterStr=inm.fecha_termino_contrato,fsalStr=inm.fecha_salida;
+let devDepInmId=null,devDepContratoId=null;
+// ── Depósito de UN contrato ───────────────────────────────────────────────────
+// Antes esto se calculaba por INMUEBLE: sumaba todos los pagos con concepto 'deposito'
+// del espacio (los de todos los inquilinos que han pasado por él) y los liquidaba contra
+// las fechas del contrato VIGENTE, que son las del inquilino de hoy. En un depto con
+// rotación, el depósito de quien se fue se le acreditaba al que llegó, y con dos
+// inquilinos históricos "en custodia" mostraba la suma de ambos. Además contaba el
+// depósito aunque `pagado = 0`, es decir aunque nunca lo hubieras recibido: podías
+// acabar devolviendo dinero que jamás entró. Ahora todo es por contrato y por dinero
+// realmente cobrado.
+function calcDepositoContrato(inm,c,cs){
+  if(!inm||!c)return null;
+  const deps=pagos.filter(p=>p.concepto==='deposito'&&p.inmueble_id===inm.id&&pagoEsDeContrato(p,c,cs));
+  if(!deps.length)return null;
+  const totalDep=deps.reduce((s,p)=>s+Number(p.pagado||0),0);   // lo REALMENTE recibido
+  const pactado=deps.reduce((s,p)=>s+Number(p.monto||0),0);     // lo pactado en el contrato
+  const porCobrar=Math.max(0,pactado-totalDep);
+  const base={totalDep,pactado,porCobrar,serviciosPost:0,motivo:'activo'};
+  // Pactado pero nunca cobrado: no hay nada en custodia y no hay nada que devolver.
+  if(totalDep<=0.005)return{...base,estado:'por_cobrar',devolver:0,retenido:0,
+    msg:`Depósito pactado por ${fmt(pactado)} pero aún no registrado como cobrado. No hay nada en custodia.`,motivo:'por_cobrar'};
+  const fterStr=c.fecha_termino_contrato,fsalStr=c.fecha_salida,finiStr=c.fecha_inicio_contrato;
   const fter=fterStr?new Date(fterStr+'T00:00:00'):null,fsal=fsalStr?new Date(fsalStr+'T00:00:00'):null;
-  if(!fsal)return{totalDep,estado:'activo',devolver:0,retenido:0,msg:'Inquilino activo. Sin fecha de salida registrada.',serviciosPost:0};
-  const fini=inm.fecha_inicio_contrato?new Date(inm.fecha_inicio_contrato+'T00:00:00'):null;
-  if(fini&&fsal<fini)return{totalDep,estado:'retenido',devolver:0,retenido:totalDep,msg:'Salida antes del inicio del contrato. No se devuelve depósito.',serviciosPost:0};
-  if(fter&&fsal<fter)return{totalDep,estado:'retenido',devolver:0,retenido:totalDep,msg:`Salida anticipada (${fd(fsalStr)}). Contrato era hasta ${fd(fterStr)}. No se devuelve depósito por incumplimiento.`,serviciosPost:0};
+  const aviso=porCobrar>0.005?` Faltan ${fmt(porCobrar)} por cobrar del depósito pactado.`:'';
+  if(!fsal)return{...base,estado:'activo',devolver:0,retenido:0,msg:'Inquilino activo. Sin fecha de salida registrada.'+aviso};
+  const fini=finiStr?new Date(finiStr+'T00:00:00'):null;
+  if(fini&&fsal<fini)return{...base,estado:'retenido',devolver:0,retenido:totalDep,motivo:'incumplimiento',
+    msg:'Salida antes del inicio del contrato. No se devuelve depósito.'+aviso};
+  if(fter&&fsal<fter)return{...base,estado:'retenido',devolver:0,retenido:totalDep,motivo:'incumplimiento',
+    msg:`Salida anticipada (${fd(fsalStr)}). Contrato era hasta ${fd(fterStr)}. No se devuelve depósito por incumplimiento.`+aviso};
+  // Cargos de servicio de ESTE contrato con período posterior al término del contrato.
+  // Se descuenta el SALDO (si el inquilino ya los pagó no hay nada que retener).
   let serviciosPost=0;
-  if(fter){svcDet.forEach(d=>{if(d.inmueble_id!==inm.id)return;const svc=servicios.find(s=>s.id===d.servicio_id);if(!svc)return;const svcIni=new Date(svc.periodo_ini+'T00:00:00');if(svcIni>fter)serviciosPost+=Number(d.monto);});}
+  if(fter){
+    // Un servicio solo puede tocarle a este contrato si su período coincide con los días
+    // que el inquilino realmente ocupó el espacio. Sin este filtro, un recibo emitido
+    // meses después —cuando ya vivía otro inquilino— se le descontaba a quien ya se fue.
+    const oc=ocupacionEfectiva(c,cs);
+    const tocaAlContrato=s=>{
+      if(!s||s.periodo_ini<=fterStr)return false;               // no es posterior al término
+      if(oc.ini&&s.periodo_fin<oc.ini)return false;              // terminó antes de que entrara
+      if(oc.fin&&s.periodo_ini>oc.fin)return false;              // empezó después de que salió
+      return true;
+    };
+    const ps=pagos.filter(p=>p.servicio_id&&p.inmueble_id===inm.id&&pagoEsDeContrato(p,c,cs));
+    if(ps.length){
+      ps.forEach(p=>{if(tocaAlContrato(servicios.find(x=>x.id===p.servicio_id)))serviciosPost+=saldoPago(p);});
+    }else{
+      // Servicios anteriores a los pagos automáticos: se cae al detalle guardado
+      svcDet.forEach(d=>{if(d.inmueble_id!==inm.id||d.es_administracion)return;if(tocaAlContrato(servicios.find(x=>x.id===d.servicio_id)))serviciosPost+=Number(d.monto);});
+    }
+  }
+  serviciosPost=Math.min(serviciosPost,totalDep);
   const devolver=Math.max(0,totalDep-serviciosPost);
-  return{totalDep,estado:devolver>0?'parcial':'retenido',devolver,retenido:serviciosPost,msg:`Contrato cumplido. Depósito: ${fmt(totalDep)} − Servicios post-contrato: ${fmt(serviciosPost)} = A devolver: ${fmt(devolver)}`,serviciosPost};
+  return{...base,serviciosPost,estado:devolver>0?'parcial':'retenido',devolver,retenido:serviciosPost,motivo:'servicios',
+    msg:`Contrato cumplido. Depósito recibido: ${fmt(totalDep)} − Servicios post-contrato: ${fmt(serviciosPost)} = A devolver: ${fmt(devolver)}`+aviso};
+}
+// Devoluciones ya registradas de ESTE contrato. Antes se preguntaba por inmueble, así que
+// al devolver el de un inquilino el del siguiente nacía marcado como "Devuelto".
+function devolucionesDeContrato(inm,c,cs){
+  return pagos.filter(p=>p.concepto==='devolucion_deposito'&&p.inmueble_id===inm.id&&pagoEsDeContrato(p,c,cs));
+}
+function depositoDevuelto(inm,c,cs){return devolucionesDeContrato(inm,c,cs).length>0}
+// Todos los depósitos de un espacio, contrato por contrato (más reciente primero).
+function depositosInm(inm){
+  const cs=historialContratos(inm.id);
+  const out=[];
+  cs.forEach(c=>{const r=calcDepositoContrato(inm,c,cs);if(r)out.push({inm,c,cs,r,devuelto:depositoDevuelto(inm,c,cs)});});
+  return out.reverse();
+}
+// Compatibilidad: el depósito del contrato VIGENTE (ficha de la ruleta y vistas de un
+// solo inquilino). Ya no agrega los de inquilinos anteriores.
+function calcDeposito(inm){
+  const cs=historialContratos(inm.id);
+  const vig=contratoVigente(inm.id);
+  if(vig)return calcDepositoContrato(inm,vig,cs);
+  const ult=cs[cs.length-1];
+  return ult?calcDepositoContrato(inm,ult,cs):null;
 }
 function renderDepositos(){
   const el=document.getElementById('dep-list'),stats=document.getElementById('dep-stats');
   if(!el||!stats)return;
-  const conDep=inmuebles.filter(i=>pagos.some(p=>p.inmueble_id===i.id&&p.concepto==='deposito'));
-  if(!conDep.length){stats.innerHTML='';el.innerHTML=`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos registrados.<br>Registra un pago con concepto "Depósito".</p></div>`;return;}
-  let totalDeps=0,totalRet=0,totalDev=0;
+  // Una tarjeta por CONTRATO con depósito, no por departamento: en un espacio con rotación
+  // cada inquilino tiene su propio depósito, su propia liquidación y su propia devolución.
+  const fichas=[];inmuebles.forEach(inm=>fichas.push(...depositosInm(inm)));
+  if(!fichas.length){stats.innerHTML='';el.innerHTML=`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos registrados.<br>Registra un pago con concepto "Depósito".</p></div>`;return;}
+  let totalDeps=0,totalRet=0,totalDev=0,totalPorCobrar=0;
   const CH={
     parcial:{accent:'#BA7517',chipBg:'#FAEEDA',chipC:'#633806',chipIco:'ti-corner-down-left',chipLbl:'Por devolver',msgBg:'#FAEEDA',msgC:'#633806',msgIco:'ti-info-circle'},
     retenido:{accent:'#E24B4A',chipBg:'#FCEBEB',chipC:'#791F1F',chipIco:'ti-lock',chipLbl:'Retenido',msgBg:'#FCEBEB',msgC:'#791F1F',msgIco:'ti-alert-triangle'},
     activo:{accent:'#378ADD',chipBg:'#E6F1FB',chipC:'#0C447C',chipIco:'ti-clock',chipLbl:'Activo',msgBg:'#E6F1FB',msgC:'#0C447C',msgIco:'ti-info-circle'},
+    por_cobrar:{accent:'#9D9B96',chipBg:'#F1EFE8',chipC:'#55514A',chipIco:'ti-hourglass',chipLbl:'Sin cobrar',msgBg:'#F1EFE8',msgC:'#55514A',msgIco:'ti-alert-circle'},
     devuelto:{accent:'#1D9E75',chipBg:'#E1F5EE',chipC:'#085041',chipIco:'ti-check',chipLbl:'Devuelto',msgBg:'#E1F5EE',msgC:'#085041',msgIco:'ti-check'}
   };
-  const panels=conDep.map(inm=>{
-    const r=calcDeposito(inm);if(!r)return'';
-    totalDeps+=r.totalDep;if(r.estado==='retenido')totalRet+=r.totalDep;if(r.estado==='parcial')totalDev+=r.devolver;
-    const devuelto=pagos.some(p=>p.inmueble_id===inm.id&&p.concepto==='devolucion_deposito');
+  const panels=fichas.map(({inm,c,cs,r,devuelto})=>{
+    totalDeps+=r.totalDep;totalPorCobrar+=r.porCobrar;
+    if(!devuelto){if(r.estado==='retenido')totalRet+=r.retenido;if(r.estado==='parcial')totalDev+=r.devolver;}
     const est=devuelto?'devuelto':r.estado;const ch=CH[est]||CH.activo;
-    const contrato=inm.fecha_inicio_contrato?`Contrato ${fd(inm.fecha_inicio_contrato)} — ${inm.fecha_termino_contrato?fd(inm.fecha_termino_contrato):'—'}${inm.fecha_salida?` · salida ${fd(inm.fecha_salida)}`:''}`:'Sin fechas de contrato';
-    const msg=devuelto?`Depósito devuelto: ${fmt(r.devolver)} registrados en el historial de pagos.`:r.msg;
+    const et=etiquetaContrato(inm.id,c.id);
+    const contrato=c.fecha_inicio_contrato?`Contrato ${fd(c.fecha_inicio_contrato)} — ${c.fecha_termino_contrato?fd(c.fecha_termino_contrato):'—'}${c.fecha_salida?` · salida ${fd(c.fecha_salida)}`:''}`:'Sin fechas de contrato';
+    // Ya devuelto: se informa lo que REALMENTE se devolvió (el pago registrado), no lo que
+    // el cálculo daría hoy — si algo cambió después, el dato histórico es el que manda.
+    const devs=devuelto?devolucionesDeContrato(inm,c,cs):[];
+    const montoDevuelto=devs.reduce((s,p)=>s+Number(p.monto||0),0);
+    const msg=devuelto?`Depósito devuelto: ${fmt(montoDevuelto)} el ${fd(devs[0].fecha_pago||devs[0].vencimiento)}.`:r.msg;
     const accionable=r.estado==='parcial'&&r.devolver>0&&!devuelto;
+    const puedeRecordar=!estaDesocupado(inm.id)&&!!contratoVigente(inm.id)&&(contratoVigente(inm.id).id||null)===(c.id||null);
     return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-left:4px solid ${ch.accent};border-radius:12px;padding:18px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05);opacity:${est==='devuelto'?'.72':'1'};transition:box-shadow .18s">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-        <div style="width:40px;height:40px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${inm.num}</div>
-        <div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:600">${inm.inquilino}</div><div style="font-size:12px;color:#9D9B96">${contrato}</div></div>
+        <div style="width:40px;height:40px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${inm.num}-${et}</div>
+        <div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:600">${c.inquilino||'—'}</div><div style="font-size:12px;color:#9D9B96">${contrato}</div></div>
         <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:${ch.chipBg};color:${ch.chipC}"><i class="ti ${ch.chipIco}" style="font-size:11px"></i>${ch.chipLbl}</span>
-        <div style="text-align:right;min-width:90px"><div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(r.totalDep)}</div><div style="font-size:10.5px;color:#9D9B96">depósito</div></div>
+        <div style="text-align:right;min-width:90px"><div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(r.totalDep)}</div><div style="font-size:10.5px;color:#9D9B96">${r.porCobrar>0.005?`de ${fmt0(r.pactado)} pactado`:'depósito'}</div></div>
       </div>
       <div style="background:${ch.msgBg};color:${ch.msgC};border-radius:9px;padding:10px 14px;font-size:12.5px;display:flex;align-items:flex-start;gap:8px;line-height:1.5"><i class="ti ${ch.msgIco}" style="font-size:15px;margin-top:1px;flex-shrink:0"></i><span>${msg}</span></div>
       ${accionable?`<div style="display:flex;gap:8px;margin-top:12px">
-        <button onclick="abrirDevolucion('${inm.id}')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-check" style="font-size:14px"></i>Confirmar devolución de ${fmt(r.devolver)}</button>
-        <button onclick="abrirRecordatorio('${inm.id}')" data-hs="background:#F1EFE8;color:#1A1917" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-send" style="font-size:14px"></i>Recordatorio</button>
+        <button onclick="abrirDevolucion('${inm.id}','${c.id||''}')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-check" style="font-size:14px"></i>Confirmar devolución de ${fmt(r.devolver)}</button>
+        ${puedeRecordar?`<button onclick="abrirRecordatorio('${inm.id}')" data-hs="background:#F1EFE8;color:#1A1917" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-send" style="font-size:14px"></i>Recordatorio</button>`:''}
       </div>`:''}
     </div>`;
   }).join('');
   stats.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-    <div style="background:#1A1917;border-radius:12px;padding:16px 20px"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">En custodia</div><div style="font-size:22px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt0(totalDeps)}</div><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">${conDep.length} contrato${conDep.length===1?'':'s'} con depósito</div></div>
+    <div style="background:#1A1917;border-radius:12px;padding:16px 20px"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">En custodia</div><div style="font-size:22px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt0(totalDeps)}</div><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">${fichas.length} contrato${fichas.length===1?'':'s'} con depósito${totalPorCobrar>0.005?` · ${fmt0(totalPorCobrar)} sin cobrar`:''}</div></div>
     <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-corner-down-left" style="color:#1D9E75;font-size:13px"></i>Por devolver</div><div style="font-size:22px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace">${fmt0(totalDev)}</div><div style="font-size:11px;color:#9D9B96;margin-top:2px">contrato cumplido</div></div>
-    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-lock" style="color:#E24B4A;font-size:13px"></i>Retenido</div><div style="font-size:22px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${fmt0(totalRet)}</div><div style="font-size:11px;color:#9D9B96">penalización por salida anticipada</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-lock" style="color:#E24B4A;font-size:13px"></i>Retenido</div><div style="font-size:22px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${fmt0(totalRet)}</div><div style="font-size:11px;color:#9D9B96">por incumplimiento o cargos pendientes</div></div>
   </div>`;
   el.innerHTML=panels||`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:56px 32px;text-align:center;color:#9D9B96"><i class="ti ti-shield-lock" style="font-size:30px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:15px;font-weight:600;color:#1A1917;margin-bottom:4px">Sin depósitos con salida registrada</div><div style="font-size:13px">Cuando un inquilino registre fecha de salida aparecerá aquí su liquidación.</div></div>`;
   mo(el);
 }
-function abrirDevolucion(inmId){
-  devDepInmId=inmId;const inm=getInm(inmId),r=calcDeposito(inm);if(!r)return;
+// Resuelve el contrato de una devolución: el indicado, o el más reciente con depósito.
+function ctxDevolucion(inmId,cId){
+  const inm=getInm(inmId);if(!inm)return null;
+  const cs=historialContratos(inmId);
+  const c=cId?cs.find(x=>x.id===cId):(contratoVigente(inmId)||cs[cs.length-1]);
+  if(!c)return null;
+  const r=calcDepositoContrato(inm,c,cs);
+  return r?{inm,c,cs,r}:null;
+}
+function abrirDevolucion(inmId,cId){
+  const ctx=ctxDevolucion(inmId,cId||null);if(!ctx)return;
+  devDepInmId=inmId;devDepContratoId=ctx.c.id||null;
+  const {inm,c,r}=ctx;
   document.getElementById('m-dev-dep-body').innerHTML=`
-    <strong>Depto. ${inm.num} — ${inm.inquilino}</strong><br><br>
-    Depósito total: <strong>${fmt(r.totalDep)}</strong><br>
+    <strong>Depto. ${inm.num}-${etiquetaContrato(inm.id,c.id)} — ${c.inquilino||'—'}</strong><br><br>
+    Depósito recibido: <strong>${fmt(r.totalDep)}</strong><br>
+    ${r.porCobrar>0.005?`<span style="color:var(--tx3)">(de ${fmt(r.pactado)} pactados; ${fmt(r.porCobrar)} nunca se cobraron)</span><br>`:''}
     Servicios post-contrato: <strong style="color:var(--red)">− ${fmt(r.serviciosPost)}</strong><br>
     <strong style="font-size:16px;color:var(--teal)">A devolver: ${fmt(r.devolver)}</strong><br><br>
-    <span style="color:var(--tx3)">Esto registrará la devolución en el historial de pagos.</span>`;
+    <span style="color:var(--tx3)">Esto registrará la devolución en el historial de pagos de este contrato.</span>`;
   openM('m-dev-dep');
 }
 async function confirmarDevolucion(){
-  const inm=getInm(devDepInmId),r=calcDeposito(inm);if(!r)return;
-  const d={workspace_id:CW.id,inmueble_id:devDepInmId,concepto:'devolucion_deposito',monto:r.devolver,pagado:r.devolver,vencimiento:new Date().toISOString().split('T')[0],fecha_pago:new Date().toISOString().split('T')[0],notas:`Devolución de depósito. Retenido por servicios post-contrato: ${fmt(r.serviciosPost)}`};
-  const {data:savedPago,error}=await sb.from('pagos').insert(d).select().single();
+  const ctx=ctxDevolucion(devDepInmId,devDepContratoId);if(!ctx)return;
+  const {c,r}=ctx;
+  if(r.devolver<=0.005){toast('No hay saldo por devolver en este contrato','ti-alert-triangle');return}
+  const d={workspace_id:CW.id,inmueble_id:devDepInmId,contrato_id:c.id||null,concepto:'devolucion_deposito',monto:r.devolver,pagado:r.devolver,vencimiento:hoyISO(),fecha_pago:hoyISO(),notas:`Devolución de depósito a ${c.inquilino||'—'}. Retenido por servicios post-contrato: ${fmt(r.serviciosPost)}`};
+  let {data:savedPago,error}=await sb.from('pagos').insert(d).select().single();
+  // Compat: si la columna contrato_id aún no existe, guarda sin ella
+  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_c,...d2}=d;({data:savedPago,error}=await sb.from('pagos').insert(d2).select().single());}
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
   pagos.unshift(savedPago);closeM('m-dev-dep');toast('Devolución registrada correctamente');
-  renderDepositos();refresh();
+  devDepContratoId=null;renderDepositos();refresh();
 }
 
 // ═══════════════════════════════════════
@@ -2612,7 +2804,7 @@ function renderSvcList(){
   el.innerHTML=Object.entries(groups).map(([k,g])=>`
     <h3 style="font-size:13px;font-weight:700;color:#6B6963;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 12px">${g.label}</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">${g.svcs.map(s=>{
-      const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion&&Number(d.ponderacion)>0).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
+      const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion&&Number(d.ponderacion)>0).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return cmpNum(ia?.num,ib?.num)});
       const co=CO[s.tipo]||CO.agua;const maxP=Math.max(1,...det.map(d=>Number(d.ponderacion)||0));const pondTotal=det.reduce((x,d)=>x+(Number(d.ponderacion)||0),0);
       const enGrafica=svcSeleccion===null||svcSeleccion.has(s.id);
       const filas=det.map((d,fi)=>{const i=getInm(d.inmueble_id);const pct=Math.round((Number(d.ponderacion)||0)/maxP*100);return`<div><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:3px"><span style="font-family:'DM Mono',monospace;font-weight:500">${i?.num||'?'} <span style="font-family:'DM Sans',sans-serif;color:#9D9B96;font-weight:400">· ${d.dias_uso} días × ${d.personas} pers.</span></span><span style="font-family:'DM Mono',monospace;color:#1A1917">${fmt(d.monto)}</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${co.c};opacity:.85;width:${pct}%;transform-origin:left;animation:growBar .75s cubic-bezier(.16,1,.3,1) ${(0.1+fi*0.07).toFixed(2)}s both"></div></div></div>`}).join('');
@@ -3032,7 +3224,10 @@ async function guardarServicio(){
   const dias=Math.max(1,dB(iniDate,finDate)+1);
   const apoyo=svcCalc.apoyo||0;
   const editing=editingSvcId;
-  const base={workspace_id:CW.id,tipo,total,periodo_ini:iniStr,periodo_fin:finStr,dias_servicio:dias,mes:iniDate.getMonth(),anio:iniDate.getFullYear(),notas:document.getElementById('sv-not').value||null,apoyo_admin:apoyo};
+  // mes/anio del recibo = mes en que CIERRA el período (ver svcMesAnio): es cuando se
+  // emite y cuando se le cobra al inquilino. Con periodo_ini un recibo a caballo entre
+  // dos meses se contabilizaba en el mes equivocado.
+  const base={workspace_id:CW.id,tipo,total,periodo_ini:iniStr,periodo_fin:finStr,dias_servicio:dias,mes:finDate.getMonth(),anio:finDate.getFullYear(),notas:document.getElementById('sv-not').value||null,apoyo_admin:apoyo};
   let svc;
   if(editing){
     // ── EDICIÓN: actualiza el servicio y reemplaza sus detalles ──
@@ -3103,32 +3298,21 @@ async function guardarServicio(){
   renderSvcList();refresh();
 }
 
-// Categoría dedicada para el apoyo del administrador (se crea una sola vez por workspace)
-async function ensureApoyoCat(){
-  await finLoad();
-  let cat=gastoCats.find(c=>c.clave==='apoyo_admin');
-  if(!cat){try{cat=await finIns('gasto_categorias',{workspace_id:CW.id,nombre:'Apoyo de administración (servicios)',clave:'apoyo_admin'});}catch(e){cat=gastoCats.find(c=>c.clave==='apoyo_admin');}}
-  return cat;
-}
-// Mantiene sincronizado el gasto de Finanzas con el apoyo del servicio (crea/edita/borra)
+// Antes esto creaba en Finanzas un gasto por el APOYO del administrador, y solo por él.
+// Ese gasto ya no hace falta: el recibo COMPLETO del servicio se contabiliza ahora en
+// finGastosServicios(), y el apoyo está incluido dentro de ese total (lo cobrado a los
+// inquilinos ya viene con el apoyo descontado). Mantenerlo además del recibo lo contaría
+// dos veces, así que aquí solo se limpia el gasto viejo que hubiera quedado.
 async function syncApoyoGasto(svc,apoyo){
   try{
     await finLoad();
-    const NOM={agua:'Agua',luz:'Luz',gas:'Gas'};
-    const fc=s=>{const d=new Date(s+'T00:00:00');return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`};
-    const desc=`Apoyo administración — ${NOM[svc.tipo]||svc.tipo} ${fc(svc.periodo_ini)}–${fc(svc.periodo_fin)}`;
     const prevId=svc.apoyo_gasto_id;
-    if(apoyo>0){
-      const cat=await ensureApoyoCat();
-      const row={workspace_id:CW.id,inmueble_id:null,categoria_id:cat?cat.id:null,categoria:'apoyo_admin',monto:apoyo,fecha:svc.periodo_ini,descripcion:desc};
-      if(prevId&&gastosOp.find(g=>g.id===prevId)){await finUpd('gastos_operacion',prevId,row);}
-      else{const g=await finIns('gastos_operacion',row);await svcSetApoyoGasto(svc,g.id);}
-    }else if(prevId){
+    if(prevId){
       if(gastosOp.find(g=>g.id===prevId))await finDelRow('gastos_operacion',prevId);
       await svcSetApoyoGasto(svc,null);
     }
     finLSave();if(document.getElementById('fin-app'))finRenderAll();
-  }catch(e){toast('Servicio guardado, pero no se pudo sincronizar el gasto en Finanzas: '+(e.message||e),'ti-alert-triangle');}
+  }catch(e){console.warn('limpieza gasto de apoyo (no bloqueante):',e.message||e);}
 }
 async function svcSetApoyoGasto(svc,gid){
   svc.apoyo_gasto_id=gid;
@@ -3139,7 +3323,7 @@ async function svcSetApoyoGasto(svc,gid){
 async function verServicio(id){
   editSvcId=id;
   const svc=servicios.find(s=>s.id===id);if(!svc)return;
-  const det=svcDet.filter(d=>d.servicio_id===id&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
+  const det=svcDet.filter(d=>d.servicio_id===id&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return cmpNum(ia?.num,ib?.num)});
   const adm=svcDet.find(d=>d.servicio_id===id&&d.es_administracion);
   const sumPond=det.reduce((s,d)=>s+Number(d.ponderacion),0)+(adm?Number(adm.ponderacion):0);
   const iconos={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'};
@@ -3154,7 +3338,7 @@ async function verServicio(id){
     <div class="card"><div class="tw"><table><thead><tr><th>Depto.</th><th>Inquilino</th><th>Días</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ Pagar</th></tr></thead>
     <tbody>${det.filter(d=>Number(d.ponderacion)>0).map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${d.inquilino||i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((Number(d.ponderacion)/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px">${SUB_LBL}</td><td style="font-weight:600;padding:10px 14px">${adm?adm.ponderacion:0}</td><td style="font-weight:600;padding:10px 14px">${adm?Math.round(Number(adm.porcentaje)*100):0}%</td><td style="font-weight:600;padding:10px 14px">${fmt(adm?adm.monto:0)}</td></tr>
-    ${Number(svc.apoyo_admin)>0?`<tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px;color:#1D9E75"><i class="ti ti-heart-handshake"></i> Apoyo de administración</td><td style="font-weight:600;padding:10px 14px">—</td><td style="font-weight:600;padding:10px 14px">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td><td style="font-weight:600;padding:10px 14px;color:#1D9E75">−${fmt(svc.apoyo_admin)}</td></tr>`:''}
+    ${Number(svc.apoyo_admin)>0?`<tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px;color:#1D9E75"><i class="ti ti-heart-handshake"></i> Apoyo de administración</td><td style="font-weight:600;padding:10px 14px">—</td><td style="font-weight:600;padding:10px 14px">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td><td style="font-weight:600;padding:10px 14px;color:#1D9E75">${fmt(svc.apoyo_admin)}</td></tr>`:''}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:700;padding:10px 14px">TOTAL</td><td style="font-weight:700;padding:10px 14px">${sumPond}</td><td style="font-weight:700;padding:10px 14px">100%</td><td style="font-weight:700;padding:10px 14px">${fmt(svc.total)}</td></tr>
     </tbody></table></div></div>`;
   openM('m-svc-det');
@@ -3167,7 +3351,7 @@ async function verServicio(id){
 async function generarSvcPNG(svcId){
   const svc=servicios.find(s=>s.id===svcId);if(!svc)return;
   if(typeof html2canvas==='undefined'){toast('No se pudo cargar el generador de imagen (sin internet)','ti-alert-triangle');return}
-  const det=svcDet.filter(d=>d.servicio_id===svcId&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return (ia?.num||'').localeCompare(ib?.num||'')});
+  const det=svcDet.filter(d=>d.servicio_id===svcId&&!d.es_administracion).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return cmpNum(ia?.num,ib?.num)});
   const adm=svcDet.find(d=>d.servicio_id===svcId&&d.es_administracion);
   const totPond=det.reduce((s,d)=>s+Number(d.ponderacion),0)+(adm?Number(adm.ponderacion):0);
   const pIni=new Date(svc.periodo_ini+'T00:00:00'),pFin=new Date(svc.periodo_fin+'T00:00:00');
@@ -3223,10 +3407,10 @@ async function generarSvcPNG(svcId){
           <td style="${B};text-align:right;font-weight:700">${fmt(adm?adm.monto:0)}</td>
         </tr>
         ${Number(svc.apoyo_admin)>0?`<tr>
-          <td colspan="5" style="${B};font-weight:700;color:#0A6B4B">Apoyo de administración</td>
+          <td colspan="5" style="${B};font-weight:700;color:#0A6B4B">Apoyo de administración (lo cubre la administración)</td>
           <td style="${B};text-align:center;font-weight:700">—</td>
           <td style="${B};text-align:center;font-weight:700">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td>
-          <td style="${B};text-align:right;font-weight:700;color:#0A6B4B">−${fmt(svc.apoyo_admin)}</td>
+          <td style="${B};text-align:right;font-weight:700;color:#0A6B4B">${fmt(svc.apoyo_admin)}</td>
         </tr>`:''}
         <tr>
           <td colspan="5" style="${B};font-weight:700;background:#F1EFE8">TOTAL</td>
@@ -3292,9 +3476,10 @@ function renderEC(){
       <div style="flex:1;min-width:140px"><div style="font-size:14px;font-weight:600">${inqui}</div><div style="font-size:12px;color:#9D9B96">Renta ${fmt(rentaMensual)} · Servicios ${fmt(svcs)}</div></div>
       <div style="text-align:right;margin-right:6px">${totalCol}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-        <button onclick="abrirECSel('${inm.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-list-check" style="font-size:13px"></i>Elegir pagos</button>
+        ${desoc?`<span style="font-size:12px;color:#9D9B96;font-style:italic;padding:8px 4px">Sin inquilino al que emitir estado de cuenta</span>`
+        :`<button onclick="abrirECSel('${inm.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-list-check" style="font-size:13px"></i>Elegir pagos</button>
         <button onclick="verEC('${inm.id}')" data-hs="background:#F1EFE8" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-eye" style="font-size:13px"></i>Ver</button>
-        <button onclick="generarPDF('${inm.id}')" data-hs="background:#F1EFE8" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-file-type-pdf" style="font-size:13px"></i>PDF</button>
+        <button onclick="generarPDF('${inm.id}')" data-hs="background:#F1EFE8" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-file-type-pdf" style="font-size:13px"></i>PDF</button>`}
       </div>
     </div>`;
   }).join('');
@@ -3317,9 +3502,21 @@ function svcMontoVigente(s,inmId){
   const d=svcDet.find(d=>d.servicio_id===s.id&&d.inmueble_id===inmId);
   return d?Number(d.monto):0;
 }
+// ¿A qué mes pertenece un recibo de servicio? Al mes en que CIERRA su período, que es
+// cuando se emite y cuando se le cobra al inquilino. Antes se anclaba a `periodo_ini`
+// (vía svc.mes/svc.anio), así que un recibo del 20-jun al 20-jul caía entero en junio y
+// el estado de cuenta de julio salía con $0 de servicios aunque el cargo fuera de julio.
+// Se lee de `periodo_fin` para que los recibos históricos también queden bien ubicados
+// sin necesidad de migrar nada.
+function svcMesAnio(s){
+  const ref=s&&(s.periodo_fin||s.periodo_ini);
+  if(ref){const d=new Date(ref+'T00:00:00');return{m:d.getMonth(),y:d.getFullYear()};}
+  return{m:s?s.mes:0,y:s?s.anio:0};
+}
+function svcDelMes(s,mes,anio){const{m,y}=svcMesAnio(s);return m===mes&&y===anio;}
 function getSvcMonto(inmId,mes,anio){
   // Suma de los servicios del período mes/anio que le corresponden al inquilino actual
-  return servicios.filter(s=>s.mes===mes&&s.anio===anio).reduce((t,s)=>t+svcMontoVigente(s,inmId),0);
+  return servicios.filter(s=>svcDelMes(s,mes,anio)).reduce((t,s)=>t+svcMontoVigente(s,inmId),0);
 }
 
 function verEC(inmId){
@@ -3363,6 +3560,11 @@ async function guardarConfig(){
 function generarPDF(inmId,download=true,selPagos=null){
   const {jsPDF}=window.jspdf;
   const inm=getInm(inmId);if(!inm)return;
+  const vigPDF=contratoVigente(inmId);
+  // Un espacio desocupado no tiene a quién cobrarle: antes se generaba igual, a nombre del
+  // inquilino que ya se fue y con su renta completa.
+  if(!vigPDF&&!Array.isArray(selPagos)){toast(`El depto. ${inm.num} está desocupado: no hay estado de cuenta que emitir`,'ti-alert-triangle');return}
+  const inqPDF=(vigPDF&&vigPDF.inquilino)||inm.inquilino||'—';
   const cfg=CW.cfg||{};
   const empresa=cfg.empresa||CW.nombre||'InmoPagos';
   const cobrador=cfg.nombre_cobrador||'';
@@ -3385,19 +3587,27 @@ function generarPDF(inmId,download=true,selPagos=null){
     const vmin=selPagos.map(p=>p.vencimiento).filter(Boolean).sort()[0];
     fechaVenc=meses.size>1?'Varios periodos':(vmin?fd(vmin):'—');
   }else{
-    // Datos del mes visible (flujo directo, sin cambios)
-    const pagosMes=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY&&p.inmueble_id===inmId});
-    const renta=pagosMes.find(p=>p.concepto==='renta');
-    const rentaMonto=renta?Number(renta.monto):Number(inm.renta);
-    const svcsDelMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
-    filasPDF=[{desc:`Renta Departamento #${inm.num}`,cant:'1 Mensualidad',monto:rentaMonto}];
-    svcsDelMes.forEach(s=>{
-      const m=svcMontoVigente(s,inmId); // solo la parte del inquilino actual, no la del anterior
-      if(m>0)filasPDF.push({desc:`Servicio de ${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)} — ${MESES[vM]}`,cant:'',monto:m});
+    // Flujo directo (botón "PDF"). Antes armaba la tabla con la renta COMPLETA del mes y
+    // los servicios, aunque el inquilino ya hubiera pagado: se le mandaba un estado de
+    // cuenta cobrándole de nuevo lo que ya había liquidado. Y se saltaba cualquier otro
+    // cargo (mantenimiento, "otro", depósito). Ahora usa exactamente el mismo criterio que
+    // "Elegir pagos": los adeudos exigibles del inquilino actual, por su SALDO.
+    const {lista}=pagosInquilinoActual(inmId);
+    const hoy=hoyISO();
+    let base=lista.filter(p=>saldoPago(p)>0.005&&p.vencimiento<=hoy);
+    // Si no debe nada, el documento refleja los cargos del mes visible con su saldo real
+    // (normalmente $0) en vez de inventar un adeudo.
+    if(!base.length)base=lista.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY});
+    filasPDF=base.map(p=>{
+      const dd=descPago(p,inm);
+      return{desc:dd.per?`${dd.desc} — ${dd.per}`:dd.desc,cant:dd.cant,monto:saldoPago(p)};
     });
     totalEC=filasPDF.reduce((s,f)=>s+f.monto,0);
-    // Fecha de vencimiento (día de pago del depto en el mes siguiente)
-    fechaVenc=`${MESES[vM]} ${inm.dia||'18'}/${vY}`;
+    const meses=new Set(base.map(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()+'-'+v.getFullYear()}));
+    const vmin=base.map(p=>p.vencimiento).filter(Boolean).sort()[0];
+    fechaVenc=base.length?(meses.size>1?'Varios periodos':(vmin?fd(vmin):'—'))
+      :fd(fechaRenta(vY,vM,(vigPDF&&vigPDF.dia)||inm.dia||1));
+    if(!filasPDF.length)filasPDF=[{desc:`Sin cargos registrados en ${MESES[vM]} ${vY}`,cant:'',monto:0}];
   }
 
   // Crear PDF
@@ -3425,7 +3635,7 @@ function generarPDF(inmId,download=true,selPagos=null){
   doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
   doc.text('Arrendatario:',M,61);
   doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
-  doc.text(inm.inquilino.toUpperCase(),M,70);
+  doc.text(String(inqPDF).toUpperCase(),M,70);
   doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
   let yc=78;
   doc.text(`Departamento #${inm.num}`,M,yc);yc+=6;
@@ -3493,15 +3703,18 @@ function generarPDF(inmId,download=true,selPagos=null){
   doc.setFontSize(9);doc.setTextColor(150,150,150);
   doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')} · ${empresa}`,W/2,290,{align:'center'});
 
-  const filename=`Estado_de_Cuenta_${MESES[vM]}_${vY}_Depto_${inm.num}_${inm.inquilino.split(' ')[0]}.pdf`;
+  const filename=`Estado_de_Cuenta_${MESES[vM]}_${vY}_Depto_${inm.num}_${String(inqPDF).split(' ')[0]}.pdf`;
   if(download)doc.save(filename);
   else doc.output('dataurlnewwindow');
 }
 
 async function generarTodosPDF(){
-  if(!inmuebles.length){toast('Sin departamentos','ti-alert-triangle');return}
-  toast(`Generando ${inmuebles.length} PDFs...`,'ti-loader');
-  for(const inm of inmuebles){await new Promise(r=>setTimeout(r,300));generarPDF(inm.id,true)}
+  // Solo espacios ocupados: para un desocupado no hay estado de cuenta que emitir
+  const ocupados=inmuebles.filter(i=>!estaDesocupado(i.id));
+  if(!ocupados.length){toast('No hay departamentos ocupados','ti-alert-triangle');return}
+  const saltados=inmuebles.length-ocupados.length;
+  toast(`Generando ${ocupados.length} PDF${ocupados.length===1?'':'s'}${saltados?` · ${saltados} desocupado${saltados===1?'':'s'} omitido${saltados===1?'':'s'}`:''}...`,'ti-loader');
+  for(const inm of ocupados){await new Promise(r=>setTimeout(r,300));generarPDF(inm.id,true)}
 }
 
 // ═══════════════════════════════════════
@@ -3537,7 +3750,28 @@ function abrirPago(inmId){
   document.getElementById('fp-mto').value='';document.getElementById('fp-con').value='mantenimiento';
   document.getElementById('fp-pag').value='';
   document.getElementById('fp-fpag').value='';document.getElementById('fp-not').value='';
+  document.getElementById('fp-venc').value=vencSugerido(inmId||null,'mantenimiento');
   openM('m-pago');
+}
+// Vencimiento propuesto para un cargo nuevo. Para la renta se usa el DÍA DE PAGO del
+// contrato dentro del mes visible; para el resto, hoy si estás en el mes en curso o el
+// primer día del mes que estás viendo. Antes todo caía en "hoy" (o el día 1), así que una
+// renta capturada a mano nacía con un vencimiento que no era su día de pago y el estado
+// del cargo salía mal desde el minuto uno.
+function vencSugerido(inmId,concepto){
+  const hoy=new Date();
+  const enMesActual=(hoy.getMonth()===vM&&hoy.getFullYear()===vY);
+  if(concepto==='renta'){
+    const vig=inmId?contratoVigente(inmId):null,inm=inmId?getInm(inmId):null;
+    return fechaRenta(vY,vM,(vig&&vig.dia)||(inm&&inm.dia)||1);
+  }
+  return enMesActual?hoyISO():`${vY}-${String(vM+1).padStart(2,'0')}-01`;
+}
+// Al cambiar depto o concepto, se recalcula la sugerencia (solo en alta, nunca al editar)
+function refrescarVencSugerido(){
+  if(editPagoId)return;
+  const el=document.getElementById('fp-venc');if(!el)return;
+  el.value=vencSugerido(document.getElementById('fp-dep').value||null,document.getElementById('fp-con').value);
 }
 function abrirEditPago(id){
   editPagoId=id;const p=pagos.find(x=>x.id===id);if(!p)return;
@@ -3545,15 +3779,17 @@ function abrirEditPago(id){
   const sel=document.getElementById('fp-dep');sel.innerHTML=inmuebles.map(i=>`<option value="${i.id}"${i.id===p.inmueble_id?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
   pobContratosPago(p.contrato_id||'');
   document.getElementById('fp-con').value=p.concepto;document.getElementById('fp-mto').value=p.monto;document.getElementById('fp-pag').value=p.pagado;document.getElementById('fp-fpag').value=p.fecha_pago||'';document.getElementById('fp-not').value=p.notas||'';
+  document.getElementById('fp-venc').value=p.vencimiento||'';
   openM('m-pago');
 }
 async function guardarPago(){
   const inmueble_id=document.getElementById('fp-dep').value,monto=parseFloat(document.getElementById('fp-mto').value)||0,pagado=Math.min(parseFloat(document.getElementById('fp-pag').value)||0,monto);
   if(!inmueble_id||!monto){toast('Completa los campos requeridos','ti-alert-triangle');return}
-  // Sin campo de vencimiento: al editar se conserva; al crear, el cargo cae en el mes visible
-  let vencimiento;
-  if(editPagoId){vencimiento=pagos.find(x=>x.id===editPagoId)?.vencimiento||hoyISO();}
-  else{const hoy=new Date();vencimiento=(hoy.getMonth()===vM&&hoy.getFullYear()===vY)?hoyISO():`${vY}-${String(vM+1).padStart(2,'0')}-01`;}
+  // El vencimiento ahora es editable (antes no existía el campo y al editar ni siquiera se
+  // podía corregir un cargo que había nacido con la fecha equivocada).
+  const vencInput=document.getElementById('fp-venc')?.value;
+  const vencimiento=vencInput||(editPagoId?(pagos.find(x=>x.id===editPagoId)?.vencimiento||hoyISO())
+                                          :vencSugerido(inmueble_id,document.getElementById('fp-con').value));
   const contrato_id=(document.getElementById('fp-contrato')?.value)||null;
   const d={workspace_id:CW.id,inmueble_id,contrato_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null,...(editPagoId?{}:{origen:'manual'})};
   const doSave=(row)=>editPagoId
@@ -3711,7 +3947,7 @@ async function guardarInm(){
   }
   let inmId;
   if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;inmId=editInmId;}
-  else{inmuebles.push(savedInm);inmuebles.sort((a,b)=>a.num.localeCompare(b.num));inmId=savedInm.id;}
+  else{inmuebles.push(savedInm);ordenarInmuebles();inmId=savedInm.id;}
   await upsertContratoVigente(inmId,cf);
   if(!editInmId)await crearPagoDeposito(inmId,contratoVigente(inmId)?.id||null); // depósito del alta
   else await syncRentaPagos(inmId); // renta/día editados → actualizar pagos pendientes
@@ -3864,7 +4100,7 @@ document.getElementById('sv-fin').addEventListener('change',calcSvcRows);
 // Cuenta de alertas: replica EXACTAMENTE las condiciones de renderAl() sin mutarla.
 function contarAlertas(){
   const t=new Date();t.setHours(0,0,0,0);let n=0;const tol=getTolerancia();
-  pagos.forEach(p=>{
+  pagos.filter(esCobranza).forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),est=getEstado(p),d=dB(t,v);
     if(est==='vencido')n++;
     else if(est==='tolerancia')n++;
@@ -3924,7 +4160,9 @@ function renderSvcDonut(){
     off+=len;delay+=.22;
   });
   // Insights (solo lectura, derivados de svcDet del mes)
-  const perD={};svcMes.forEach(s=>svcDet.forEach(d=>{if(d.servicio_id===s.id&&Number(d.monto)>0)perD[d.inmueble_id]=(perD[d.inmueble_id]||0)+Number(d.monto);}));
+  // Solo filas de departamento: la del subsidio (es_administracion, inmueble_id null) no es
+  // un depto — entraba al promedio y hasta podía ganar el "mayor consumo" sin nombre.
+  const perD={};svcMes.forEach(s=>svcDet.forEach(d=>{if(d.servicio_id===s.id&&!d.es_administracion&&d.inmueble_id&&Number(d.monto)>0)perD[d.inmueble_id]=(perD[d.inmueble_id]||0)+Number(d.monto);}));
   const ids=Object.keys(perD);
   let topId=null;ids.forEach(k=>{if(!topId||perD[k]>perD[topId])topId=k;});
   const topInm=topId?getInm(topId):null;
@@ -3991,7 +4229,7 @@ function renderDashboard(){
   document.getElementById('dash-hi').textContent=`${saludo}${nombre?', '+nombre:''}`;
   document.getElementById('dash-sub').textContent=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})+' · así va tu negocio hoy';
   // Anillo de cobranza del mes visible (misma base que renderStats)
-  const mesP=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY;});
+  const mesP=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return esCobranza(p)&&v.getMonth()===vM&&v.getFullYear()===vY;});
   const esp=mesP.reduce((s,p)=>s+Number(p.monto),0),cob=mesP.reduce((s,p)=>s+Number(p.pagado),0);
   const pct=esp>0?Math.round(cob/esp*100):0;
   document.getElementById('dash-ring-pct').textContent=pct+'%';
@@ -4003,15 +4241,17 @@ function renderDashboard(){
   // Tiles
   const nAl=contarAlertas();
   // Por devolver (depósitos con contrato cumplido, no devueltos)
+  // Contrato por contrato: antes bastaba con que el espacio tuviera UNA devolución para
+  // dar por devuelto también el depósito del inquilino siguiente.
   let porDevolver=0,nDev=0;
-  inmuebles.forEach(inm=>{
-    const r=calcDeposito(inm);
-    if(r&&r.devolver>0&&!pagos.some(p=>p.inmueble_id===inm.id&&p.concepto==='devolucion_deposito')){porDevolver+=r.devolver;nDev++;}
-  });
+  inmuebles.forEach(inm=>depositosInm(inm).forEach(({r,devuelto})=>{
+    if(!devuelto&&r.devolver>0){porDevolver+=r.devolver;nDev++;}
+  }));
   // Servicios del mes visible
-  const svcMes=servicios.filter(s=>s.mes===vM&&s.anio===vY);
+  const svcMes=servicios.filter(s=>svcDelMes(s,vM,vY));
   const totalSvcMes=svcMes.reduce((s,x)=>s+Number(x.total),0);
-  const deptosSvc=new Set();svcMes.forEach(s=>svcDet.forEach(d=>{if(d.servicio_id===s.id&&Number(d.monto)>0)deptosSvc.add(d.inmueble_id);}));
+  // Sin la fila de subsidio (inmueble_id null), que inflaba en 1 la cuenta de deptos
+  const deptosSvc=new Set();svcMes.forEach(s=>svcDet.forEach(d=>{if(d.servicio_id===s.id&&!d.es_administracion&&d.inmueble_id&&Number(d.monto)>0)deptosSvc.add(d.inmueble_id);}));
   // Ocupación: inquilinos sin salida o con salida futura
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const activos=inmuebles.filter(i=>!estaDesocupado(i.id)).length;
@@ -4030,10 +4270,18 @@ function renderDashboard(){
       <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#085041;text-transform:uppercase;letter-spacing:.06em"><i class="ti ti-building" style="font-size:12px;color:#1D9E75"></i>Ocupación</div>
       <div style="font-size:26px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;margin-top:8px">${activos}/${inmuebles.length}</div><div style="font-size:11.5px;color:#3D7A66">unidades rentadas</div></button>`;
   // Barras: últimos 6 meses terminando en el mes visible
+  // Cobranza REAL por mes: se agrupa por la fecha en que ENTRÓ el dinero (fecha_pago), no
+  // por el vencimiento del cargo. Antes la renta de enero cobrada en marzo se dibujaba en
+  // la barra de enero, así que la gráfica nunca decía cuánto entró de verdad cada mes.
+  // Los pagos viejos sin fecha_pago caen a su vencimiento (mejor dato disponible).
   const barras=[];let maxCob=0;
   for(let k=5;k>=0;k--){
     let mm=vM-k,yy=vY;while(mm<0){mm+=12;yy--;}
-    const pp=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===mm&&v.getFullYear()===yy;});
+    const pp=pagos.filter(p=>{
+      if(!esCobranza(p)||Number(p.pagado)<=0)return false;
+      const f=fechaCobro(p);if(!f)return false;
+      const v=new Date(f+'T00:00:00');return v.getMonth()===mm&&v.getFullYear()===yy;
+    });
     const c=pp.reduce((s,p)=>s+Number(p.pagado),0);
     const esCurso=(mm===vM&&yy===vY);
     barras.push({mes:MESES[mm].slice(0,3),cob:c,curso:esCurso});
@@ -4088,7 +4336,10 @@ let rulIdx=0,rulOpen=true,rulOn=(typeof localStorage!=='undefined'&&localStorage
 
 // Estado visual por depto — misma semántica que las tarjetas de Departamentos
 function rulStatus(inm){
-  const mp=pagos.filter(p=>p.inmueble_id===inm.id);
+  // Un espacio desocupado tiene su propio estado: antes heredaba el del último inquilino
+  // y la casita seguía pintada como si alguien viviera ahí.
+  if(estaDesocupado(inm.id))return{k:'libre',lbl:'Desocupado',pct:0,main:{top:'#CFC8FB',front:'#B9AFF5',shade:'#9A8EE0'}};
+  const mp=pagos.filter(p=>p.inmueble_id===inm.id&&esCobranza(p));
   const mm=mp.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY;});
   const pagados=mm.filter(p=>getEstado(p)==='pagado').length;
   const tv=mp.some(p=>getEstado(p)==='vencido');
@@ -4176,7 +4427,7 @@ function renderRuleta(){
     const st=rulStatus(inm);
     const sec=st.k==='venc'?{top:'#B2CDA9',front:'#9FBF9B',shade:'#7FA37D'}:{top:'#DA9273',front:'#C97C5E',shade:'#A96246'};
     const V=RULV[i%RULV.length];
-    html+=`<div class="rul-item" data-i="${i}" role="button" tabindex="-1" aria-label="Departamento ${inm.num}, ${inm.inquilino}, ${st.lbl}">
+    html+=`<div class="rul-item" data-i="${i}" role="button" tabindex="-1" aria-label="Departamento ${inm.num}, ${(contratoVigente(inm.id)||{}).inquilino||'desocupado'}, ${st.lbl}">
       <div style="display:flex;justify-content:center;margin-bottom:10px"><span class="lg" style="border-radius:20px;padding:4px 13px;font-family:'DM Mono',monospace;font-size:11.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${st.main.front}"></span>${inm.num}${st.k==='venc'?'<span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>':''}</span></div>
       <div class="rul-focus"><div class="rul-house" style="animation-delay:${(i%5)*.55}s">${casaSVG(st.main,sec,i,V)}</div>
       <div class="rul-shadow" style="animation-delay:${(i%5)*.55}s"></div></div>
@@ -4222,13 +4473,17 @@ function rulPosition(animate){
 // Ventanas liquid glass del departamento centrado — misma info que las otras pestañas, y más
 function rulGlassHTML(inm){
   const id=inm.id,st=rulStatus(inm);
-  const mm=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===id&&v.getMonth()===vM&&v.getFullYear()===vY;});
+  // Todos los datos del inquilino salen del CONTRATO VIGENTE, no del mirror del inmueble:
+  // el mirror conserva al último inquilino aunque el espacio ya esté desocupado, así que la
+  // ficha mostraba nombre, renta y teléfono de alguien que ya se fue.
+  const vig=contratoVigente(id),desoc=!vig;
+  const mm=pagos.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return p.inmueble_id===id&&esCobranza(p)&&v.getMonth()===vM&&v.getFullYear()===vY;});
   const esp=mm.reduce((s,p)=>s+Number(p.monto),0),cob=mm.reduce((s,p)=>s+Math.min(Number(p.pagado),Number(p.monto)),0);
-  const nv=pagos.filter(p=>p.inmueble_id===id&&getEstado(p)==='vencido').length;
+  const nv=pagos.filter(p=>p.inmueble_id===id&&esCobranza(p)&&getEstado(p)==='vencido').length;
   const svcs=getSvcMonto(id,vM,vY);
   const dep=calcDeposito(inm);
-  const ult=pagos.filter(p=>p.inmueble_id===id&&p.fecha_pago).sort((a,b)=>new Date(b.fecha_pago)-new Date(a.fecha_pago))[0];
-  const chip={venc:['rgba(226,75,74,.16)','#791F1F','ti-alert-triangle'],ok:['rgba(29,158,117,.16)','#085041','ti-circle-check'],proc:['rgba(186,117,23,.16)','#633806','ti-clock'],none:['rgba(26,25,23,.08)','#6B6963','ti-minus']}[st.k];
+  const ult=pagos.filter(p=>p.inmueble_id===id&&p.fecha_pago&&esCobranza(p)).sort((a,b)=>new Date(b.fecha_pago)-new Date(a.fecha_pago))[0];
+  const chip={venc:['rgba(226,75,74,.16)','#791F1F','ti-alert-triangle'],ok:['rgba(29,158,117,.16)','#085041','ti-circle-check'],proc:['rgba(186,117,23,.16)','#633806','ti-clock'],none:['rgba(26,25,23,.08)','#6B6963','ti-minus'],libre:['rgba(75,63,158,.16)','#4B3F9E','ti-door-exit']}[st.k];
   const IB='display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.5);color:#4A453E;border-radius:9px;cursor:pointer;transition:all .15s;font-family:inherit;backdrop-filter:blur(6px)';
   const row=(ico,lbl,val,c)=>`<div class="rul-row"><i class="ti ${ico}" style="font-size:14px;color:${c||'#8A857D'};width:16px;text-align:center"></i><span style="color:#55514A;flex:1">${lbl}</span><span style="font-family:'DM Mono',monospace;font-weight:500;color:#1A1917">${val}</span></div>`;
   let depRow='';
@@ -4237,16 +4492,16 @@ function rulGlassHTML(inm){
   return `
     <div class="rul-gwrap side" style="left:calc(50% - 332px);top:46px"><div class="lg rul-pill" style="display:flex;align-items:center;gap:9px">
       <i class="ti ti-building" style="color:#1D9E75;font-size:16px"></i>
-      <div><div style="font-size:12.5px;font-weight:700">Depto. ${inm.num}</div><div style="font-size:11px;color:#55514A">Piso ${inm.piso||'—'} · ${inm.personas||1} pers. · paga el día ${inm.dia||'—'}</div></div>
+      <div><div style="font-size:12.5px;font-weight:700">Depto. ${inm.num}</div><div style="font-size:11px;color:#55514A">Piso ${inm.piso||'—'}${desoc?' · sin inquilino':` · ${vig.personas||1} pers. · paga el día ${vig.dia||'—'}`}</div></div>
     </div></div>
     <div class="rul-gwrap side" style="left:calc(50% - 348px);bottom:92px;animation-delay:.12s"><div class="lg rul-pill" style="text-align:center;animation-delay:1.6s">
       <div style="font-size:9.5px;font-weight:700;color:#55514A;text-transform:uppercase;letter-spacing:.08em">Renta</div>
-      <div style="font-family:'DM Mono',monospace;font-size:17px;font-weight:500">${fmt0(inm.renta)}<span style="font-size:10.5px;color:#55514A"> /mes</span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:17px;font-weight:500">${desoc?'—':fmt0(vig.renta)}<span style="font-size:10.5px;color:#55514A"> ${desoc?'':'/mes'}</span></div>
     </div></div>
     <div class="rul-gwrap main" style="left:calc(50% + 172px);top:16px;animation-delay:.06s"><div class="lg rul-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;flex-shrink:0">${inm.num}</div>
-        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${inm.inquilino}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${desoc?';color:#6B6963;font-style:italic':''}">${desoc?'Espacio disponible':(vig.inquilino||'—')}</div>
         <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:${chip[0]};color:${chip[1]}"><i class="ti ${chip[2]}" style="font-size:10px"></i>${st.lbl}</span></div>
         <button onclick="rulOpen=false;rulPosition(false)" title="Cerrar ficha" style="border:none;background:none;cursor:pointer;color:#8A857D;font-size:16px;padding:4px;border-radius:6px;display:flex;font-family:inherit">✕</button>
       </div>
@@ -4256,11 +4511,12 @@ function rulGlassHTML(inm){
       ${row('ti-bolt','Servicios del mes',svcs>0?fmt(svcs):'—','#BA7517')}
       ${depRow}
       ${nv>0?row('ti-alert-triangle',nv===1?'Pago vencido':'Pagos vencidos',nv,'#E24B4A'):''}
-      ${row('ti-phone','Teléfono',inm.tel||'—')}
-      ${inm.fecha_termino_contrato?row('ti-calendar-event','Contrato hasta',fdS(inm.fecha_termino_contrato)):''}
+      ${row('ti-phone','Teléfono',(desoc?'':vig.tel)||'—')}
+      ${!desoc&&vig.fecha_termino_contrato?row('ti-calendar-event','Contrato hasta',fdS(vig.fecha_termino_contrato)):''}
       ${ult?row('ti-history','Último pago',fdS(ult.fecha_pago)):''}
       <div style="display:flex;gap:6px;margin-top:12px">
-        <button title="Recordatorio WhatsApp" onclick="rulAct('rec','${id}')" data-hs="background:rgba(29,158,117,.22);color:#085041" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>
+        ${desoc?`<button title="Asignar nuevo inquilino" onclick="rulAct('nuevo','${id}')" data-hs="background:rgba(75,63,158,.22);color:#4B3F9E" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-user-plus" style="font-size:15px"></i></button>`
+        :`<button title="Recordatorio WhatsApp" onclick="rulAct('rec','${id}')" data-hs="background:rgba(29,158,117,.22);color:#085041" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>`}
         <button title="Nuevo pago" onclick="rulAct('pago','${id}')" data-hs="background:rgba(255,255,255,.85);color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-plus" style="font-size:15px"></i></button>
         <button title="Editar departamento" onclick="rulAct('inm','${id}')" data-hs="background:rgba(255,255,255,.85);color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-pencil" style="font-size:15px"></i></button>
         <button title="Estado de cuenta PDF" onclick="rulAct('pdf','${id}')" data-hs="background:rgba(255,255,255,.85);color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-file-type-pdf" style="font-size:15px"></i></button>
@@ -4270,7 +4526,7 @@ function rulGlassHTML(inm){
 }
 function rulGo(d){const n=inmuebles.length;if(!n)return;rulIdx=(rulIdx+d+n)%n;rulPosition(true);}
 function rulSet(i){if(i===rulIdx)return;rulIdx=i;rulPosition(true);}
-function rulAct(a,id){if(a==='rec')abrirRecordatorio(id);else if(a==='pago')abrirPago(id);else if(a==='inm')abrirInm(id);else if(a==='pdf')generarPDF(id);else if(a==='dep')setTab('inmuebles');}
+function rulAct(a,id){if(a==='rec')abrirRecordatorio(id);else if(a==='nuevo')abrirNuevoContrato(id);else if(a==='pago')abrirPago(id);else if(a==='inm')abrirInm(id);else if(a==='pdf')generarPDF(id);else if(a==='dep')setTab('inmuebles');}
 function rulToggle(){rulOn=!rulOn;try{localStorage.setItem('ib_ruleta',rulOn?'1':'0');}catch(e){}renderRuleta();}
 
 // Interacción de la ruleta: swipe, clic y teclado
@@ -4321,12 +4577,16 @@ const FIN_CATC=['#A855F7','#22D3EE','#F59E0B','#34D399','#F472B6','#818CF8','#FB
 let finGlobal=false,finGLoaded=false;
 let finWS=[];                                  // [{id,nombre}] negocios del usuario (memberships)
 let finGSel=new Set();                         // ids seleccionados; Set vacío = TODOS
-let finGData={pagos:[],gastos:[],imps:[],cats:[],inms:[]};
+let finGData={pagos:[],gastos:[],imps:[],cats:[],inms:[],svcs:[]};
 function finWSok(w){return !finGSel.size||finGSel.has(w);}
 function finDSPagos(){return finGlobal?finGData.pagos.filter(p=>finWSok(p.workspace_id)):pagos;}
-function finDSGastos(){return finGlobal?finGData.gastos.filter(g=>finWSok(g.workspace_id)):gastosOp;}
+// Los gastos con categoría `apoyo_admin` se excluyen del cálculo: el apoyo del
+// administrador ya viene dentro del recibo completo del servicio, que ahora sí se
+// contabiliza como gasto (ver finGastosServicios). Contarlo aparte lo duplicaba.
+function finDSGastos(){const a=finGlobal?finGData.gastos.filter(g=>finWSok(g.workspace_id)):gastosOp;return a.filter(g=>g.categoria!=='apoyo_admin');}
 function finDSImps(){return finGlobal?finGData.imps.filter(i=>finWSok(i.workspace_id)):impuestosPag;}
 function finDSCats(){return finGlobal?finGData.cats:gastoCats;}  // pool completo: resolución por id
+function finDSServicios(){return finGlobal?finGData.svcs.filter(s=>finWSok(s.workspace_id)):servicios;}
 function finGetInm(id){return finGlobal?finGData.inms.find(i=>i.id===id):getInm(id);}
 function finWSName(id){return finWS.find(w=>w.id===id)?.nombre||'—';}
 function finRowLoc(r){const n=finGetInm(r.inmueble_id)?.num||'—';return finGlobal?`${finWSName(r.workspace_id)} · ${n}`:n;}
@@ -4394,7 +4654,8 @@ function finDemoFondo(){
   if(fact<=0)fact=48000;
   const g=Math.round(fact*0.31), i=Math.round((fact-g)*0.12);
   try{
-    finRenderCascade({ms:[],pl:new Array(Math.max(1,inmuebles.length)),fact,
+    finRenderCascade({ms:[],pl:new Array(Math.max(1,inmuebles.length)),fact,cobr:fact,porCobrar:0,
+      cl:new Array(Math.max(1,inmuebles.length)),
       gl:new Array(6),gTot:g,util:fact-g,il:new Array(2),iTot:i,neta:fact-g-i});
   }catch(e){}
   const panel=(t,filas)=>`<div class="fin-panel" style="padding:20px 24px">
@@ -4550,15 +4811,16 @@ async function finLoad(){
 async function finGLoad(){
   finGLoaded=false;
   const ids=finWS.map(w=>w.id);
-  const [p,g,i,c,n]=await Promise.all([
+  const [p,g,i,c,n,sv]=await Promise.all([
     sb.from('pagos').select('*').in('workspace_id',ids).order('vencimiento',{ascending:false}),
     sb.from('gastos_operacion').select('*').in('workspace_id',ids).order('fecha',{ascending:false}),
     sb.from('impuestos_pagados').select('*').in('workspace_id',ids).order('fecha',{ascending:false}),
     sb.from('gasto_categorias').select('*').in('workspace_id',ids).order('nombre'),
-    sb.from('inmuebles').select('*').in('workspace_id',ids).order('num')
+    sb.from('inmuebles').select('*').in('workspace_id',ids).order('num'),
+    sb.from('servicios').select('*').in('workspace_id',ids).order('periodo_fin',{ascending:false})
   ]);
-  if(p.error||g.error||i.error||c.error||n.error)throw(p.error||g.error||i.error||c.error||n.error);
-  finGData={pagos:p.data||[],gastos:g.data||[],imps:i.data||[],cats:c.data||[],inms:n.data||[]};
+  if(p.error||g.error||i.error||c.error||n.error||sv.error)throw(p.error||g.error||i.error||c.error||n.error||sv.error);
+  finGData={pagos:p.data||[],gastos:g.data||[],imps:i.data||[],cats:c.data||[],inms:n.data||[],svcs:sv.data||[]};
   finGLoaded=true;
 }
 // CRUD genérico sobre las 3 tablas (reactividad inmediata, como el resto de la app)
@@ -4634,24 +4896,66 @@ function finGastosMes(propId,m,y){
   return out;
 }
 
+// ── Recibos de servicio como GASTO de operación ───────────────────────────────
+// El agua, la luz y el gas los paga el arrendador y luego los recobra a los inquilinos.
+// Esos cobros SÍ entraban a la cascada como ingreso, pero el recibo que sale del bolsillo
+// no se registraba en ninguna parte: Finanzas nunca leía la tabla `servicios` y el único
+// gasto que se creaba era el del "apoyo". Resultado: un recibo de $3,000 recobrado en
+// $2,700 se reportaba como +$2,400 de utilidad cuando la realidad eran −$300. Con varios
+// servicios al mes, la Utilidad Neta se inflaba decenas de miles al año.
+// Aquí el recibo entra completo como gasto (por eso el apoyo ya no se cuenta aparte:
+// está incluido en el total, y lo cobrado a los inquilinos ya viene con él descontado).
+// Se calcula, no se escribe en la BD: así vale también para todos los recibos históricos
+// y es imposible que se desincronice.
+function svcFechaContable(s){
+  // El mismo mes en el que se les cobró a los inquilinos, para que el ingreso y el gasto
+  // de un mismo recibo jamás caigan en meses distintos.
+  const ps=finDSPagos().filter(p=>p.servicio_id===s.id&&p.vencimiento);
+  if(ps.length){const v=ps.map(p=>p.vencimiento).sort();return v[0];}
+  return s.periodo_fin||s.periodo_ini||null;
+}
+const FIN_SVC_NOM={agua:'Agua',luz:'Luz',gas:'Gas'};
+function finGastosServicios(prop,ms){
+  // Un recibo es del edificio completo, no de un departamento: cuando se filtra por una
+  // propiedad concreta no se le puede imputar entero, así que queda fuera.
+  if(prop)return[];
+  const inMs=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return ms.some(x=>v.getMonth()===x.m&&v.getFullYear()===x.y);};
+  return finDSServicios().filter(s=>Number(s.total)>0).map(s=>({s,fecha:svcFechaContable(s)}))
+    .filter(({fecha})=>inMs(fecha))
+    .map(({s,fecha})=>({
+      id:'svc:'+s.id,_svc:true,workspace_id:s.workspace_id,inmueble_id:null,categoria_id:null,
+      categoria:'servicios_recibo',monto:Number(s.total),fecha,
+      descripcion:`Recibo de ${FIN_SVC_NOM[s.tipo]||s.tipo} · ${fdS(s.periodo_ini)}–${fdS(s.periodo_fin)}`
+    }));
+}
 // ── Cascada de cálculo (orden estricto del spec) ──
 function finCalc(){
   const ms=finMeses(),prop=finProp||null;
-  const inMs=d=>{const v=new Date(d+'T00:00:00');return ms.some(x=>v.getMonth()===x.m&&v.getFullYear()===x.y);};
-  // 1) Facturación (ya existe en la app; excluye depósitos y devoluciones)
-  const pl=finDSPagos().filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito'&&(!prop||p.inmueble_id===prop)&&inMs(p.vencimiento));
+  const inMs=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return ms.some(x=>v.getMonth()===x.m&&v.getFullYear()===x.y);};
+  const esOp=p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito';
+  // 1) Facturado: lo que se emitió en el periodo (referencia, ya no es la base del cálculo)
+  const pl=finDSPagos().filter(p=>esOp(p)&&(!prop||p.inmueble_id===prop)&&inMs(p.vencimiento));
   const fact=pl.reduce((s,p)=>s+Number(p.monto),0);
-  // 2) Gastos de operación (con recurrencias expandidas)
+  const porCobrar=pl.reduce((s,p)=>s+Math.max(0,Number(p.monto)-Number(p.pagado)),0);
+  // 1b) INGRESOS COBRADOS: la base real de la cascada. Antes la utilidad se calculaba
+  // sobre lo FACTURADO, así que la renta que nadie pagó contaba como ganancia y el módulo
+  // reportaba utilidad inexistente cuando había morosos. Se agrupa por la fecha en que
+  // entró el dinero (fecha_pago), que además es la base que aplica al arrendamiento de
+  // persona física en México: se tributa sobre lo efectivamente cobrado.
+  const cl=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inMs(p.fecha_pago||p.vencimiento));
+  const cobr=cl.reduce((s,p)=>s+Number(p.pagado),0);
+  // 2) Gastos de operación (recurrencias expandidas) + los recibos de servicio del periodo
   let gl=[];ms.forEach(x=>gl.push(...finGastosMes(prop,x.m,x.y)));
+  gl=gl.concat(finGastosServicios(prop,ms));
   const gTot=gl.reduce((s,g)=>s+Number(g.monto),0);
-  // 3) Utilidad = Facturación − Gastos (calculada, nunca editable)
-  const util=fact-gTot;
+  // 3) Utilidad = Cobrado − Gastos (calculada, nunca editable)
+  const util=cobr-gTot;
   // 4) Impuestos (captura manual)
   const il=finDSImps().filter(p=>(!prop||p.inmueble_id===prop)&&inMs(p.fecha));
   const iTot=il.reduce((s,x)=>s+Number(x.monto),0);
   // 5) Utilidad neta = Utilidad − Impuestos
   const neta=util-iTot;
-  return{ms,pl,fact,gl,gTot,util,il,iTot,neta};
+  return{ms,pl,fact,porCobrar,cl,cobr,gl,gTot,util,il,iTot,neta};
 }
 
 // ── Render principal ──
@@ -4693,18 +4997,18 @@ function finRenderCascade(C){
       <span class="fin-chip"><i class="ti ti-arrows-down" style="font-size:11px"></i>cálculo en cascada · toca una cifra para su desglose</span>
     </div>
     <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap;row-gap:14px">
-      ${node('fact','FACTURACIÓN',C.fact,C.pl.length+' cargos del periodo','#C4B5FD')}
+      ${node('fact','INGRESOS COBRADOS',C.cobr,`de ${finF(C.fact)} facturado${C.porCobrar>0.005?` · ${finF(C.porCobrar)} por cobrar`:''}`,'#C4B5FD')}
       <div class="fin-op">−</div>
-      ${node('gastos','GASTOS OPERACIÓN',C.gTot,C.gl.length+' gastos registrados','#F0ABFC')}
+      ${node('gastos','GASTOS OPERACIÓN',C.gTot,C.gl.length+' gastos (incluye recibos de servicios)','#F0ABFC')}
       <div class="fin-op">=</div>
-      ${node('util','UTILIDAD',C.util,'Facturación − Gastos',uC)}
+      ${node('util','UTILIDAD',C.util,'Cobrado − Gastos',uC)}
       <div class="fin-op">−</div>
       ${node('imp','IMPUESTOS',C.iTot,C.il.length+' pagos capturados','#FBBF24')}
       <div class="fin-op">=</div>
       ${node('neta','UTILIDAD NETA',C.neta,'Utilidad − Impuestos',nC,true)}
     </div>
   </div>`;
-  countUp(document.getElementById('fin-v-fact'),C.fact,finF);
+  countUp(document.getElementById('fin-v-fact'),C.cobr,finF);
   countUp(document.getElementById('fin-v-gastos'),C.gTot,finF);
   countUp(document.getElementById('fin-v-util'),C.util,finF);
   countUp(document.getElementById('fin-v-imp'),C.iTot,finF);
@@ -4714,10 +5018,12 @@ function finRenderTrend(){
   // Últimos 6 meses (ancla: fin del periodo visible) — Utilidad Neta por mes
   const ms=finMeses(),last=ms[ms.length-1];
   const arr=[];for(let k=5;k>=0;k--){let m=last.m-k,y=last.y;while(m<0){m+=12;y--;}
-    const sm=[{m,y}];const inM=d=>{const v=new Date(d+'T00:00:00');return v.getMonth()===m&&v.getFullYear()===y;};
+    const inM=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return v.getMonth()===m&&v.getFullYear()===y;};
     const prop=finProp||null;
-    const f=finDSPagos().filter(p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito'&&(!prop||p.inmueble_id===prop)&&inM(p.vencimiento)).reduce((s,p)=>s+Number(p.monto),0);
-    const g=finGastosMes(prop,m,y).reduce((s,x)=>s+Number(x.monto),0);
+    const esOp=p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito';
+    // Misma base que finCalc: cobrado real, y los recibos de servicio dentro de los gastos
+    const f=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inM(p.fecha_pago||p.vencimiento)).reduce((s,p)=>s+Number(p.pagado),0);
+    const g=finGastosMes(prop,m,y).concat(finGastosServicios(prop,[{m,y}])).reduce((s,x)=>s+Number(x.monto),0);
     const i=finDSImps().filter(p=>(!prop||p.inmueble_id===prop)&&inM(p.fecha)).reduce((s,x)=>s+Number(x.monto),0);
     arr.push({lbl:MESES[m].slice(0,3),neta:f-g-i});}
   const maxA=Math.max(1,...arr.map(a=>Math.abs(a.neta)));
@@ -4745,14 +5051,26 @@ function finRenderTrend(){
   </div>`;
 }
 function finCatColor(catId){const k=Math.max(0,finDSCats().findIndex(c=>c.id===catId));return FIN_CATC[k%FIN_CATC.length];}
-function finCatNombre(g){const c=finDSCats().find(x=>x.id===g.categoria_id);return c?c.nombre:(g.categoria||'Sin categoría');}
+function finCatNombre(g){
+  if(g._svc)return'Servicios (agua, luz, gas)';
+  const c=finDSCats().find(x=>x.id===g.categoria_id);return c?c.nombre:(g.categoria||'Sin categoría');
+}
 function finRenderGastos(C){
   // resumen por categoría
   const por={};C.gl.forEach(g=>{const n=finCatNombre(g);por[n]=(por[n]||0)+Number(g.monto);});
   const chips=Object.entries(por).map(([n,v],i2)=>`<span class="fin-chip" style="border-color:${FIN_CATC[i2%FIN_CATC.length]}55;color:#EDEBFA"><span style="width:7px;height:7px;border-radius:2px;background:${FIN_CATC[i2%FIN_CATC.length]}"></span>${n} · <b style="font-family:'DM Mono',monospace">${finF(v)}</b></span>`).join(' ');
   const rows=[...C.gl].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).map((g,i2)=>{
-    const col=finCatColor(g.categoria_id);
     const virt=g._inst==='virtual';
+    // Los recibos de servicio se derivan de la sección Servicios: se muestran para que la
+    // cuenta cuadre, pero se editan allá, no aquí.
+    if(g._svc)return`<div class="fin-row" style="animation-delay:${Math.min(i2*.04,.4)}s;cursor:default;opacity:.92">
+      <span style="width:9px;height:9px;border-radius:3px;background:#38BDF8;box-shadow:0 0 8px #38BDF888;flex-shrink:0"></span>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${finCatNombre(g)} <span style="color:#8E89A8;font-weight:400">· ${g.descripcion}</span></div>
+      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${finGlobal?finWSName(g.workspace_id)+' · ':''}${fdS(g.fecha)} · <i class="ti ti-bolt" style="font-size:10px"></i> desde Servicios</div></div>
+      <span style="font-family:'DM Mono',monospace;font-weight:500;font-size:13px">${fmt(g.monto)}</span>
+      <span style="width:26px"></span>
+    </div>`;
+    const col=finCatColor(g.categoria_id);
     const act=virt?`finEditGasto('${g.id}',${g._vm},${g._vy})`:`finEditGasto('${g.id}')`;
     return`<div class="fin-row" style="animation-delay:${Math.min(i2*.04,.4)}s;cursor:pointer" onclick="${act}">
       <span style="width:9px;height:9px;border-radius:3px;background:${col};box-shadow:0 0 8px ${col}88;flex-shrink:0"></span>
@@ -4796,15 +5114,21 @@ function finRenderImps(C){
 // ── Drill-down (trazabilidad: cada cifra se abre a su desglose) ──
 function finDrawer(kind){
   const C=finCalc(),d=document.getElementById('fin-drawer');
-  const T={fact:['FACTURACIÓN','Cargos del periodo (renta, servicios, etc.)','#C4B5FD'],gastos:['GASTOS DE OPERACIÓN','Desglose de gastos del periodo','#F0ABFC'],util:['UTILIDAD','Facturación − Gastos de operación',C.util<0?'#FB7185':'#6EE7B7'],imp:['IMPUESTOS','Pagos de impuestos capturados','#FBBF24'],neta:['UTILIDAD NETA','La cascada completa del periodo',C.neta<0?'#FB7185':'#6EE7B7']};
+  const T={fact:['INGRESOS COBRADOS','Dinero efectivamente cobrado en el periodo','#C4B5FD'],gastos:['GASTOS DE OPERACIÓN','Gastos y recibos de servicios del periodo','#F0ABFC'],util:['UTILIDAD','Cobrado − Gastos de operación',C.util<0?'#FB7185':'#6EE7B7'],imp:['IMPUESTOS','Pagos de impuestos capturados','#FBBF24'],neta:['UTILIDAD NETA','La cascada completa del periodo',C.neta<0?'#FB7185':'#6EE7B7']};
   const [ttl,sub,col]=T[kind];
   const line=(l,v,c,b)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px ${b?'solid':'dashed'} rgba(139,92,246,.2);font-size:${b?'14px':'12.5px'};${b?'font-weight:700':''}"><span style="color:${b?'#EDEBFA':'#8E89A8'}">${l}</span><span style="font-family:'DM Mono',monospace;color:${c||'#EDEBFA'}">${typeof v==='number'?fmt(v):v}</span></div>`;
+  const nota=t=>`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">${t}</p>`;
   let body='';
-  if(kind==='fact')body=C.pl.map(p=>line(`${finRowLoc(p)} · ${p.concepto} · ${fdS(p.vencimiento)}`,Number(p.monto))).join('')+line('Total facturación',C.fact,'#C4B5FD',1);
-  else if(kind==='gastos')body=C.gl.map(g=>line(`${finRowLoc(g)} · ${finCatNombre(g)}${g._inst==='virtual'?' ↻':''} · ${fdS(g.fecha)}`,Number(g.monto))).join('')+line('Total gastos',C.gTot,'#F0ABFC',1);
+  if(kind==='fact')body=C.cl.map(p=>line(`${finRowLoc(p)} · ${p.concepto} · ${fdS(p.fecha_pago||p.vencimiento)}`,Number(p.pagado))).join('')
+    +line('Total cobrado',C.cobr,'#C4B5FD',1)
+    +line('Facturado en el periodo',C.fact,'#8E89A8')
+    +(C.porCobrar>0.005?line('Aún por cobrar',C.porCobrar,'#FB7185'):'')
+    +nota('La cascada parte de lo <b>cobrado</b>, no de lo facturado: la renta que todavía no entra no es utilidad. Los cobros se agrupan por su fecha de pago real.');
+  else if(kind==='gastos')body=C.gl.map(g=>line(`${g._svc?finCatNombre(g):finRowLoc(g)+' · '+finCatNombre(g)}${g._inst==='virtual'?' ↻':''} · ${fdS(g.fecha)}`,Number(g.monto))).join('')+line('Total gastos',C.gTot,'#F0ABFC',1)
+    +nota('Incluye los <b>recibos completos de agua, luz y gas</b> que pagas tú. Lo que recobras a los inquilinos entra como ingreso arriba, así que la diferencia entre ambos es lo que el servicio te cuesta de verdad.');
   else if(kind==='imp')body=C.il.map(x=>line(`${finRowLoc(x)} · ${x.concepto||'Impuesto'} · ${fdS(x.fecha)}`,Number(x.monto))).join('')+line('Total impuestos',C.iTot,'#FBBF24',1);
-  else if(kind==='util')body=line('Facturación',C.fact,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,col,1)+`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">Valor calculado — no es editable. Se recalcula automáticamente al cambiar la facturación o cualquier gasto del periodo.${C.util<0?' <b style="color:#FB7185">Utilidad negativa</b>: hubo más gastos que facturación (p. ej. vacancia).':''}</p>`;
-  else body=line('Facturación',C.fact,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,C.util<0?'#FB7185':'#6EE7B7',1)+line('− Impuestos',-C.iTot,'#FBBF24')+line('= Utilidad neta',C.neta,col,1)+`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">Lo que realmente queda después de gastos operativos e impuestos. Calculado en cascada estricta; nunca editable.</p>`;
+  else if(kind==='util')body=line('Ingresos cobrados',C.cobr,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,col,1)+nota(`Valor calculado — no es editable. Se recalcula al cambiar cualquier cobro o gasto del periodo.${C.util<0?' <b style="color:#FB7185">Utilidad negativa</b>: hubo más gastos que cobranza (p. ej. vacancia o un recibo alto).':''}`);
+  else body=line('Ingresos cobrados',C.cobr,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,C.util<0?'#FB7185':'#6EE7B7',1)+line('− Impuestos',-C.iTot,'#FBBF24')+line('= Utilidad neta',C.neta,col,1)+nota('Lo que realmente queda después de gastos operativos e impuestos, sobre dinero cobrado. Calculado en cascada estricta; nunca editable.');
   d.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid rgba(139,92,246,.2)">
       <div style="flex:1"><div class="fin-lbl" style="color:${col}">${ttl}</div><div style="font-size:12px;color:#8E89A8;margin-top:2px">${sub} · ${finPerLbl()}</div></div>
@@ -4828,7 +5152,7 @@ function finNuevoGasto(){
   document.getElementById('fga-rec').checked=false;document.getElementById('fga-rfin').value='';
   document.getElementById('fga-rfin-wrap').style.display='none';
   const hoy=new Date();const sameP=(finSeg==='mes'&&fM===hoy.getMonth()&&fY===hoy.getFullYear());
-  document.getElementById('fga-fecha').value=sameP?hoy.toISOString().split('T')[0]:`${fY}-${String((finSeg==='mes'?fM:hoy.getMonth())+1).padStart(2,'0')}-01`;
+  document.getElementById('fga-fecha').value=sameP?hoyISO():`${fY}-${String((finSeg==='mes'?fM:hoy.getMonth())+1).padStart(2,'0')}-01`;
   finOpenOv('fm-gasto');
 }
 function finEditGasto(id,vm,vy){
@@ -4905,7 +5229,7 @@ function finNuevoImp(){
   document.getElementById('fim-prop').value=finProp||'';
   document.getElementById('fim-monto').value='';document.getElementById('fim-conc').value='';
   const hoy=new Date();const sameP=(finSeg==='mes'&&fM===hoy.getMonth()&&fY===hoy.getFullYear());
-  document.getElementById('fim-fecha').value=sameP?hoy.toISOString().split('T')[0]:`${fY}-${String((finSeg==='mes'?fM:hoy.getMonth())+1).padStart(2,'0')}-01`;
+  document.getElementById('fim-fecha').value=sameP?hoyISO():`${fY}-${String((finSeg==='mes'?fM:hoy.getMonth())+1).padStart(2,'0')}-01`;
   finOpenOv('fm-imp');
 }
 function finEditImp(id){
