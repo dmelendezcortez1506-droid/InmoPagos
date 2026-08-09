@@ -2306,7 +2306,10 @@ async function doLogout(){await sb.auth.signOut();CU=null;CW=null;show('s-auth')
 // ═══════════════════════════════════════
 // Llave pública de Stripe: es pública por diseño, igual que la anon de Supabase.
 // Al pasar a producción se cambia por la pk_live_...
-const PK_STRIPE='pk_test_PENDIENTE';
+// Pegar aquí la llave publicable de Stripe (pk_live_... o pk_test_... para
+// probar). Es pública por diseño, igual que la anon de Supabase. Vacía = el
+// pago con tarjeta se apaga solo y queda el pago por WhatsApp.
+const PK_STRIPE='pk_live_51U2HXxDUgFms61jEuWKoaNR9lJOmhq7KUm7fGqYqh6WcQVrv7AP97X3Hmp4HtFIAtqUEaqg3Uc4u3DeZNASwIXNE003VKwbUfu';
 const FN_URL='https://pfkkjpoedvcecgdnxmuy.supabase.co/functions/v1/crear-checkout';
 // Fuente única de precios en el navegador. Espeja precio_lista() de Postgres;
 // lo que de verdad se cobra son los objetos Price de Stripe.
@@ -2331,6 +2334,11 @@ const money=n=>'$'+n.toLocaleString('es-MX');
 // detección de fraude por carga. Solo hace falta aquí, así que se pide bajo
 // demanda: la pantalla de inicio no lo paga.
 function cargarStripe(){
+  // Mientras no esté la llave publicable, Stripe.js truena con un error
+  // críptico. Mejor decirlo claro y mandar al pago por WhatsApp, que sí
+  // funciona: un cliente que quiere pagar no debe toparse con "undefined".
+  if(!/^pk_(test|live)_[A-Za-z0-9]{20,}$/.test(PK_STRIPE))
+    return Promise.reject(new Error('El pago con tarjeta todavía no está disponible. Usa el pago por WhatsApp aquí abajo.'));
   if(!_stripeP)_stripeP=new Promise((ok,fail)=>{
     if(window.Stripe)return ok(Stripe(PK_STRIPE));
     const s=document.createElement('script');s.src='https://js.stripe.com/v3';
@@ -2421,6 +2429,21 @@ function renderPlanes(){
   }).join('');
 }
 
+// Los códigos que devuelve crear-checkout son para el log, no para un cliente
+// que quiere pagar. Se traducen aquí; el código real queda en la consola.
+function mensajeCheckout(codigo,status){
+  const t={
+    SIN_LLAVE_STRIPE:      'El pago con tarjeta todavía no está configurado. Usa el pago por WhatsApp aquí abajo.',
+    PRECIO_NO_CONFIGURADO: 'Ese plan todavía no está disponible para pago con tarjeta. Escríbenos por WhatsApp y lo activamos.',
+    NO_AUTENTICADO:        'Tu sesión expiró. Vuelve a entrar y lo intentamos de nuevo.',
+    STRIPE_FALLO:          'El servicio de pagos no respondió. Intenta en un minuto o paga por WhatsApp.'
+  }[codigo];
+  if(t)return t;
+  if(status===401)return 'Tu sesión expiró. Vuelve a entrar y lo intentamos de nuevo.';
+  console.error('checkout · código sin traducir:',codigo,status);
+  return 'No pudimos abrir el pago con tarjeta. Puedes intentar de nuevo o pagar por WhatsApp aquí abajo.';
+}
+
 async function iniciarCheckout(plan){
   const caja=document.getElementById('pl-checkout-box');
   document.getElementById('pl-grid').style.display='none';
@@ -2433,11 +2456,20 @@ async function iniciarCheckout(plan){
     const stripe=await cargarStripe();
     const {data:{session}}=await sb.auth.getSession();
     if(!session)throw new Error('Tu sesión expiró. Vuelve a entrar.');
-    const r=await fetch(FN_URL,{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-      body:JSON.stringify({plan,periodo:PERIODO_SEL})});
-    const j=await r.json();
-    if(!r.ok||!j.client_secret)throw new Error(j.error||'No pudimos abrir el pago');
+    let r;
+    try{
+      r=await fetch(FN_URL,{method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+        body:JSON.stringify({plan,periodo:PERIODO_SEL})});
+    }catch(red){
+      // "Failed to fetch" a secas es lo que el navegador dice cuando bloquea la
+      // respuesta por CORS, y no menciona CORS por ningún lado. Nadie puede
+      // depurar eso desde un mensaje así.
+      console.error('checkout · la petición no llegó (CORS o red):',red);
+      throw new Error('No pudimos conectar con el servidor de pagos. Revisa tu conexión, o usa el pago por WhatsApp aquí abajo.');
+    }
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.client_secret)throw new Error(mensajeCheckout(j.error,r.status));
     if(CHECKOUT){try{CHECKOUT.destroy()}catch(e){}CHECKOUT=null}
     document.getElementById('stripe-checkout').innerHTML='';
     CHECKOUT=await stripe.initEmbeddedCheckout({clientSecret:j.client_secret,onComplete:esperarActivacion});
