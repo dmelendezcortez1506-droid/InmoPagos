@@ -140,6 +140,10 @@ code{background:var(--bd);padding:2px 6px;border-radius:4px;font-family:'DM Mono
 .pl-card.destacada .pl-lista i{color:#8B5CF6}
 .pl-cta{width:100%;justify-content:center;padding:12px}
 .pl-actual{text-align:center;font-size:12.5px;color:var(--tx3);padding:12px;background:var(--sf2);border-radius:var(--r)}
+/* Reactivación: la tarjeta del plan que traía se reconoce de un vistazo, pero
+   sigue siendo un botón — no un letrero muerto como .pl-actual. */
+.pl-card.previo{border-color:var(--teal)}
+.pl-tag.previo{background:var(--teal)}
 #stripe-checkout{min-height:560px}
 .pl-alt{text-align:center;margin-top:1.75rem;padding-top:1.5rem;border-top:1px solid var(--bd)}
 .pl-alt p{font-size:13px;color:var(--tx2);margin-bottom:11px}
@@ -373,6 +377,14 @@ input[type=number]{-moz-appearance:textfield}
 .blq-row:last-child{border-bottom:none;padding-bottom:0}
 .blq-row strong{color:var(--tx);font-weight:500}
 .blq-row span{color:var(--tx2);font-family:"DM Mono",monospace;font-size:12px}
+.blq-otros{text-align:left;border-top:1px solid var(--bd);padding-top:1rem}
+.blq-otros>summary{cursor:pointer;list-style:none;text-align:center;font-size:13px;color:var(--tx2);
+  padding:6px;border-radius:var(--r);user-select:none}
+.blq-otros>summary::-webkit-details-marker{display:none}
+.blq-otros>summary::after{content:"  ⌄";font-size:15px;color:var(--tx3)}
+.blq-otros[open]>summary::after{content:"  ⌃"}
+.blq-otros>summary:hover{color:var(--tx);background:var(--sf2)}
+.blq-otros .blq-box{margin-bottom:1rem}
 /* ── ANIMACIONES (nuevo diseño) ── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes ringIn{from{stroke-dasharray:0 389.56}}
@@ -534,10 +546,36 @@ tbody tr:hover td{background:var(--hover)}
 /* ── TARJETAS DE PANTALLA (auth/setup/ws/bloqueado) ── */
 .auth-card,.setup-card,.ws-card,.blq-card{border-radius:16px;box-shadow:0 20px 50px rgba(26,25,23,.12)}
 .atab.active{background:var(--teal)}
-.ws-item{border-radius:12px;transition:transform .15s,box-shadow .15s,border-color .15s}
+.ws-item{border-radius:12px;transition:transform .15s,box-shadow .15s,border-color .15s;position:relative}
 .ws-item:hover{transform:translateY(-1px);box-shadow:var(--sh2);border-color:var(--bd2)}
 .ws-item.ws-bloq{cursor:not-allowed;background:var(--sf2)}
 .ws-item.ws-bloq:hover{transform:none;box-shadow:none;border-color:var(--bd)}
+/* ── Negocio pausado, y el menú (⋯) para pausarlo o eliminarlo ── */
+.ws-item.ws-pausado{background:var(--sf2)}
+.ws-item.ws-pausado .ws-av,.ws-item.ws-pausado .ws-nom{opacity:.6}
+.ws-chip{margin-left:auto;flex-shrink:0;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:var(--amber-bg);color:var(--amber-tx)}
+.ws-kebab{flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid transparent;background:none;border-radius:8px;color:var(--tx3);cursor:pointer;font-family:inherit;transition:background .15s,color .15s,border-color .15s}
+.ws-kebab:hover{background:var(--surface);border-color:var(--bd);color:var(--tx)}
+.ws-pop{position:absolute;z-index:60;right:8px;top:calc(100% - 6px);min-width:216px;padding:5px;background:var(--surface);border:1px solid var(--bd);border-radius:12px;box-shadow:0 16px 40px rgba(26,25,23,.18);display:none;cursor:default}
+.ws-pop.open{display:block;animation:modalUp .18s cubic-bezier(.16,1,.3,1) both}
+.ws-pop button{width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;border:0;background:none;border-radius:8px;font:inherit;font-size:13px;color:var(--tx);text-align:left;cursor:pointer}
+.ws-pop button:hover{background:var(--sf2)}
+.ws-pop button.danger{color:var(--red-tx)}
+.ws-pop button.danger:hover{background:var(--red-bg)}
+.ws-pop .sep{height:1px;background:var(--bd-soft);margin:4px 6px}
+/* Una fila de negocio es de UN renglón: el texto se corta con puntos suspensivos
+   en vez de partirse y empujar el chip a media línea. */
+.ws-txt{flex:1;min-width:0}
+.ws-txt>*{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:560px){
+  /* En pantalla angosta el rol ya se lee debajo del nombre, así que el chip de
+     rol estorba y se quita. El de "Pausado" se queda pero solo con su ícono:
+     el renglón entero es para el nombre del negocio. */
+  .ws-item .ws-role{display:none}
+  .ws-chip>span{display:none}
+  .ws-chip{padding:5px 7px}
+  .ws-card{padding:1.5rem 1.25rem}
+}
 
 /* ── TOAST ── */
 .toast{border-radius:10px;animation:toastIn .28s cubic-bezier(.34,1.56,.64,1);box-shadow:0 12px 30px rgba(26,25,23,.28)}
@@ -964,18 +1002,27 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <i class="ti ti-lock blq-icon"></i>
   <h2 id="blq-ttl">Tu suscripción ha vencido</h2>
   <p id="blq-sub">Para seguir usando InmoPagos y administrar tus inmuebles, realiza el pago de tu mensualidad. En cuanto lo hagamos efectivo, tu acceso se reactiva al instante.</p>
-  <div class="blq-box">
-    <h3>Datos para pago</h3>
-    <div class="blq-row"><strong>Beneficiario</strong><span id="blq-cobrador">—</span></div>
-    <div class="blq-row"><strong>CLABE</strong><span id="blq-clabe">—</span></div>
-    <div class="blq-row"><strong>Banco</strong><span id="blq-banco">Scotiabank</span></div>
-    <div class="blq-row"><strong>Cuenta Scotiabank</strong><span id="blq-scott">—</span></div>
-    <div class="blq-row"><strong>Tarjeta OXXO</strong><span id="blq-oxxo">—</span></div>
-  </div>
-  <p style="font-size:13px;color:var(--tx3);margin-bottom:1.25rem">Después de pagar, envía tu comprobante por WhatsApp o Instagram y activamos tu cuenta en minutos.</p>
-  <button class="btn primary" id="blq-pagar" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px" onclick="abrirPlanes('vencido','s-bloqueado')"><i class="ti ti-credit-card"></i>Pagar con tarjeta</button>
-  <button class="btn primary" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px" onclick="contactarWhatsApp()"><i class="ti ti-brand-whatsapp"></i>Enviar comprobante por WhatsApp</button>
-  <button class="btn" style="width:100%;justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i>Cerrar sesión</button>
+  <!-- Pagar con tarjeta va PRIMERO y solo: es el único camino que reabre la
+       cuenta sin que nadie del otro lado tenga que hacer nada. La transferencia
+       depende de que alguien vea el comprobante, así que va abajo y plegada. -->
+  <button class="btn primary" id="blq-pagar" style="width:100%;justify-content:center;padding:13px;font-size:15px" onclick="abrirPlanes('vencido','s-bloqueado')"><i class="ti ti-credit-card"></i>Elegir plan y pagar con tarjeta</button>
+  <p style="font-size:12.5px;color:var(--tx3);margin:9px 0 1.25rem">Eliges el plan que quieras —puedes quedarte en el tuyo o cambiarlo— y tu acceso se reabre en segundos.</p>
+
+  <details class="blq-otros">
+    <summary>Prefiero transferencia, depósito u OXXO</summary>
+    <div class="blq-box" style="margin-top:1rem">
+      <h3>Datos para pago</h3>
+      <div class="blq-row"><strong>Beneficiario</strong><span id="blq-cobrador">—</span></div>
+      <div class="blq-row"><strong>CLABE</strong><span id="blq-clabe">—</span></div>
+      <div class="blq-row"><strong>Banco</strong><span id="blq-banco">Scotiabank</span></div>
+      <div class="blq-row"><strong>Cuenta Scotiabank</strong><span id="blq-scott">—</span></div>
+      <div class="blq-row"><strong>Tarjeta OXXO</strong><span id="blq-oxxo">—</span></div>
+    </div>
+    <p style="font-size:13px;color:var(--tx3);margin-bottom:1rem">Después de pagar, envía tu comprobante por WhatsApp o Instagram y activamos tu cuenta en minutos.</p>
+    <button class="btn" style="width:100%;justify-content:center;padding:11px" onclick="contactarWhatsApp()"><i class="ti ti-brand-whatsapp"></i>Enviar comprobante por WhatsApp</button>
+  </details>
+
+  <button class="btn" style="width:100%;justify-content:center;margin-top:1.25rem" onclick="doLogout()"><i class="ti ti-logout"></i>Cerrar sesión</button>
 </div>
 </div>
 
@@ -1162,6 +1209,12 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <i class="ti ti-clock-hour-4" style="font-size:18px;flex-shrink:0"></i>
     <span id="trial-txt" style="flex:1;min-width:0"></span>
     <button class="btn primary" style="flex-shrink:0;padding:7px 13px;font-size:12.5px" onclick="abrirPlanes('trial','s-app')"><i class="ti ti-crown"></i>Activar mi plan</button>
+  </div>
+  <!-- Aviso de negocio pausado -->
+  <div id="pause-bar" style="display:none;align-items:center;gap:11px;border:1px solid #F2E3C2;background:#FEF6E7;color:#6B4E12;border-radius:11px;padding:11px 14px;margin-bottom:18px;font-size:13px">
+    <i class="ti ti-player-pause" style="font-size:18px;flex-shrink:0"></i>
+    <span style="flex:1;min-width:0"><strong>Este negocio está pausado.</strong> No se generan rentas ni adeudos nuevos. Lo que ya estaba registrado sigue igual y puedes seguir consultándolo o corrigiéndolo.</span>
+    <button class="btn primary" id="pause-cta" style="flex-shrink:0;padding:7px 13px;font-size:12.5px" onclick="reactivarNegocioActual()"><i class="ti ti-player-play"></i>Reactivar</button>
   </div>
   <!-- INICIO / RESUMEN -->
   <div id="sec-inicio">
@@ -1490,6 +1543,17 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div class="mf"><button class="btn" onclick="closeM('m-cws')">Cancelar</button><button class="btn primary" onclick="crearWS()"><i class="ti ti-check"></i>Crear</button></div>
 </div></div>
 
+<!-- Eliminar negocio definitivamente -->
+<div class="overlay" id="m-delws"><div class="modal sm">
+  <div class="mh"><h3><i class="ti ti-alert-triangle" style="color:var(--red)"></i>Eliminar negocio</h3><button class="mc" onclick="closeM('m-delws')"><i class="ti ti-x"></i></button></div>
+  <p style="font-size:13.5px;color:var(--tx2);line-height:1.55;margin:0 0 10px">Vas a borrar <strong id="delws-nom" style="color:var(--tx)">—</strong> para siempre, junto con <strong>todos sus departamentos, contratos, pagos, servicios, gastos e impuestos</strong>. También se cae el acceso de quienes colaboran en él.</p>
+  <p style="font-size:13px;color:var(--red-tx);background:var(--red-bg);border-radius:var(--r);padding:9px 13px;line-height:1.5;margin:0 0 14px"><i class="ti ti-trash" style="margin-right:5px"></i>Esto no se puede deshacer. Si solo quieres que deje de generar cobros, mejor <strong>pausa</strong> el negocio.</p>
+  <div class="fg2"><label>Escribe <strong id="delws-eco">el nombre</strong> para confirmar</label>
+    <input type="text" id="delws-input" autocomplete="off" placeholder="Escribe el nombre aquí"></div>
+  <div class="err" id="delws-err"></div>
+  <div class="mf"><button class="btn" onclick="closeM('m-delws')">Cancelar</button><button class="btn danger" id="delws-btn" onclick="wsBorrar()"><i class="ti ti-trash"></i>Eliminar para siempre</button></div>
+</div></div>
+
 <!-- Llegaste al límite de tu plan -->
 <div class="overlay" id="m-upgrade"><div class="modal sm">
   <div class="mh"><h3><i class="ti ti-crown" style="color:#7C3AED"></i>Llegaste al límite de tu plan</h3><button class="mc" onclick="closeM('m-upgrade')"><i class="ti ti-x"></i></button></div>
@@ -1534,15 +1598,16 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <div class="overlay" id="m-pago"><div class="modal">
   <div class="mh"><h3><i class="ti ti-receipt" style="color:var(--teal)"></i><span id="mp-ttl">Registrar pago</span></h3><button class="mc" onclick="closeM('m-pago')"><i class="ti ti-x"></i></button></div>
   <div class="fg-grid">
-    <div class="fg"><label>Departamento *</label><select id="fp-dep" onchange="pobContratosPago();refrescarVencSugerido()"></select></div>
-    <div class="fg"><label>Inquilino / contrato</label><select id="fp-contrato"></select></div>
-    <div class="fg"><label>Concepto *</label><select id="fp-con" onchange="refrescarVencSugerido()"><option value="renta">Renta mensual</option><option value="servicios">Servicios (Agua+Luz+Gas)</option><option value="mantenimiento">Mantenimiento</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select></div>
-    <div class="fg"><label>Monto total *</label><input type="number" id="fp-mto" placeholder="0.00" step="0.01" min="0"></div>
-    <div class="fg"><label>Monto pagado</label><input type="number" id="fp-pag" placeholder="0.00" step="0.01" min="0"></div>
-    <div class="fg"><label>Vence el *</label><input type="date" id="fp-venc"></div>
+    <div class="fg"><label>Departamento *</label><select id="fp-dep" onchange="pobContratosPago();pobConceptosPago()"></select></div>
+    <div class="fg"><label>Inquilino / contrato</label><select id="fp-contrato" onchange="pobConceptosPago()"></select></div>
+    <div class="fg full" id="fp-con-wrap"><label>Concepto *</label><select id="fp-con" onchange="onConceptoPago()"><option value="renta">Renta mensual</option><option value="servicios">Servicios (Agua+Luz+Gas)</option><option value="mantenimiento">Mantenimiento</option><option value="agua">Agua</option><option value="luz">Luz</option><option value="gas">Gas</option><option value="deposito">Depósito</option><option value="otro">Otro</option></select></div>
+    <div class="fg" id="fp-mto-wrap" style="display:none"><label>Monto total *</label><input type="number" id="fp-mto" placeholder="0.00" step="0.01" min="0"></div>
+    <div class="fg"><label id="fp-pag-lbl">Monto pagado *</label><input type="number" id="fp-pag" placeholder="0.00" step="0.01" min="0" oninput="pintarHintPago()"></div>
+    <div class="fg" id="fp-venc-wrap" style="display:none"><label>Vence el *</label><input type="date" id="fp-venc"></div>
     <div class="fg"><label>Fecha de pago</label><input type="date" id="fp-fpag"></div>
+    <div class="fg full" id="fp-hint" style="display:none"></div>
     <div class="fg full"><label>Notas</label><textarea id="fp-not" placeholder="Observaciones..."></textarea></div>
-    <div class="fg full" style="font-size:11.5px;color:#9D9B96;margin-top:-4px">La renta y los servicios se generan automáticamente; usa este formulario para cargos sueltos. El vencimiento se propone según el mes que estás viendo y el día de pago del contrato — puedes cambiarlo.</div>
+    <div class="fg full" id="fp-help" style="font-size:11.5px;color:#9D9B96;margin-top:-4px"></div>
   </div>
   <div class="mf">
     <button class="btn danger" id="btn-del-p" style="display:none;margin-right:auto" onclick="elimPago()"><i class="ti ti-trash"></i>Eliminar</button>
@@ -2358,7 +2423,13 @@ async function abrirPlanes(motivo,retorno){
   const bienvenida=(motivo==='bienvenida');
   document.getElementById('pl-skip-top').innerHTML='';
   document.getElementById('pl-volver').style.display=bienvenida?'none':'';
-  if(!bienvenida){
+  if(esReactivacion()){
+    // Viene de la pantalla de bloqueo: lo que necesita no es descubrir los
+    // planes, es volver a entrar. El copy lo dice y la mecánica lo cumple —
+    // en modo reactivación las DOS tarjetas se pueden pagar (ver renderPlanes).
+    document.getElementById('pl-ttl').textContent='Elige tu plan y reactiva tu cuenta';
+    document.getElementById('pl-sub').textContent='Puedes quedarte en el mismo plan o cambiarlo. En cuanto Stripe confirme el cobro, tu acceso se reabre solo.';
+  }else if(!bienvenida){
     document.getElementById('pl-ttl').textContent='Elige tu plan';
     document.getElementById('pl-sub').textContent='Cancela cuando quieras. Tus datos se conservan.';
   }
@@ -2411,24 +2482,44 @@ function pintarSkip(trialFin){
     +(dias>0?'Empezar mi prueba de '+dias+' día'+(dias===1?'':'s')+' gratis':'Entrar a InmoPagos')+'</button>';
 }
 
+// Reactivación = el cliente llegó aquí con el acceso cerrado. Cambia dos
+// reglas de la pantalla de planes, y las dos son necesarias para que pueda
+// pagar EL PLAN QUE SEA:
+//   1. Su plan actual deja de ser un letrero muerto ("Tu plan actual") y
+//      vuelve a ser un botón: si se venció estando en Normal, tiene que poder
+//      volver a pagar Normal, no solo comprar Premium.
+//   2. SUB_STRIPE deja de mandar a WhatsApp. Ese candado existe para no crear
+//      una segunda suscripción encima de una viva; aquí la suscripción está
+//      muerta (por eso está bloqueado) y el id viejo sigue guardado porque
+//      nada lo borra. Quien confirma que de verdad está muerta es
+//      crear-checkout contra Stripe — el navegador no es fuente de verdad.
+function esReactivacion(){return PLAN_MOTIVO==='vencido'}
+
 function renderPlanes(){
   const g=document.getElementById('pl-grid');
+  const react=esReactivacion();
   g.innerHTML=['normal','premium'].map(k=>{
     const info=PLANES_INFO[k],precio=PRECIOS[k][PERIODO_SEL];
     const actual=(PLAN===k);
     const equiv=PERIODO_SEL==='anual'?money(Math.round(precio/12))+' al mes, pagado de golpe':'&nbsp;';
-    return '<div class="pl-card'+(info.destacada?' destacada':'')+'">'
-      +(info.destacada?'<span class="pl-tag">MÁS COMPLETO</span>':'')
+    return '<div class="pl-card'+(info.destacada?' destacada':'')+(react&&actual?' previo':'')+'">'
+      +(react&&actual?'<span class="pl-tag previo">TU PLAN ANTERIOR</span>'
+        :info.destacada?'<span class="pl-tag">MÁS COMPLETO</span>':'')
       +'<div class="pl-nom"><i class="ti '+info.icono+'"></i>'+info.nom+'</div>'
       +'<div class="pl-desc">'+info.desc+'</div>'
       +'<div class="pl-precio">'+money(precio)+' <small>MXN / '+(PERIODO_SEL==='anual'?'año':'mes')+'</small></div>'
       +'<div class="pl-equiv">'+equiv+'</div>'
       +'<ul class="pl-lista">'+info.puntos.map(p=>'<li><i class="ti ti-check"></i>'+p+'</li>').join('')+'</ul>'
-      +(actual
-         ?'<div class="pl-actual">Tu plan actual</div>'
-         :SUB_STRIPE
-           ?'<button class="btn pl-cta" onclick="pedirPremium(\''+k+'\')"><i class="ti ti-brand-whatsapp"></i>Cambiar a '+info.nom+'</button>'
-           :'<button class="btn '+(info.destacada?'primary':'')+' pl-cta" onclick="iniciarCheckout(\''+k+'\')"><i class="ti ti-credit-card"></i>Contratar '+info.nom+'</button>')
+      +(react
+         // Bloqueado: las dos tarjetas se pagan, siempre. La suya dice
+         // "Reactivar" (es lo que va a hacer) y la otra dice "Cambiar a".
+         ?'<button class="btn '+(actual||info.destacada?'primary':'')+' pl-cta" onclick="iniciarCheckout(\''+k+'\')">'
+           +'<i class="ti ti-credit-card"></i>'+(actual?'Reactivar mi plan '+info.nom:'Cambiar a '+info.nom)+'</button>'
+         :actual
+           ?'<div class="pl-actual">Tu plan actual</div>'
+           :SUB_STRIPE
+             ?'<button class="btn pl-cta" onclick="pedirPremium(\''+k+'\')"><i class="ti ti-brand-whatsapp"></i>Cambiar a '+info.nom+'</button>'
+             :'<button class="btn '+(info.destacada?'primary':'')+' pl-cta" onclick="iniciarCheckout(\''+k+'\')"><i class="ti ti-credit-card"></i>Contratar '+info.nom+'</button>')
       +'</div>';
   }).join('');
 }
@@ -2440,7 +2531,10 @@ function mensajeCheckout(codigo,status){
     SIN_LLAVE_STRIPE:      'El pago con tarjeta todavía no está configurado. Usa el pago por WhatsApp aquí abajo.',
     PRECIO_NO_CONFIGURADO: 'Ese plan todavía no está disponible para pago con tarjeta. Escríbenos por WhatsApp y lo activamos.',
     NO_AUTENTICADO:        'Tu sesión expiró. Vuelve a entrar y lo intentamos de nuevo.',
-    STRIPE_FALLO:          'El servicio de pagos no respondió. Intenta en un minuto o paga por WhatsApp.'
+    STRIPE_FALLO:          'El servicio de pagos no respondió. Intenta en un minuto o paga por WhatsApp.',
+    // El servidor encontró una suscripción VIVA en Stripe. No es un error del
+    // cliente: es el candado que evita cobrarle dos veces.
+    SUSCRIPCION_VIVA:      'Tu tarjeta ya tiene una suscripción activa en Stripe, así que no te vamos a cobrar otra vez. Si tu acceso sigue cerrado o quieres cambiar de plan, escríbenos por WhatsApp aquí abajo y lo resolvemos.'
   }[codigo];
   if(t)return t;
   if(status===401)return 'Tu sesión expiró. Vuelve a entrar y lo intentamos de nuevo.';
@@ -2594,8 +2688,8 @@ function mostrarBloqueado(cfg){
     ? 'Tu prueba gratuita terminó'
     : 'Tu suscripción ha vencido';
   document.getElementById('blq-sub').textContent=finPrueba
-    ? 'Tus datos siguen intactos y te esperan. Activa tu plan para volver a entrar — en cuanto confirmemos el pago, tu cuenta se reabre al instante.'
-    : 'Para seguir usando InmoPagos y administrar tus inmuebles, realiza el pago de tu mensualidad. En cuanto lo hagamos efectivo, tu acceso se reactiva al instante.';
+    ? 'Tus datos siguen intactos y te esperan. Elige el plan que quieras y paga con tarjeta: tu cuenta se reabre en cuanto el banco confirme el cobro.'
+    : 'Tus datos siguen intactos. Elige el plan que quieras —el mismo que traías o el otro— y paga con tarjeta: tu acceso se reactiva en cuanto el banco confirme el cobro.';
   // Pagar con tarjeta ya no depende de que el admin haya configurado un
   // link_pago a mano: el checkout de Stripe está siempre disponible.
   const bp=document.getElementById('blq-pagar');
@@ -2662,23 +2756,44 @@ async function cargarWS(){
   const {data}=await sb.rpc('mis_negocios');
   const el=document.getElementById('ws-list');
   const libres=(data||[]).filter(w=>!w.bloqueado);
+  // Los pausados SÍ siguen en Finanzas: lo que ya se registró se queda tal cual.
+  // Pausar solo apaga lo que el negocio genera de aquí en adelante.
   finWS=libres.map(w=>({id:w.id,nombre:w.nombre}));
   // El límite de negocios cuenta solo los propios: colaborar en el negocio de
   // alguien más no consume tu plan, lo consume el de quien paga ese negocio.
-  NEG_PROPIOS=(data||[]).filter(w=>w.es_dueno).length;
+  // Y un negocio pausado tampoco ocupa lugar (mismo criterio que el trigger
+  // chk_limite_negocios de la base, para que interfaz y servidor no se peleen).
+  NEG_PROPIOS=(data||[]).filter(w=>w.es_dueno&&!w.pausado).length;
+  WS_LISTA=data||[];
   document.getElementById('ws-fin-card').style.display=finWS.length?'flex':'none';
   if(!data?.length){el.innerHTML=`<p style="font-size:13px;color:var(--tx2);padding:1rem 0">Sin negocios. Crea uno o únete con un código.</p>`;return}
+  // Los nombres van escapados y los handlers reciben solo el id: así un negocio
+  // llamado «Depa's Girasol» ya no rompe el HTML ni el onclick.
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   el.innerHTML=data.map(w=>{
-    const rol=w.role==='owner'?'Propietario':'Miembro';
+    const rol=w.role==='owner'?'Propietario':'Miembro',nom=esc(w.nombre);
     if(w.bloqueado)return `<div class="ws-item ws-bloq" onclick="avisoWSBloqueado()">
       <div class="ws-av"><i class="ti ti-lock" style="font-size:16px;color:var(--red)"></i></div>
-      <div style="flex:1"><strong style="font-size:14px;font-weight:500;display:block">${w.nombre}</strong><span style="font-size:12px;color:var(--red)">Suscripción del propietario vencida</span></div>
+      <div class="ws-txt"><strong style="font-size:14px;font-weight:500">${nom}</strong><span style="font-size:12px;color:var(--red)">Suscripción del propietario vencida</span></div>
       <span class="ws-role" style="background:var(--red-bg);color:var(--red-tx)">Sin acceso</span>
     </div>`;
-    return `<div class="ws-item" onclick="entrarWS('${w.id}','${w.nombre}','${w.invite_code}','${w.role}')">
-      <div class="ws-av">${w.nombre.slice(0,2).toUpperCase()}</div>
-      <div style="flex:1"><strong style="font-size:14px;font-weight:500;display:block">${w.nombre}</strong><span style="font-size:12px;color:var(--tx2)">${rol}</span></div>
-      <span class="ws-role ${w.role}">${rol}</span>
+    // En el chip cabe el estado; el detalle de qué implica va en el aviso de
+    // adentro. Así el nombre del negocio se queda con casi todo el renglón.
+    const chip=w.pausado
+      ? `<span class="ws-chip" title="Pausado: no genera cobros nuevos"><i class="ti ti-player-pause" style="font-size:11px"></i><span>Pausado</span></span>`
+      : `<span class="ws-role ${w.role}">${rol}</span>`;
+    // El menú de pausar/eliminar es solo para el dueño: un colaborador no puede
+    // apagar ni borrar el negocio de alguien más (la base lo vuelve a checar).
+    const menu=w.es_dueno?`<button class="ws-kebab" title="Opciones" onclick="wsMenu(event,'${w.id}')"><i class="ti ti-dots-vertical" style="font-size:17px"></i></button>
+      <div class="ws-pop" id="wspop-${w.id}" onclick="event.stopPropagation()">
+        <button onclick="wsPausar('${w.id}',${w.pausado?'false':'true'})"><i class="ti ti-player-${w.pausado?'play':'pause'}" style="font-size:15px"></i>${w.pausado?'Reactivar negocio':'Pausar negocio'}</button>
+        <div class="sep"></div>
+        <button class="danger" onclick="wsPedirBorrar('${w.id}')"><i class="ti ti-trash" style="font-size:15px"></i>Eliminar definitivamente</button>
+      </div>`:'';
+    return `<div class="ws-item${w.pausado?' ws-pausado':''}" onclick="wsEntrar('${w.id}')">
+      <div class="ws-av">${esc(String(w.nombre).slice(0,2).toUpperCase())}</div>
+      <div class="ws-txt"><strong class="ws-nom" style="font-size:14px;font-weight:500">${nom}</strong><span style="font-size:12px;color:var(--tx2)">${rol}</span></div>
+      ${chip}${menu}
     </div>`;
   }).join('');
 }
@@ -2735,20 +2850,21 @@ async function unirseWS(){
   toast(r.ya_era_miembro?'Ya eras parte de "'+r.nombre+'"':'¡Te uniste a "'+r.nombre+'"!');
   cargarWS();
 }
-function entrarWS(id,nombre,code,role){
-  CW={id,nombre,invite_code:code,role};
+function entrarWS(id,nombre,code,role,pausado){
+  CW={id,nombre,invite_code:code,role,pausado:!!pausado};
   // Guardar en localStorage para sobrevivir el refresco de página
   localStorage.setItem('ib_ws_id',id);
   localStorage.setItem('ib_ws_nombre',nombre);
   localStorage.setItem('ib_ws_code',code);
   localStorage.setItem('ib_ws_role',role);
+  localStorage.setItem('ib_ws_pausa',pausado?'1':'');
   document.getElementById('sb-wsn').textContent=nombre;
   document.getElementById('sb-fecha').textContent=new Date().toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short'});
   const un=(CU.user_metadata?.full_name||CU.email.split('@')[0]);
   document.getElementById('sb-uname').textContent=un;document.getElementById('sb-uemail').textContent=CU.email;
   document.getElementById('sb-av').textContent=un.slice(0,1).toUpperCase();
   document.getElementById('show-code').textContent=code;
-  show('s-app');renderPlanUI();cargarTodo();suscribir();cargarConfig();
+  show('s-app');renderPlanUI();renderPauseBar();cargarTodo();suscribir();cargarConfig();
   finLoaded=false;finLoad(); // precarga del modo Finanzas (gastos/impuestos/categorías)
 }
 function goWS(){
@@ -2757,7 +2873,110 @@ function goWS(){
   localStorage.removeItem('ib_ws_nombre');
   localStorage.removeItem('ib_ws_code');
   localStorage.removeItem('ib_ws_role');
+  localStorage.removeItem('ib_ws_pausa');
   cargarWS();
+}
+
+// ═══════════════════════════════════════
+//  PAUSAR / ELIMINAR UN NEGOCIO
+//  Pausar deja el negocio congelado: el motor de pagos lo salta (no nacen
+//  rentas ni adeudos nuevos) y deja de ocupar lugar en el plan, pero todo lo
+//  ya registrado se queda igual —en el negocio y en Finanzas— y se puede
+//  seguir consultando y corrigiendo. Al reactivarlo vuelve a correr solo.
+//  Eliminar es definitivo: la cascada de la base se lleva departamentos,
+//  contratos, pagos, servicios, gastos, impuestos y colaboradores.
+//  Ambas cosas son solo del dueño; la base lo vuelve a checar por su cuenta.
+// ═══════════════════════════════════════
+let WS_LISTA=[],delWSId=null;                  // último resultado de mis_negocios()
+function wsGet(id){return WS_LISTA.find(w=>w.id===id)||(CW&&CW.id===id?CW:null)}
+function wsEntrar(id){const w=wsGet(id);if(!w)return;entrarWS(w.id,w.nombre,w.invite_code,w.role,!!w.pausado)}
+// ¿El error es "esa función no existe"? Entonces falta correr la migración.
+function rpcFalta(e){return /PGRST202|could not find the function|schema cache|does not exist/i.test(((e&&e.message)||'')+' '+((e&&e.code)||''))}
+function wsCerrarMenus(){document.querySelectorAll('.ws-pop.open').forEach(p=>p.classList.remove('open'))}
+document.addEventListener('click',e=>{if(!e.target.closest('.ws-pop')&&!e.target.closest('.ws-kebab'))wsCerrarMenus()});
+function wsMenu(ev,id){
+  ev.stopPropagation();
+  const p=document.getElementById('wspop-'+id),abierto=p&&p.classList.contains('open');
+  wsCerrarMenus();if(p&&!abierto)p.classList.add('open');
+}
+async function wsPausar(id,pausar){
+  const w=wsGet(id);if(!w)return;
+  wsCerrarMenus();
+  if(pausar&&!confirm(`¿Pausar "${w.nombre}"?\n\nDeja de generar rentas y adeudos nuevos y libera su lugar en tu plan. Lo que ya está registrado no se toca, y puedes reactivarlo cuando quieras.`))return;
+  const {data:r,error}=await sb.rpc('pausar_negocio',{w_id:id,p_pausar:!!pausar});
+  if(error){
+    toast(rpcFalta(error)?'Falta correr migracion_pausar_negocio.sql en Supabase para poder pausar negocios':'No se pudo: '+error.message,'ti-alert-triangle');
+    return;
+  }
+  if(!r?.ok){
+    // Reactivar cuenta como ocupar lugar otra vez: si ya no cabe, a ampliar plan.
+    if(r?.error==='LIMITE_NEGOCIOS'){modalUpgrade('negocios');return}
+    toast({
+      SOLO_DUENO:'Solo el propietario puede pausar o reactivar este negocio',
+      CUENTA_INACTIVA:'Renueva tu suscripción para poder hacer esto',
+      NO_EXISTE:'Ese negocio ya no existe'
+    }[r?.error]||'No se pudo cambiar el estado del negocio','ti-alert-triangle');
+    return;
+  }
+  toast(pausar?`"${w.nombre}" quedó pausado`:`"${w.nombre}" está activo otra vez`,pausar?'ti-player-pause':'ti-player-play');
+  if(CW&&CW.id===id){CW.pausado=!!pausar;localStorage.setItem('ib_ws_pausa',pausar?'1':'')}
+  // Desde la lista se repinta la lista; desde adentro del negocio no se puede
+  // llamar a cargarWS() (te sacaría de la pantalla), así que se refresca en sitio.
+  if(document.getElementById('s-workspace').classList.contains('active')){cargarWS();return}
+  renderPauseBar();
+  // Al reactivar, cargarTodo() vuelve a correr el motor y materializa las rentas
+  // que no nacieron mientras estuvo pausado (hasta MESES_RETRO atrás).
+  if(pausar)refresh();else cargarTodo();
+}
+function reactivarNegocioActual(){if(CW)wsPausar(CW.id,false)}
+// Aviso de "este negocio está pausado" dentro del panel.
+function renderPauseBar(){
+  const el=document.getElementById('pause-bar');if(!el)return;
+  el.style.display=(CW&&CW.pausado)?'flex':'none';
+  const b=document.getElementById('pause-cta');
+  if(b)b.style.display=(CW&&CW.role==='owner')?'inline-flex':'none';
+}
+function wsPedirBorrar(id){
+  const w=wsGet(id);if(!w)return;
+  wsCerrarMenus();delWSId=id;
+  document.getElementById('delws-nom').textContent=w.nombre;
+  document.getElementById('delws-eco').textContent=w.nombre;
+  // El placeholder NO lleva el nombre: se vería como si el campo ya estuviera
+  // lleno, y la idea de teclearlo es justo que el borrado cueste un segundo.
+  const inp=document.getElementById('delws-input');inp.value='';
+  document.getElementById('delws-err').style.display='none';
+  openM('m-delws');setTimeout(()=>inp.focus(),90);
+}
+async function wsBorrar(){
+  const w=wsGet(delWSId),err=document.getElementById('delws-err');
+  if(!w){closeM('m-delws');return}
+  const tecleado=document.getElementById('delws-input').value.trim();
+  if(tecleado.toLowerCase()!==String(w.nombre).trim().toLowerCase()){
+    se(err,'El nombre no coincide. Escríbelo igual que arriba para confirmar.');return;
+  }
+  const btn=document.getElementById('delws-btn');btn.disabled=true;
+  try{
+    let {data:r,error}=await sb.rpc('borrar_negocio',{w_id:w.id,p_nombre:tecleado});
+    if(error&&rpcFalta(error)){
+      // Sin la migración corrida todavía no existe borrar_negocio(): se borra por
+      // la vía directa, que RLS ya permitía. El "solo el dueño" se checa aquí.
+      if(!w.es_dueno&&w.role!=='owner'){se(err,'Solo el propietario puede eliminar este negocio');return}
+      const d=await sb.from('workspaces').delete().eq('id',w.id);
+      if(d.error){se(err,'No se pudo eliminar: '+d.error.message);return}
+      r={ok:true};error=null;
+    }
+    if(error){se(err,'No se pudo eliminar: '+error.message);return}
+    if(!r?.ok){
+      se(err,{
+        SOLO_DUENO:'Solo el propietario puede eliminar este negocio',
+        NOMBRE_NO_COINCIDE:'El nombre no coincide. Escríbelo igual que arriba.'
+      }[r?.error]||'No se pudo eliminar');return;
+    }
+    closeM('m-delws');
+    toast(`"${w.nombre}" se eliminó para siempre`,'ti-trash');
+    // Si era el negocio abierto, hay que salir: sus datos ya no existen.
+    if(CW&&CW.id===w.id)goWS();else cargarWS();
+  }finally{btn.disabled=false}
 }
 function copiarCodigo(){navigator.clipboard?.writeText(CW.invite_code).then(()=>toast('Código copiado','ti-copy'))}
 
@@ -2813,7 +3032,9 @@ function fechaRenta(anio,mes,dia){
   return `${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 async function ensureAutoPagos(anioVista,mesVista){
-  if(!CW||motorBusy||!inmuebles.length)return;
+  // Negocio pausado = motor apagado: no nacen rentas ni adeudos nuevos. Al
+  // reactivarlo esta misma función los materializa (hasta MESES_RETRO atrás).
+  if(!CW||CW.pausado||motorBusy||!inmuebles.length)return;
   motorBusy=true;
   try{
     const hoy=new Date();
@@ -4603,70 +4824,175 @@ function pobContratosPago(selId){
     return `<option value="${c.id}"${c.id===def?' selected':''}>${et} · ${c.inquilino||'—'} (${estado})</option>`;
   }).join('');
 }
+// ── Alta de pagos: registrar dinero que YA entró ──────────────────────────────
+// El formulario de alta dejó de crear cargos "por vencer" (para eso están la renta, los
+// servicios y el depósito, que se generan solos). Ahora captura un pago RECIBIDO: se elige
+// a qué adeudo se le abona y cuánto entregó el inquilino. Un abono parcial baja el saldo
+// del cargo y deja el resto debiéndose, así que el estado de cuenta cobra solo lo que falta.
+const CONCEPTOS_PAGO=[['renta','Renta mensual'],['servicios','Servicios (Agua+Luz+Gas)'],['mantenimiento','Mantenimiento'],['agua','Agua'],['luz','Luz'],['gas','Gas'],['deposito','Depósito'],['otro','Otro']];
+// Último adeudo cuyo saldo se copió al campo de monto: evita pisar lo que el usuario
+// escribió a mano cuando la lista se vuelve a pintar sin que él haya cambiado de adeudo.
+let fpUltAdeudo=null;
+// Cargos con saldo del depto/contrato elegido, del más viejo al más nuevo. Sin contrato
+// vigente (espacio desocupado) se ofrecen todos: un inquilino que ya salió puede seguir
+// abonando lo que quedó debiendo.
+function adeudosPago(inmId,contratoId){
+  if(!inmId)return[];
+  const cs=contratosDe(inmId);
+  const c=contratoId?getContrato(contratoId):contratoVigente(inmId);
+  return pagos.filter(p=>{
+    if(p.inmueble_id!==inmId||!esCobranza(p)||saldoPago(p)<=0.005)return false;
+    return c?pagoEsDeContrato(p,c,cs):true;
+  }).sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
+}
+function etiquetaAdeudo(p){
+  const v=new Date(p.vencimiento+'T00:00:00');
+  const con=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'Cargo';
+  const est=getEstado(p);
+  const tag=est==='vencido'?' · vencido':est==='tolerancia'?' · en tolerancia':'';
+  const ab=Number(p.pagado)>0.005?` (lleva ${fmt(p.pagado)} de ${fmt(p.monto)})`:'';
+  return `${con} · ${MESES[v.getMonth()]} ${v.getFullYear()} — debe ${fmt(saldoPago(p))}${ab}${tag}`;
+}
+// El adeudo detrás del valor del selector. Los adeudos van con prefijo "#" para que los
+// conceptos sueltos conserven exactamente el mismo valor de siempre (renta, agua, …) y la
+// edición de un cargo siga funcionando igual.
+function adeudoSeleccionado(){
+  const v=document.getElementById('fp-con')?.value||'';
+  return v.startsWith('#')?(pagos.find(x=>x.id===v.slice(1))||null):null;
+}
+// `reset` (al abrir el modal) descarta la selección anterior para proponer el adeudo más
+// viejo; sin él se conserva lo elegido, que es lo que se quiere al cambiar de depto.
+function pobConceptosPago(reset){
+  const sel=document.getElementById('fp-con');if(!sel)return;
+  const libres=CONCEPTOS_PAGO.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  if(editPagoId){sel.innerHTML=libres;return}
+  const prev=reset?'':sel.value;
+  const ads=adeudosPago(document.getElementById('fp-dep').value,document.getElementById('fp-contrato')?.value);
+  sel.innerHTML=(ads.length?`<optgroup label="Abonar a un adeudo">${ads.map(p=>`<option value="#${p.id}">${etiquetaAdeudo(p)}</option>`).join('')}</optgroup>`:'')
+    +`<optgroup label="${ads.length?'Sin relacionar con un adeudo':'Concepto del pago'}">${libres}</optgroup>`;
+  if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+  else sel.value=ads.length?`#${ads[0].id}`:'mantenimiento';
+  onConceptoPago();
+}
+function onConceptoPago(){
+  if(editPagoId)return;
+  const p=adeudoSeleccionado(),inp=document.getElementById('fp-pag');
+  // Al elegir un adeudo se propone liquidarlo completo; para un parcial basta con bajar
+  // el monto. Al soltar el adeudo se limpia lo que se había propuesto.
+  if(p&&fpUltAdeudo!==p.id){inp.value=saldoPago(p).toFixed(2);fpUltAdeudo=p.id;}
+  else if(!p&&fpUltAdeudo){inp.value='';fpUltAdeudo=null;}
+  pintarHintPago();
+}
+// Explica en vivo qué va a pasar con el adeudo elegido: cuánto debe, y con lo que se está
+// capturando si queda saldado o cuánto le seguirá faltando.
+function pintarHintPago(){
+  const hint=document.getElementById('fp-hint');if(!hint)return;
+  const p=editPagoId?null:adeudoSeleccionado();
+  if(!p){hint.style.display='none';hint.innerHTML='';return}
+  const saldo=saldoPago(p),ab=Math.max(0,parseFloat(document.getElementById('fp-pag').value)||0);
+  const rest=saldo-ab;
+  const ya=Number(p.pagado)>0.005?`Ya había abonado ${fmt(p.pagado)} de ${fmt(p.monto)}. `:'';
+  const cierre=ab<=0?'Escribe cuánto te entregó.'
+    :rest>0.005?`Con ${fmt(ab)} le quedarían <strong>${fmt(rest)}</strong> pendientes.`
+    :rest<-0.005?`Queda <strong>saldado</strong>; solo se aplicarán ${fmt(saldo)}, que era lo que faltaba.`
+    :'Queda <strong>saldado</strong>.';
+  hint.style.display='';
+  hint.innerHTML=`<div style="background:#F6F5F0;border:1px solid #E2E0D8;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#6B6963;line-height:1.5"><i class="ti ti-info-circle" style="color:#1D9E75;margin-right:5px"></i>${ya}Debe ${fmt(saldo)} · vence ${fdS(p.vencimiento)}. ${cierre}</div>`;
+}
+// Alterna entre registrar un pago recibido (alta) y corregir un cargo existente (edición).
+// Solo la edición muestra monto total y vencimiento: al registrar un pago esos datos ya los
+// pone el adeudo, y si el cobro no corresponde a ninguno el cargo nace saldado.
+function modoPago(nuevo){
+  document.getElementById('fp-mto-wrap').style.display=nuevo?'none':'';
+  document.getElementById('fp-venc-wrap').style.display=nuevo?'none':'';
+  document.getElementById('fp-con-wrap').classList.toggle('full',nuevo);
+  document.getElementById('fp-pag-lbl').textContent=nuevo?'Monto pagado *':'Monto pagado';
+  document.getElementById('fp-help').innerHTML=nuevo
+    ?'Esto registra dinero que ya recibiste, no un cargo por cobrar. Elige un adeudo para abonarle —puede ser un pago parcial: el resto se le sigue debiendo— o un concepto suelto si lo que te pagaron no corresponde a ningún cargo.'
+    :'Estás corrigiendo un cargo existente: aquí sí puedes ajustar su monto total, su vencimiento y lo que lleva pagado.';
+  if(!nuevo){const h=document.getElementById('fp-hint');h.style.display='none';h.innerHTML='';}
+}
 function abrirPago(inmId){
-  editPagoId=null;
-  document.getElementById('mp-ttl').textContent='Registrar pago';
+  editPagoId=null;fpUltAdeudo=null;
+  document.getElementById('mp-ttl').textContent='Registrar pago recibido';
   document.getElementById('btn-del-p').style.display='none';
   const sel=document.getElementById('fp-dep');
   sel.innerHTML='<option value="">Seleccionar...</option>'+inmuebles.map(i=>`<option value="${i.id}"${i.id===inmId?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
   pobContratosPago();
-  document.getElementById('fp-mto').value='';document.getElementById('fp-con').value='mantenimiento';
-  document.getElementById('fp-pag').value='';
-  document.getElementById('fp-fpag').value='';document.getElementById('fp-not').value='';
-  document.getElementById('fp-venc').value=vencSugerido(inmId||null,'mantenimiento');
+  modoPago(true);
+  document.getElementById('fp-mto').value='';document.getElementById('fp-venc').value='';
+  document.getElementById('fp-pag').value='';document.getElementById('fp-not').value='';
+  document.getElementById('fp-fpag').value=hoyISO();
+  pobConceptosPago(true);
   openM('m-pago');
 }
-// Vencimiento propuesto para un cargo nuevo. Para la renta se usa el DÍA DE PAGO del
-// contrato dentro del mes visible; para el resto, hoy si estás en el mes en curso o el
-// primer día del mes que estás viendo. Antes todo caía en "hoy" (o el día 1), así que una
-// renta capturada a mano nacía con un vencimiento que no era su día de pago y el estado
-// del cargo salía mal desde el minuto uno.
-function vencSugerido(inmId,concepto){
-  const hoy=new Date();
-  const enMesActual=(hoy.getMonth()===vM&&hoy.getFullYear()===vY);
-  if(concepto==='renta'){
-    const vig=inmId?contratoVigente(inmId):null,inm=inmId?getInm(inmId):null;
-    return fechaRenta(vY,vM,(vig&&vig.dia)||(inm&&inm.dia)||1);
-  }
-  return enMesActual?hoyISO():`${vY}-${String(vM+1).padStart(2,'0')}-01`;
-}
-// Al cambiar depto o concepto, se recalcula la sugerencia (solo en alta, nunca al editar)
-function refrescarVencSugerido(){
-  if(editPagoId)return;
-  const el=document.getElementById('fp-venc');if(!el)return;
-  el.value=vencSugerido(document.getElementById('fp-dep').value||null,document.getElementById('fp-con').value);
-}
 function abrirEditPago(id){
-  editPagoId=id;const p=pagos.find(x=>x.id===id);if(!p)return;
+  editPagoId=id;fpUltAdeudo=null;const p=pagos.find(x=>x.id===id);if(!p)return;
   document.getElementById('mp-ttl').textContent='Editar pago';document.getElementById('btn-del-p').style.display='inline-flex';
   const sel=document.getElementById('fp-dep');sel.innerHTML=inmuebles.map(i=>`<option value="${i.id}"${i.id===p.inmueble_id?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
   pobContratosPago(p.contrato_id||'');
+  modoPago(false);pobConceptosPago();
   document.getElementById('fp-con').value=p.concepto;document.getElementById('fp-mto').value=p.monto;document.getElementById('fp-pag').value=p.pagado;document.getElementById('fp-fpag').value=p.fecha_pago||'';document.getElementById('fp-not').value=p.notas||'';
   document.getElementById('fp-venc').value=p.vencimiento||'';
   openM('m-pago');
 }
-async function guardarPago(){
+function guardarPago(){return editPagoId?guardarEdicionPago():registrarPagoRecibido();}
+// Guardar un cargo existente (edición): aquí sí manda lo capturado en el formulario.
+async function guardarEdicionPago(){
   const inmueble_id=document.getElementById('fp-dep').value,monto=parseFloat(document.getElementById('fp-mto').value)||0,pagado=Math.min(parseFloat(document.getElementById('fp-pag').value)||0,monto);
   if(!inmueble_id||!monto){toast('Completa los campos requeridos','ti-alert-triangle');return}
-  // El vencimiento ahora es editable (antes no existía el campo y al editar ni siquiera se
-  // podía corregir un cargo que había nacido con la fecha equivocada).
-  const vencInput=document.getElementById('fp-venc')?.value;
-  const vencimiento=vencInput||(editPagoId?(pagos.find(x=>x.id===editPagoId)?.vencimiento||hoyISO())
-                                          :vencSugerido(inmueble_id,document.getElementById('fp-con').value));
+  const vencimiento=document.getElementById('fp-venc')?.value||pagos.find(x=>x.id===editPagoId)?.vencimiento||hoyISO();
   const contrato_id=(document.getElementById('fp-contrato')?.value)||null;
-  const d={workspace_id:CW.id,inmueble_id,contrato_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null,...(editPagoId?{}:{origen:'manual'})};
-  const doSave=(row)=>editPagoId
-    ? sb.from('pagos').update(row).eq('id',editPagoId).select().single()
-    : sb.from('pagos').insert(row).select().single();
-  let {data:savedPago,error}=await doSave(d);
-  // Compat: si las columnas nuevas aún no existen en la BD, reintenta sin ellas
-  if(error&&/origen|omitido|servicio_id/i.test(error.message||'')){const{origen:_o,...d1}=d;({data:savedPago,error}=await doSave(d1));}
-  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_,origen:_o2,...d2}=d;({data:savedPago,error}=await doSave(d2));}
+  const d={workspace_id:CW.id,inmueble_id,contrato_id,concepto:document.getElementById('fp-con').value,monto,pagado,vencimiento,fecha_pago:document.getElementById('fp-fpag').value||null,notas:document.getElementById('fp-not').value||null};
+  const {data:savedPago,error}=await guardarFilaPago(d,editPagoId);
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
-  if(editPagoId){const idx=pagos.findIndex(x=>x.id===editPagoId);if(idx!==-1)pagos[idx]=savedPago;}
-  else{pagos.unshift(savedPago);}
-  closeM('m-pago');toast(editPagoId?'Pago actualizado':'Pago registrado');
+  const idx=pagos.findIndex(x=>x.id===editPagoId);if(idx!==-1)pagos[idx]=savedPago;
+  closeM('m-pago');toast('Pago actualizado');
   if(Number(savedPago.pagado)>=Number(savedPago.monto)&&Number(savedPago.monto)>0)lanzarConfetti(window.innerWidth/2,window.innerHeight/2);
+  refresh();
+}
+// Insert/update con los reintentos de compatibilidad de siempre (columnas que puede que
+// la BD todavía no tenga si falta correr una migración).
+async function guardarFilaPago(d,id){
+  const doSave=(row)=>id?sb.from('pagos').update(row).eq('id',id).select().single()
+                        :sb.from('pagos').insert(row).select().single();
+  let {data,error}=await doSave(d);
+  if(error&&/origen|omitido|servicio_id/i.test(error.message||'')){const{origen:_o,...d1}=d;({data,error}=await doSave(d1));}
+  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_c,origen:_o2,...d2}=d;({data,error}=await doSave(d2));}
+  return{data,error};
+}
+async function registrarPagoRecibido(){
+  const inmueble_id=document.getElementById('fp-dep').value;
+  const abono=parseFloat(document.getElementById('fp-pag').value)||0;
+  const fecha=document.getElementById('fp-fpag').value||hoyISO();
+  const nota=document.getElementById('fp-not').value.trim();
+  if(!inmueble_id){toast('Elige el departamento','ti-alert-triangle');return}
+  if(abono<=0){toast('Escribe cuánto te pagaron','ti-alert-triangle');return}
+  const p=adeudoSeleccionado();
+  // ── Abono a un adeudo existente: se le suma a lo pagado y el saldo baja solo ──
+  if(p){
+    const saldo=saldoPago(p);
+    // Nunca se guarda de más: un pagado > monto inflaría lo cobrado del mes.
+    const aplicado=Math.min(abono,saldo);
+    const linea=`${fdS(fecha)} · abono ${fmt(aplicado)}${nota?' — '+nota:''}`;
+    const d={pagado:Number(p.pagado||0)+aplicado,fecha_pago:fecha,notas:[p.notas,linea].filter(Boolean).join('\n')};
+    const {data:saved,error}=await guardarFilaPago(d,p.id);
+    if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+    const idx=pagos.findIndex(x=>x.id===p.id);if(idx!==-1)pagos[idx]=saved;
+    const rest=saldoPago(saved);
+    closeM('m-pago');
+    if(rest>0.005)toast(`Abono de ${fmt(aplicado)} registrado · le faltan ${fmt(rest)}`);
+    else{toast(abono>saldo+0.005?`Adeudo saldado · se aplicaron ${fmt(aplicado)}, que era lo que faltaba`:'Adeudo saldado');lanzarConfetti(window.innerWidth/2,window.innerHeight/2);}
+    refresh();return;
+  }
+  // ── Pago sin adeudo detrás: nace saldado y con fecha de pago, no genera deuda ──
+  const contrato_id=(document.getElementById('fp-contrato')?.value)||null;
+  const d={workspace_id:CW.id,inmueble_id,contrato_id,concepto:document.getElementById('fp-con').value,
+    monto:abono,pagado:abono,vencimiento:fecha,fecha_pago:fecha,notas:nota||null,origen:'manual'};
+  const {data:saved,error}=await guardarFilaPago(d,null);
+  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  pagos.unshift(saved);
+  closeM('m-pago');toast('Pago registrado');lanzarConfetti(window.innerWidth/2,window.innerHeight/2);
   refresh();
 }
 async function elimPago(){
@@ -5448,6 +5774,7 @@ function rulToggle(){rulOn=!rulOn;try{localStorage.setItem('ib_ruleta',rulOn?'1'
 // cobrar o registrar algo esas vistas seguían con el número viejo hasta recargar la página.
 // Finanzas y los modales abiertos también leen los mismos pagos/servicios, así que entran aquí.
 function refresh(){
+  renderPauseBar();
   renderStats();renderPagos();renderInm();renderAl();renderRep();
   renderSvcList();renderEC();renderDepositos();renderRecList();renderDashboard();
   if(deudaInmIdAbierto&&mAbierto('m-deuda'))renderDeuda(deudaInmIdAbierto);
