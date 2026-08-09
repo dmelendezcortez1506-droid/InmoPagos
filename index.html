@@ -2440,8 +2440,17 @@ function mensajeCheckout(codigo,status){
   }[codigo];
   if(t)return t;
   if(status===401)return 'Tu sesión expiró. Vuelve a entrar y lo intentamos de nuevo.';
-  console.error('checkout · código sin traducir:',codigo,status);
-  return 'No pudimos abrir el pago con tarjeta. Puedes intentar de nuevo o pagar por WhatsApp aquí abajo.';
+  // Stripe manda frases, no códigos. La más común mientras la cuenta está en
+  // revisión es "cannot currently make live charges": no es un bug de la app,
+  // es que Stripe todavía no la habilita.
+  const s=String(codigo||'');
+  if(/live charges|activate your account|account.*not.*activ/i.test(s))
+    return 'Tu cuenta de Stripe todavía no está habilitada para cobrar en vivo. Stripe la está revisando; revisa dashboard.stripe.com por si te falta algún dato.';
+  console.error('checkout · respuesta sin traducir:',codigo,status);
+  // Mostrar el texto crudo de Stripe en vez de tragárselo: sin esto, la única
+  // forma de saber qué pasó es abrir la consola del navegador.
+  return 'No pudimos abrir el pago con tarjeta. Puedes intentar de nuevo o pagar por WhatsApp aquí abajo.'
+    + (s?'\n\nDetalle técnico: '+s:'');
 }
 
 async function iniciarCheckout(plan){
@@ -2475,9 +2484,15 @@ async function iniciarCheckout(plan){
     CHECKOUT=await stripe.initEmbeddedCheckout({clientSecret:j.client_secret,onComplete:esperarActivacion});
     CHECKOUT.mount('#stripe-checkout');
   }catch(e){
+    const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const partes=String(e.message||'No pudimos abrir el pago').split('\n\nDetalle técnico: ');
     document.getElementById('stripe-checkout').innerHTML=
-      '<div class="err" style="display:block">'+(e.message||'No pudimos abrir el pago')+'</div>'
-      +'<p style="font-size:13px;color:var(--tx2)">Puedes intentar de nuevo o pagar por WhatsApp aquí abajo.</p>';
+      '<div class="err" style="display:block">'+esc(partes[0])+'</div>'
+      // El texto crudo de Stripe, plegado: al cliente no le estorba y a
+      // nosotros nos evita tener que abrir la consola para saber qué pasó.
+      +(partes[1]?'<details style="font-size:12px;color:var(--tx3);margin-top:4px">'
+        +'<summary style="cursor:pointer">Detalle técnico</summary>'
+        +'<p style="margin-top:6px;font-family:\'DM Mono\',monospace;word-break:break-word">'+esc(partes[1])+'</p></details>':'');
     console.error('checkout:',e);
   }
 }
