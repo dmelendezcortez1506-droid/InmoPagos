@@ -2341,7 +2341,11 @@ function cargarStripe(){
     return Promise.reject(new Error('El pago con tarjeta todavía no está disponible. Usa el pago por WhatsApp aquí abajo.'));
   if(!_stripeP)_stripeP=new Promise((ok,fail)=>{
     if(window.Stripe)return ok(Stripe(PK_STRIPE));
-    const s=document.createElement('script');s.src='https://js.stripe.com/v3';
+    const s=document.createElement('script');
+    // Versión actual de Stripe.js. La vieja (/v3) no trae
+    // createEmbeddedCheckoutPage, que es el método que reemplazó a
+    // initEmbeddedCheckout para el checkout embebido.
+    s.src='https://js.stripe.com/dahlia/stripe.js';
     s.onload=()=>ok(Stripe(PK_STRIPE));s.onerror=()=>fail(new Error('No se pudo cargar Stripe'));
     document.head.appendChild(s);
   });
@@ -2481,7 +2485,12 @@ async function iniciarCheckout(plan){
     if(!r.ok||!j.client_secret)throw new Error(mensajeCheckout(j.error,r.status));
     if(CHECKOUT){try{CHECKOUT.destroy()}catch(e){}CHECKOUT=null}
     document.getElementById('stripe-checkout').innerHTML='';
-    CHECKOUT=await stripe.initEmbeddedCheckout({clientSecret:j.client_secret,onComplete:esperarActivacion});
+    // createEmbeddedCheckoutPage es el nombre actual; initEmbeddedCheckout es
+    // el viejo. Se aceptan los dos por si la versión de Stripe.js cambia bajo
+    // nuestros pies — es una librería que cargamos por CDN, no la fijamos.
+    const crear=(stripe.createEmbeddedCheckoutPage||stripe.initEmbeddedCheckout);
+    if(!crear)throw new Error('Esta versión de Stripe.js no soporta el pago embebido');
+    CHECKOUT=await crear.call(stripe,{clientSecret:j.client_secret,onComplete:esperarActivacion});
     CHECKOUT.mount('#stripe-checkout');
   }catch(e){
     const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
