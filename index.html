@@ -1569,7 +1569,24 @@ function cmpNum(a,b){return String(a==null?'':a).localeCompare(String(b==null?''
 function ordenarInmuebles(){inmuebles.sort((a,b)=>cmpNum(a.num,b.num))}
 // Fecha en la que el dinero ENTRÓ (caja). Los pagos viejos pueden no traer fecha_pago:
 // para esos se cae al vencimiento, que es la mejor aproximación disponible.
+// Solo para el número de caja del Reporte, que es el que se compara contra el banco.
 function fechaCobro(p){return p.fecha_pago||p.vencimiento}
+// Mes al que PERTENECE el cobro (devengado): el período que cubre el cargo, no el día en que
+// se capturó. "Cobrar" estampa fecha_pago = hoy, así que dar de alta en agosto los pagos de
+// mayo, junio y julio amontonaba los tres en la barra de agosto y en Finanzas, aunque la
+// vista Pagos los mostrara —bien— en su mes. El vencimiento es el único dato que no depende
+// del día de captura, y es NOT NULL en la tabla, así que siempre hay con qué agrupar.
+function fechaPeriodo(p){return p.vencimiento||p.fecha_pago}
+// ── Anticipo del estado de cuenta ──
+// La RENTA se puede mandar por adelantado: desde 5 días antes de su día de pago el cargo ya
+// entra en el estado de cuenta, para que el inquilino lo reciba con tiempo de juntar el
+// dinero (paga el 8 → se le puede enviar desde el 3). Es solo para EMITIR el documento: no
+// adelanta el vencimiento, ni la deuda exigible, ni las alertas — un cargo anticipado sigue
+// contando como "pendiente" hasta su fecha real. El resto de los conceptos (servicios,
+// mantenimiento, depósito) siguen entrando únicamente cuando ya llegó su día.
+// Vive aquí arriba porque ensureAutoPagos() lo necesita para materializar a tiempo la renta
+// de los deptos que cobran a principio de mes (ver ahí).
+const EC_DIAS_ANTICIPO=5;
 // Movimientos que cuentan como cobranza. La devolución de un depósito es dinero que SALE
 // (se registra con pagado=monto), así que sumarla a "Cobrado" inflaba la cobranza del mes.
 function esCobranza(p){return p.concepto!=='devolucion_deposito'}
@@ -2003,6 +2020,12 @@ async function ensureAutoPagos(anioVista,mesVista){
     for(let k=0;k<=MESES_RETRO;k++){const d=new Date(hoy.getFullYear(),hoy.getMonth()-k,1);targets.add(d.getFullYear()*12+d.getMonth());}
     // Mes futuro navegado → se materializa para poder cobrar adelantado
     if(anioVista!=null&&(anioVista*12+mesVista)>(hoy.getFullYear()*12+hoy.getMonth()))targets.add(anioVista*12+mesVista);
+    // Ventana de anticipo del estado de cuenta: si dentro de los próximos EC_DIAS_ANTICIPO
+    // días ya cae el mes siguiente, ese mes se materializa también. Sin esto, un depto que
+    // paga el 1 o el 2 nunca tenía su cargo creado cuando se abría su ventana de anticipo,
+    // y la renta anticipada no aparecía por más que su día estuviera a la vuelta.
+    const limAnt=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()+EC_DIAS_ANTICIPO);
+    targets.add(limAnt.getFullYear()*12+limAnt.getMonth());
     const nuevos=[];
     targets.forEach(key=>{
       const anio=Math.floor(key/12),mes=key%12;
@@ -2267,15 +2290,23 @@ function descPago(p,inm){
   const c=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'Cargo';
   return{desc:c,per,cant:''};
 }
+// ¿Este cargo ya se puede incluir en un estado de cuenta? (ver EC_DIAS_ANTICIPO)
+function ecAnticipable(p){return p.concepto==='renta'}
+function ecEmisible(p,hoy){
+  const t=hoy||hoyISO();
+  if(p.vencimiento<=t)return true;
+  return ecAnticipable(p)&&p.vencimiento<=diaISO(t,EC_DIAS_ANTICIPO);
+}
 let ecselInmId=null, ecselSel=new Set();
 function abrirECSel(inmId){
   const inm=getInm(inmId);if(!inm)return;
   const {vig,lista}=pagosInquilinoActual(inmId);
   if(!vig){toast('Este depto está desocupado','ti-alert-triangle');return}
   ecselInmId=inmId;
-  // Default: premarcar los adeudos exigibles (los mismos que salen en "Debe $X")
+  // Default: premarcar los adeudos exigibles (los mismos que salen en "Debe $X") más la
+  // renta que ya entró a su ventana de anticipo
   const hoy=hoyISO();
-  ecselSel=new Set(lista.filter(p=>{const saldo=Number(p.monto)-Number(p.pagado);return saldo>0.005&&p.vencimiento<=hoy}).map(p=>p.id));
+  ecselSel=new Set(lista.filter(p=>{const saldo=Number(p.monto)-Number(p.pagado);return saldo>0.005&&ecEmisible(p,hoy)}).map(p=>p.id));
   document.getElementById('ecsel-ttl').textContent=`Estado de cuenta · ${vig.inquilino||inm.inquilino||'—'} · Depto. ${inm.num}`;
   renderECSel();
   openM('m-ecsel');
@@ -2299,12 +2330,13 @@ function renderECSel(){
     const d=descPago(p,inm);
     const marc=ecselSel.has(p.id);
     const futuro=p.vencimiento>hoy;
+    const anticipado=futuro&&ecEmisible(p,hoy);
     const sub=Number(p.pagado)>0&&saldo>0.005?`abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`:est==='pagado'?'Ya pagado':`Vence ${fdS(p.vencimiento)}`;
     return`<label style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid #EEECE4;cursor:pointer">
       <input type="checkbox" ${marc?'checked':''} onchange="toggleECSel('${p.id}')" style="width:17px;height:17px;accent-color:#1D9E75;cursor:pointer;flex-shrink:0">
       <div style="flex:1;min-width:0">
         <div style="font-size:13.5px;font-weight:600">${d.desc} <span style="font-weight:400;color:#9D9B96">· ${d.per}</span></div>
-        <div style="font-size:11.5px;color:#9D9B96">${sub}${futuro?' · próximo':''}</div>
+        <div style="font-size:11.5px;color:#9D9B96">${sub}${anticipado?' · <span style="color:#0C447C;font-weight:600">se puede enviar por adelantado</span>':futuro?' · próximo':''}</div>
       </div>
       <span style="display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:${b.bg};color:${b.c};white-space:nowrap">${b.lbl}</span>
       <span style="font-family:'DM Mono',monospace;font-size:13.5px;font-weight:600;min-width:80px;text-align:right">${fmt(saldo)}</span>
@@ -2902,8 +2934,14 @@ function ocupacionEfectiva(c,cs){
   }
   return{ini,fin};
 }
-// Solapamiento (en días, ambos extremos inclusive) de UN contrato con el período del servicio.
+// Solapamiento (en días TRANSCURRIDOS) de UN contrato con el período del servicio.
 // Sin fecha de inicio → arranca al inicio del período; sin fin → llega al final.
+// Se cuenta la diferencia entre las dos fechas, sin sumar el día extra del extremo final:
+// un período del 1 al 31 son 30 días, igual que en el Excel con el que se venía repartiendo
+// el recibo. Antes se contaban ambos extremos (31) y cada contrato salía con un día de más,
+// lo que inflaba su ponderación y, con ella, lo que se le cobraba. El total del período usa
+// exactamente el mismo criterio (ver svcDiasPeriodo), así que un depto ocupado de punta a
+// punta sigue pesando el 100% y no aparece subsidio fantasma.
 function svcSolapeContrato(c,periodoIni,periodoFin,cs){
   const oc=ocupacionEfectiva(c,cs);
   const finiStr=oc.ini,fterStr=c.fecha_termino_contrato,fsalStr=c.fecha_salida;
@@ -2911,9 +2949,13 @@ function svcSolapeContrato(c,periodoIni,periodoFin,cs){
   const cFinStr=oc.fin,cFin=cFinStr?new Date(cFinStr+'T00:00:00'):null;
   const desde=cIni?new Date(Math.max(periodoIni.getTime(),cIni.getTime())):new Date(periodoIni.getTime());
   const hasta=cFin?new Date(Math.min(periodoFin.getTime(),cFin.getTime())):new Date(periodoFin.getTime());
-  const dias=hasta>=desde?Math.round((hasta-desde)/86400000)+1:0;
+  const dias=hasta>=desde?dB(desde,hasta):0;
   return{dias,cIni,cFin,finiStr,fterStr,fsalStr,finEfStr:cFinStr};
 }
+// Días del período completo del servicio, con el mismo criterio que el solape de cada
+// contrato: diferencia entre las fechas, sin el día extra. Es el denominador del reparto,
+// así que tiene que hablar el mismo idioma que el numerador o el subsidio se descuadra.
+function svcDiasPeriodo(ini,fin){return Math.max(1,dB(ini,fin))}
 // ¿Le aplica el servicio a este espacio, y por cuántos días? Considera TODO el historial de
 // contratos del espacio (vigente + anteriores), no solo el mirror del inmueble: un servicio lo
 // paga quien haya ocupado el depto durante el período, aunque hoy viva otro inquilino o el
@@ -2921,7 +2963,7 @@ function svcSolapeContrato(c,periodoIni,periodoFin,cs){
 // las personas por esos días. Reglas 1–4 (entró tarde / salió / terminó / salida intermedia)
 // se aplican ahora contrato por contrato dentro del historial.
 function svcAplicaInfo(inm,periodoIni,periodoFin){
-  const diasTotal=Math.max(1,dB(periodoIni,periodoFin)+1);
+  const diasTotal=svcDiasPeriodo(periodoIni,periodoFin);
   const csRaw=historialContratos(inm.id),cs=(csRaw&&csRaw.length)?csRaw:[contratoSintetico(inm)];
   let diasUso=0,pondPers=0,motivo='',inq='',domDias=-1,domId=null;
   cs.forEach(c=>{
@@ -3032,7 +3074,7 @@ let svcCalc=null;
 function calcSvcRows(){
   const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
   const iniDate=iniStr?new Date(iniStr+'T00:00:00'):null,finDate=finStr?new Date(finStr+'T00:00:00'):null;
-  const diasTotal=iniDate&&finDate?Math.max(1,dB(iniDate,finDate)+1):31;
+  const diasTotal=iniDate&&finDate?svcDiasPeriodo(iniDate,finDate):30;
 
   const tbody=document.getElementById('sv-rows');
   if(!inmuebles.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:1rem">Agrega departamentos primero</td></tr>`;return}
@@ -3078,7 +3120,7 @@ function recalcAllSvc(){
   const iniStr=document.getElementById('sv-ini').value,finStr=document.getElementById('sv-fin').value;
   if(!iniStr||!finStr){svcCalc=null;return}
   const periodoIni=new Date(iniStr+'T00:00:00'),periodoFin=new Date(finStr+'T00:00:00');
-  const diasTotal=Math.max(1,dB(periodoIni,periodoFin)+1);
+  const diasTotal=svcDiasPeriodo(periodoIni,periodoFin);
   // Reparto sobre PONDERACIÓN COMPLETA: cada unidad de cobro paga sus días×personas sobre lo
   // que habría usado el edificio ocupado todo el período. La parte no usada va al subsidio.
   // Unidades de cobro = fila del contrato VIGENTE (editable) + partes de los que SALIERON
@@ -3221,7 +3263,7 @@ async function guardarServicio(){
   recalcAllSvc();
   if(!svcCalc){toast('Revisa las fechas del período','ti-alert-triangle');return}
   const iniDate=new Date(iniStr+'T00:00:00'),finDate=new Date(finStr+'T00:00:00');
-  const dias=Math.max(1,dB(iniDate,finDate)+1);
+  const dias=svcDiasPeriodo(iniDate,finDate);
   const apoyo=svcCalc.apoyo||0;
   const editing=editingSvcId;
   // mes/anio del recibo = mes en que CIERRA el período (ver svcMesAnio): es cuando se
@@ -3370,7 +3412,11 @@ async function generarSvcPNG(svcId){
     const nombre=haySnap?(d.inquilino||'—'):(aplica?(i?.inquilino||'—'):'—');
     const motivo=haySnap?(d.nota||''):(info?.motivo||'');
     const nota=motivo?` (${motivo})`:'';
-    const pct=totPond>0?Math.round(Number(d.ponderacion)/totPond*100):0;
+    // El % se mide sobre el TOTAL de la factura, no sobre la ponderación. Con apoyo de la
+    // administración el importe de cada depto ya viene rebajado, así que el porcentaje por
+    // ponderación decía una cosa y el dinero otra, y la columna no cerraba en 100%. Sin
+    // apoyo ambos criterios dan exactamente el mismo número, así que no cambia nada.
+    const pct=Number(svc.total)>0?Math.round(Number(d.monto)/Number(svc.total)*100):0;
     return `<tr>
       <td style="${B};font-weight:600;text-align:center">${i?.num||'?'}</td>
       <td style="${B}">${nombre}${nota?`<span style="color:#55514A;font-size:11.5px">${nota}</span>`:''}</td>
@@ -3382,7 +3428,19 @@ async function generarSvcPNG(svcId){
       <td style="${B};text-align:right;font-weight:600">${aplica?fmt(d.monto):'$ —'}</td>
     </tr>`;
   }).join('');
-  const subPct=adm&&totPond>0?Math.round(Number(adm.ponderacion)/totPond*100):0;
+  // ── Bloque agrupado: TODO lo que no pagan los inquilinos, en un solo renglón ──
+  // Antes esto salían en dos renglones sueltos (subsidio y apoyo) y con porcentajes medidos
+  // sobre bases distintas. El inquilino sumaba la columna de la foto, no le daba el total de
+  // la factura y acababa preguntando por qué. Agrupado, la cuenta cierra a la vista:
+  // lo de los deptos + este bloque = total de la factura.
+  const subMonto=Number(adm?adm.monto:0)||0;
+  const apoyoMonto=Number(svc.apoyo_admin)||0;
+  const admMonto=subMonto+apoyoMonto;
+  const admPct=Number(svc.total)>0?Math.round(admMonto/Number(svc.total)*100):0;
+  const admLbl=apoyoMonto>0.005?'Subsidio y apoyo de la administración':SUB_LBL;
+  const admDesg=[];
+  if(subMonto>0.005)admDesg.push(`Deptos que salieron o sin uso en el período: ${fmt(subMonto)}`);
+  if(apoyoMonto>0.005)admDesg.push(`Apoyo que aporta la administración: ${fmt(apoyoMonto)}`);
   const node=document.createElement('div');
   node.style.cssText='position:fixed;left:-10000px;top:0;width:1080px;background:#FFFFFF;padding:28px;font-family:"DM Sans",sans-serif';
   node.innerHTML=`
@@ -3396,22 +3454,16 @@ async function generarSvcPNG(svcId){
     <table style="border-collapse:collapse;width:100%">
       <thead><tr>
         <th style="${TH}">Departamento</th><th style="${TH}">Inquilino</th><th style="${TH}">¿Corresponde uso?</th>
-        <th style="${TH}">Días de uso</th><th style="${TH}">Personas</th><th style="${TH}">Ponderación</th><th style="${TH}">%</th><th style="${TH}">$ Pagar</th>
+        <th style="${TH}">Días de uso</th><th style="${TH}">Personas</th><th style="${TH}">Ponderación</th><th style="${TH}">% de la factura</th><th style="${TH}">$ Pagar</th>
       </tr></thead>
       <tbody>
         ${filas}
         <tr>
-          <td colspan="5" style="${B};font-weight:700">${SUB_LBL}</td>
-          <td style="${B};text-align:center;font-weight:700">${adm?adm.ponderacion:0}</td>
-          <td style="${B};text-align:center;font-weight:700">${subPct}%</td>
-          <td style="${B};text-align:right;font-weight:700">${fmt(adm?adm.monto:0)}</td>
+          <td colspan="5" style="${B};font-weight:700;background:#EAF2EC">${admLbl}${admDesg.length>1?`<div style="font-weight:400;font-size:11.5px;color:#55514A;margin-top:3px">${admDesg.map(x=>'· '+x).join('<br>')}</div>`:''}</td>
+          <td style="${B};text-align:center;font-weight:700;background:#EAF2EC">${adm?adm.ponderacion:0}</td>
+          <td style="${B};text-align:center;font-weight:700;background:#EAF2EC">${admPct}%</td>
+          <td style="${B};text-align:right;font-weight:700;background:#EAF2EC">${fmt(admMonto)}</td>
         </tr>
-        ${Number(svc.apoyo_admin)>0?`<tr>
-          <td colspan="5" style="${B};font-weight:700;color:#0A6B4B">Apoyo de administración (lo cubre la administración)</td>
-          <td style="${B};text-align:center;font-weight:700">—</td>
-          <td style="${B};text-align:center;font-weight:700">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td>
-          <td style="${B};text-align:right;font-weight:700;color:#0A6B4B">${fmt(svc.apoyo_admin)}</td>
-        </tr>`:''}
         <tr>
           <td colspan="5" style="${B};font-weight:700;background:#F1EFE8">TOTAL</td>
           <td style="${B};text-align:center;font-weight:700;background:#F1EFE8">${totPond}</td>
@@ -3420,7 +3472,7 @@ async function generarSvcPNG(svcId){
         </tr>
       </tbody>
     </table>
-    <div style="margin-top:12px;font-size:11.5px;color:#55514A">Cada inquilino paga únicamente sus días de uso × personas. El subsidio corresponde a los departamentos que salieron o no tuvieron uso en el período.${Number(svc.apoyo_admin)>0?' El apoyo de administración lo aporta el administrador para abaratar el recibo a los inquilinos.':''} · Generado con InmoPagos · ${new Date().toLocaleDateString('es-MX')}</div>`;
+    <div style="margin-top:12px;font-size:11.5px;color:#55514A">Cada inquilino paga únicamente sus días de uso × personas. Lo que no pagan los inquilinos va agrupado en el renglón de <b>${admLbl.toLowerCase()}</b>: son los departamentos que salieron o no tuvieron uso en el período${apoyoMonto>0.005?', más el apoyo que aporta la administración para abaratarles el recibo':''}. Sumando esa línea, la columna cierra exacto con el total de la factura. · Generado con InmoPagos · ${new Date().toLocaleDateString('es-MX')}</div>`;
   document.body.appendChild(node);
   try{
     const canvas=await html2canvas(node,{scale:2,backgroundColor:'#FFFFFF'});
@@ -3594,7 +3646,7 @@ function generarPDF(inmId,download=true,selPagos=null){
     // "Elegir pagos": los adeudos exigibles del inquilino actual, por su SALDO.
     const {lista}=pagosInquilinoActual(inmId);
     const hoy=hoyISO();
-    let base=lista.filter(p=>saldoPago(p)>0.005&&p.vencimiento<=hoy);
+    let base=lista.filter(p=>saldoPago(p)>0.005&&ecEmisible(p,hoy));
     // Si no debe nada, el documento refleja los cargos del mes visible con su saldo real
     // (normalmente $0) en vez de inventar un adeudo.
     if(!base.length)base=lista.filter(p=>{const v=new Date(p.vencimiento+'T00:00:00');return v.getMonth()===vM&&v.getFullYear()===vY});
@@ -4270,16 +4322,17 @@ function renderDashboard(){
       <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#085041;text-transform:uppercase;letter-spacing:.06em"><i class="ti ti-building" style="font-size:12px;color:#1D9E75"></i>Ocupación</div>
       <div style="font-size:26px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace;margin-top:8px">${activos}/${inmuebles.length}</div><div style="font-size:11.5px;color:#3D7A66">unidades rentadas</div></button>`;
   // Barras: últimos 6 meses terminando en el mes visible
-  // Cobranza REAL por mes: se agrupa por la fecha en que ENTRÓ el dinero (fecha_pago), no
-  // por el vencimiento del cargo. Antes la renta de enero cobrada en marzo se dibujaba en
-  // la barra de enero, así que la gráfica nunca decía cuánto entró de verdad cada mes.
-  // Los pagos viejos sin fecha_pago caen a su vencimiento (mejor dato disponible).
+  // Cobranza por mes: se agrupa por el PERÍODO del cargo (vencimiento), igual que la vista
+  // Pagos. Antes se agrupaba por fecha_pago, pero "Cobrar" la estampa con el día en que se
+  // captura: quien daba de alta en agosto la renta de mayo, junio y julio veía las tres
+  // barras vacías y todo el dinero apilado en agosto. La caja real —dinero contra banco—
+  // sigue midiéndose por fecha_pago en el Reporte (ver fechaCobro).
   const barras=[];let maxCob=0;
   for(let k=5;k>=0;k--){
     let mm=vM-k,yy=vY;while(mm<0){mm+=12;yy--;}
     const pp=pagos.filter(p=>{
       if(!esCobranza(p)||Number(p.pagado)<=0)return false;
-      const f=fechaCobro(p);if(!f)return false;
+      const f=fechaPeriodo(p);if(!f)return false;
       const v=new Date(f+'T00:00:00');return v.getMonth()===mm&&v.getFullYear()===yy;
     });
     const c=pp.reduce((s,p)=>s+Number(p.pagado),0);
@@ -4939,10 +4992,11 @@ function finCalc(){
   const porCobrar=pl.reduce((s,p)=>s+Math.max(0,Number(p.monto)-Number(p.pagado)),0);
   // 1b) INGRESOS COBRADOS: la base real de la cascada. Antes la utilidad se calculaba
   // sobre lo FACTURADO, así que la renta que nadie pagó contaba como ganancia y el módulo
-  // reportaba utilidad inexistente cuando había morosos. Se agrupa por la fecha en que
-  // entró el dinero (fecha_pago), que además es la base que aplica al arrendamiento de
-  // persona física en México: se tributa sobre lo efectivamente cobrado.
-  const cl=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inMs(p.fecha_pago||p.vencimiento));
+  // reportaba utilidad inexistente cuando había morosos. Solo se cuenta lo efectivamente
+  // cobrado, pero ubicado en el mes del cargo (fechaPeriodo) y no en el día en que se
+  // capturó: capturar en agosto tres meses de renta atrasada dejaba mayo, junio y julio en
+  // ceros y disparaba la utilidad de agosto.
+  const cl=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inMs(fechaPeriodo(p)));
   const cobr=cl.reduce((s,p)=>s+Number(p.pagado),0);
   // 2) Gastos de operación (recurrencias expandidas) + los recibos de servicio del periodo
   let gl=[];ms.forEach(x=>gl.push(...finGastosMes(prop,x.m,x.y)));
@@ -5021,8 +5075,9 @@ function finRenderTrend(){
     const inM=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return v.getMonth()===m&&v.getFullYear()===y;};
     const prop=finProp||null;
     const esOp=p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito';
-    // Misma base que finCalc: cobrado real, y los recibos de servicio dentro de los gastos
-    const f=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inM(p.fecha_pago||p.vencimiento)).reduce((s,p)=>s+Number(p.pagado),0);
+    // Misma base que finCalc: cobrado real ubicado en el mes del cargo, y los recibos de
+    // servicio dentro de los gastos
+    const f=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inM(fechaPeriodo(p))).reduce((s,p)=>s+Number(p.pagado),0);
     const g=finGastosMes(prop,m,y).concat(finGastosServicios(prop,[{m,y}])).reduce((s,x)=>s+Number(x.monto),0);
     const i=finDSImps().filter(p=>(!prop||p.inmueble_id===prop)&&inM(p.fecha)).reduce((s,x)=>s+Number(x.monto),0);
     arr.push({lbl:MESES[m].slice(0,3),neta:f-g-i});}
@@ -5119,11 +5174,11 @@ function finDrawer(kind){
   const line=(l,v,c,b)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px ${b?'solid':'dashed'} rgba(139,92,246,.2);font-size:${b?'14px':'12.5px'};${b?'font-weight:700':''}"><span style="color:${b?'#EDEBFA':'#8E89A8'}">${l}</span><span style="font-family:'DM Mono',monospace;color:${c||'#EDEBFA'}">${typeof v==='number'?fmt(v):v}</span></div>`;
   const nota=t=>`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">${t}</p>`;
   let body='';
-  if(kind==='fact')body=C.cl.map(p=>line(`${finRowLoc(p)} · ${p.concepto} · ${fdS(p.fecha_pago||p.vencimiento)}`,Number(p.pagado))).join('')
+  if(kind==='fact')body=C.cl.map(p=>line(`${finRowLoc(p)} · ${p.concepto} · ${fdS(fechaPeriodo(p))}`,Number(p.pagado))).join('')
     +line('Total cobrado',C.cobr,'#C4B5FD',1)
     +line('Facturado en el periodo',C.fact,'#8E89A8')
     +(C.porCobrar>0.005?line('Aún por cobrar',C.porCobrar,'#FB7185'):'')
-    +nota('La cascada parte de lo <b>cobrado</b>, no de lo facturado: la renta que todavía no entra no es utilidad. Los cobros se agrupan por su fecha de pago real.');
+    +nota('La cascada parte de lo <b>cobrado</b>, no de lo facturado: la renta que todavía no entra no es utilidad. Cada cobro cuenta en el <b>mes del cargo</b> que liquida, no en el día en que se capturó, para que registrar hoy una renta atrasada no vacíe su mes.');
   else if(kind==='gastos')body=C.gl.map(g=>line(`${g._svc?finCatNombre(g):finRowLoc(g)+' · '+finCatNombre(g)}${g._inst==='virtual'?' ↻':''} · ${fdS(g.fecha)}`,Number(g.monto))).join('')+line('Total gastos',C.gTot,'#F0ABFC',1)
     +nota('Incluye los <b>recibos completos de agua, luz y gas</b> que pagas tú. Lo que recobras a los inquilinos entra como ingreso arriba, así que la diferencia entre ambos es lo que el servicio te cuesta de verdad.');
   else if(kind==='imp')body=C.il.map(x=>line(`${finRowLoc(x)} · ${x.concepto||'Impuesto'} · ${fdS(x.fecha)}`,Number(x.monto))).join('')+line('Total impuestos',C.iTot,'#FBBF24',1);
