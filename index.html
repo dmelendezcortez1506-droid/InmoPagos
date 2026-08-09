@@ -47,6 +47,108 @@ code{background:var(--bd);padding:2px 6px;border-radius:4px;font-family:'DM Mono
 .atab{flex:1;padding:9px;font-size:13px;font-weight:500;font-family:inherit;border:none;background:none;cursor:pointer;color:var(--tx2)}
 .atab.active{background:var(--tx);color:#fff}
 
+/* ── PANTALLA DE INICIO (tema oscuro, acotado a #s-auth) ──
+   Los tokens oscuros se declaran SOBRE #s-auth, nunca en :root, y con
+   nombres propios (--atx/--amut/--aline). Redefinir --tx aquí haría que
+   cualquier cosa que algún día se re-parentee adentro herede texto oscuro.
+   Los valores son los de landing.html, para que el recorrido sea continuo:
+   landing oscura -> login oscuro -> app clara.                            */
+#s-auth{
+  --ink:#0B0A09;--ink-2:#141210;--aline:rgba(237,233,223,.14);
+  --atx:#EDE9DF;--amut:#A8A395;--teal-hi:#3BC98F;
+  background:var(--ink);position:relative;overflow:hidden;flex-direction:column;padding:1.5rem 1rem}
+.strands-host{position:absolute;inset:0;z-index:0;pointer-events:none;width:100%;height:100%}
+.strands-host canvas{display:block;width:100%;height:100%}
+/* Respaldo cuando no hay WebGL2: mismos 3 colores, sin movimiento. */
+#s-auth.no-webgl .strands-host{background:
+  radial-gradient(60% 42% at 22% 34%, rgba(127,178,47,.30), transparent 68%),
+  radial-gradient(58% 40% at 78% 62%, rgba(90,0,244,.26), transparent 66%),
+  radial-gradient(70% 46% at 50% 50%, rgba(185,185,185,.10), transparent 72%)}
+/* El velo es la pieza de accesibilidad clave: con glow 2.6 las hebras pasan
+   brillantes por detrás de la tarjeta y el contraste no se puede garantizar
+   contra un fondo en movimiento. */
+.auth-veil{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(58% 62% at 50% 47%,rgba(11,10,9,.70),rgba(11,10,9,.42) 58%,rgba(11,10,9,.80) 100%)}
+.auth-wrap{position:relative;z-index:2;width:100%;max-width:420px;display:flex;flex-direction:column;gap:1.25rem}
+.auth-brand{text-align:center}
+.auth-brand img{height:46px;width:auto;object-fit:contain;margin-bottom:.7rem;
+  filter:drop-shadow(0 2px 14px rgba(0,0,0,.6))}
+.auth-brand h1{font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--atx);line-height:1.2}
+.auth-brand p{font-size:14px;color:var(--amut);margin-top:5px}
+#s-auth .auth-card{background:rgba(20,18,16,.72);backdrop-filter:blur(22px) saturate(120%);
+  -webkit-backdrop-filter:blur(22px) saturate(120%);
+  border:1px solid var(--aline);border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.5);
+  padding:1.75rem;max-width:none;width:100%}
+/* Sin backdrop-filter las hebras se ven A TRAVÉS del texto. No es opcional. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  #s-auth .auth-card{background:rgba(20,18,16,.94)}}
+#s-auth .auth-tabs{border-color:var(--aline);background:rgba(11,10,9,.4)}
+#s-auth .atab{padding:12px;color:var(--amut);transition:color .15s,background .15s}
+#s-auth .atab:hover{color:var(--atx)}
+#s-auth .atab.active{background:var(--teal);color:#fff}
+/* Los inputs heredan de la línea 99-100: fondo claro y un anillo de foco
+   rgba(0,0,0,.07) invisible sobre oscuro. Hay que ganarles en especificidad. */
+#s-auth .auth-card input{background:rgba(11,10,9,.55);color:var(--atx);border-color:var(--aline);
+  padding:13px 14px;font-size:15px;border-radius:10px}
+#s-auth .auth-card input::placeholder{color:#77736A}
+#s-auth .auth-card input:focus{border-color:var(--teal-hi);box-shadow:0 0 0 3px rgba(59,201,143,.22)}
+#s-auth .fg2{gap:6px;margin-bottom:15px}
+#s-auth .fg2 label{font-size:13px;color:var(--amut)}
+#s-auth :focus-visible{outline:2px solid var(--teal-hi);outline-offset:2px}
+#s-auth .btn.primary{padding:13px;font-size:14.5px;border-radius:10px}
+#s-auth .spinner{border-color:rgba(255,255,255,.28);border-top-color:#fff}
+#s-auth .err{background:rgba(226,75,74,.14);color:#FFB4B2;border:1px solid rgba(226,75,74,.34)}
+#s-auth .ok{background:rgba(59,201,143,.13);color:#8FE9C4;border:1px solid rgba(59,201,143,.3)}
+.auth-link{background:none;border:none;font-family:inherit;font-size:13px;color:var(--amut);
+  cursor:pointer;padding:6px 2px;text-decoration:underline;text-underline-offset:3px}
+.auth-link:hover{color:var(--teal-hi)}
+.auth-legal{text-align:center;font-size:12px;color:#6F6B63;line-height:1.6}
+.field-msg{font-size:12px;color:#FFB4B2;min-height:0}
+#s-auth input[aria-invalid="true"]{border-color:rgba(226,75,74,.6)}
+@media(max-width:760px){
+  #s-auth .auth-card{padding:1.4rem}
+  /* 16px para que Safari iOS no haga auto-zoom al enfocar. */
+  #s-auth .auth-card input{font-size:16px}
+  .auth-brand h1{font-size:23px}
+}
+
+/* ── PLANES / COBRO ── */
+#s-planes{align-items:flex-start;justify-content:center;padding:2.5rem 1rem;overflow-y:auto}
+.pl-wrap{width:100%;max-width:760px}
+.pl-head{text-align:center;margin-bottom:1.5rem}
+.pl-head h2{font-size:24px;font-weight:600;letter-spacing:-.02em}
+.pl-head p{font-size:14px;color:var(--tx2);margin-top:6px}
+.pl-skip{width:100%;justify-content:center;padding:13px;margin-bottom:1.5rem;font-size:14.5px}
+.pl-toggle{display:flex;gap:6px;background:var(--sf2);border:1px solid var(--bd);border-radius:11px;padding:5px;margin:0 auto 1.5rem;width:fit-content}
+.pl-per{font-family:inherit;font-size:13.5px;font-weight:500;border:none;background:none;color:var(--tx2);
+  padding:9px 18px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .15s,color .15s}
+.pl-per.active{background:var(--surface);color:var(--tx);box-shadow:var(--sh)}
+.pl-ahorro{font-size:10.5px;font-weight:700;letter-spacing:.03em;background:var(--green-bg);color:var(--green-tx);padding:3px 7px;border-radius:5px}
+.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pl-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.5rem;display:flex;flex-direction:column;position:relative}
+.pl-card.destacada{border-color:#A78BFA;box-shadow:0 8px 30px rgba(139,124,247,.16)}
+.pl-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#7C3AED;color:#fff;
+  font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:4px 11px;border-radius:999px;white-space:nowrap}
+.pl-nom{font-size:16px;font-weight:600;display:flex;align-items:center;gap:7px}
+.pl-desc{font-size:12.5px;color:var(--tx3);margin-top:3px;min-height:32px}
+.pl-precio{font-size:32px;font-weight:600;letter-spacing:-.03em;margin:14px 0 2px;font-feature-settings:"tnum"}
+.pl-precio small{font-size:13px;font-weight:400;color:var(--tx2);letter-spacing:0}
+.pl-equiv{font-size:12px;color:var(--tx3);min-height:18px}
+.pl-lista{list-style:none;margin:16px 0;display:flex;flex-direction:column;gap:9px;flex:1}
+.pl-lista li{font-size:13px;display:flex;gap:8px;align-items:flex-start;line-height:1.45}
+.pl-lista i{color:var(--teal);font-size:15px;flex-shrink:0;margin-top:1px}
+.pl-card.destacada .pl-lista i{color:#8B5CF6}
+.pl-cta{width:100%;justify-content:center;padding:12px}
+.pl-actual{text-align:center;font-size:12.5px;color:var(--tx3);padding:12px;background:var(--sf2);border-radius:var(--r)}
+#stripe-checkout{min-height:560px}
+.pl-alt{text-align:center;margin-top:1.75rem;padding-top:1.5rem;border-top:1px solid var(--bd)}
+.pl-alt p{font-size:13px;color:var(--tx2);margin-bottom:11px}
+@media(max-width:720px){
+  #s-planes{padding:1.5rem 1rem}
+  .pl-grid{grid-template-columns:1fr}
+  .pl-head h2{font-size:21px}
+}
+
 /* ── WORKSPACE ── */
 #s-workspace{align-items:center;justify-content:center;padding:1rem}
 .ws-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);box-shadow:var(--shl);padding:2rem;width:100%;max-width:520px}
@@ -871,7 +973,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div class="blq-row"><strong>Tarjeta OXXO</strong><span id="blq-oxxo">—</span></div>
   </div>
   <p style="font-size:13px;color:var(--tx3);margin-bottom:1.25rem">Después de pagar, envía tu comprobante por WhatsApp o Instagram y activamos tu cuenta en minutos.</p>
-  <button class="btn primary" id="blq-pagar" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px;display:none"><i class="ti ti-credit-card"></i>Pagar en línea</button>
+  <button class="btn primary" id="blq-pagar" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px" onclick="abrirPlanes('vencido','s-bloqueado')"><i class="ti ti-credit-card"></i>Pagar con tarjeta</button>
   <button class="btn primary" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px" onclick="contactarWhatsApp()"><i class="ti ti-brand-whatsapp"></i>Enviar comprobante por WhatsApp</button>
   <button class="btn" style="width:100%;justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i>Cerrar sesión</button>
 </div>
@@ -879,26 +981,70 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
 <!-- ════ AUTH ════ -->
 <div id="s-auth" class="screen">
-<div class="auth-card">
-  <div style="font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-building" style="color:var(--teal)"></i>InmoPagos</div>
-  <div style="font-size:12px;color:var(--tx3);margin-bottom:1.75rem;padding-left:30px">Gestión de pagos de inmuebles</div>
-  <div class="auth-tabs">
-    <button class="atab active" onclick="atab('login',this)">Iniciar sesión</button>
-    <button class="atab" onclick="atab('reg',this)">Crear cuenta</button>
+<div class="strands-host" id="strands-host" aria-hidden="true"></div>
+<div class="auth-veil" aria-hidden="true"></div>
+<div class="auth-wrap">
+  <div class="auth-brand">
+    <!-- favicon-dark es la marca con fondo transparente (logoinmopagos.png
+         trae el fondo blanco horneado y se vería como un recuadro). -->
+    <img src="favicon-dark.png" alt="">
+    <h1>InmoPagos</h1>
+    <p>Cobranza, servicios y depósitos de tus rentas en un solo lugar</p>
   </div>
-  <div id="a-login">
-    <div class="fg2"><label>Correo</label><input type="email" id="a-email" placeholder="correo@ejemplo.com"></div>
-    <div class="fg2"><label>Contraseña</label><input type="password" id="a-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="err" id="login-err"></div>
-    <button class="btn primary" style="width:100%;justify-content:center;padding:11px" onclick="doLogin()" id="btn-login"><i class="ti ti-login"></i>Entrar</button>
+  <div class="auth-card">
+    <div class="auth-tabs" id="auth-tabs" role="tablist" aria-label="Acceder a InmoPagos">
+      <button class="atab active" data-panel="login" role="tab" id="tab-login" aria-selected="true" aria-controls="a-login" onclick="atab('login',this)">Iniciar sesión</button>
+      <button class="atab" data-panel="reg" role="tab" id="tab-reg" aria-selected="false" aria-controls="a-reg" onclick="atab('reg',this)">Crear cuenta</button>
+    </div>
+
+    <form id="a-login" role="tabpanel" aria-labelledby="tab-login" onsubmit="event.preventDefault();doLogin()">
+      <div class="fg2"><label for="a-email">Correo</label>
+        <input type="email" id="a-email" autocomplete="email" placeholder="correo@ejemplo.com" onblur="authBlur(this,'email')">
+        <span class="field-msg" id="msg-a-email"></span></div>
+      <div class="fg2"><label for="a-pass">Contraseña</label>
+        <input type="password" id="a-pass" autocomplete="current-password" placeholder="••••••••"></div>
+      <div class="err" id="login-err" role="alert"></div>
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center" id="btn-login"><i class="ti ti-login"></i>Entrar</button>
+      <div style="text-align:center;margin-top:12px"><button type="button" class="auth-link" onclick="authPanel('forgot')">¿Olvidaste tu contraseña?</button></div>
+    </form>
+
+    <form id="a-reg" style="display:none" role="tabpanel" aria-labelledby="tab-reg" onsubmit="event.preventDefault();doReg()">
+      <div class="fg2"><label for="r-name">Nombre completo</label>
+        <input type="text" id="r-name" autocomplete="name" placeholder="Tu nombre"></div>
+      <div class="fg2"><label for="r-email">Correo</label>
+        <input type="email" id="r-email" autocomplete="email" placeholder="correo@ejemplo.com" onblur="authBlur(this,'email')">
+        <span class="field-msg" id="msg-r-email"></span></div>
+      <div class="fg2"><label for="r-pass">Contraseña</label>
+        <input type="password" id="r-pass" autocomplete="new-password" placeholder="Mínimo 6 caracteres" onblur="authBlur(this,'pass')">
+        <span class="field-msg" id="msg-r-pass"></span></div>
+      <div class="err" id="reg-err" role="alert"></div><div class="ok" id="reg-ok" role="status"></div>
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center" id="btn-reg"><i class="ti ti-user-plus"></i>Crear cuenta</button>
+      <p style="font-size:12px;color:var(--amut);text-align:center;margin-top:12px">Incluye <strong style="color:var(--atx)">prueba gratis</strong> con todo Premium desbloqueado. Sin tarjeta.</p>
+    </form>
+
+    <form id="a-forgot" style="display:none" onsubmit="event.preventDefault();doForgot()">
+      <h2 style="font-size:16px;font-weight:600;color:var(--atx);margin-bottom:5px">Recuperar contraseña</h2>
+      <p style="font-size:13px;color:var(--amut);margin-bottom:1.1rem">Te mandamos un enlace para elegir una nueva.</p>
+      <div class="fg2"><label for="f-email">Correo</label>
+        <input type="email" id="f-email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
+      <div class="err" id="forgot-err" role="alert"></div><div class="ok" id="forgot-ok" role="status"></div>
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center" id="btn-forgot"><i class="ti ti-mail"></i>Enviar enlace</button>
+      <div style="text-align:center;margin-top:12px"><button type="button" class="auth-link" onclick="authPanel('login')">Volver a iniciar sesión</button></div>
+    </form>
+
+    <form id="a-nueva" style="display:none" onsubmit="event.preventDefault();doNuevaPass()">
+      <h2 style="font-size:16px;font-weight:600;color:var(--atx);margin-bottom:5px">Elige tu nueva contraseña</h2>
+      <p style="font-size:13px;color:var(--amut);margin-bottom:1.1rem">Ya validamos tu enlace. Solo falta esto.</p>
+      <div class="fg2"><label for="n-pass">Nueva contraseña</label>
+        <input type="password" id="n-pass" autocomplete="new-password" placeholder="Mínimo 6 caracteres" onblur="authBlur(this,'pass')">
+        <span class="field-msg" id="msg-n-pass"></span></div>
+      <div class="fg2"><label for="n-pass2">Confírmala</label>
+        <input type="password" id="n-pass2" autocomplete="new-password" placeholder="Escríbela otra vez"></div>
+      <div class="err" id="nueva-err" role="alert"></div><div class="ok" id="nueva-ok" role="status"></div>
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center" id="btn-nueva"><i class="ti ti-lock-check"></i>Guardar y entrar</button>
+    </form>
   </div>
-  <div id="a-reg" style="display:none">
-    <div class="fg2"><label>Nombre completo</label><input type="text" id="r-name" placeholder="Tu nombre"></div>
-    <div class="fg2"><label>Correo</label><input type="email" id="r-email" placeholder="correo@ejemplo.com"></div>
-    <div class="fg2"><label>Contraseña</label><input type="password" id="r-pass" placeholder="Mínimo 6 caracteres"></div>
-    <div class="err" id="reg-err"></div><div class="ok" id="reg-ok"></div>
-    <button class="btn primary" style="width:100%;justify-content:center;padding:11px" onclick="doReg()" id="btn-reg"><i class="ti ti-user-plus"></i>Crear cuenta</button>
-  </div>
+  <p class="auth-legal">Hecho en México · MC Conecta Living</p>
 </div>
 </div>
 
@@ -922,6 +1068,41 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <button class="btn" style="justify-content:center" onclick="openM('m-jws')"><i class="ti ti-door-enter"></i>Unirse con código</button>
   </div>
   <div style="margin-top:1rem;text-align:right"><button class="sb-btn" onclick="doLogout()">Cerrar sesión</button></div>
+</div>
+</div>
+
+<!-- ════ PLANES / COBRO ════ -->
+<div id="s-planes" class="screen">
+<div class="pl-wrap">
+  <div class="pl-head">
+    <h2 id="pl-ttl">Elige tu plan</h2>
+    <p id="pl-sub">Cancela cuando quieras. Tus datos se conservan.</p>
+  </div>
+
+  <div id="pl-skip-top"></div>
+
+  <div class="pl-toggle" role="group" aria-label="Periodo de cobro">
+    <button type="button" class="pl-per active" data-per="mensual" onclick="setPeriodo('mensual')">Mensual</button>
+    <button type="button" class="pl-per" data-per="anual" onclick="setPeriodo('anual')">Anual <span class="pl-ahorro">2 meses gratis</span></button>
+  </div>
+
+  <div class="pl-grid" id="pl-grid"></div>
+
+  <div id="pl-checkout-box" style="display:none">
+    <button class="btn" style="margin-bottom:14px" onclick="cancelarCheckout()"><i class="ti ti-arrow-left"></i>Elegir otro plan</button>
+    <div id="stripe-checkout"></div>
+    <div id="pl-confirmando" style="display:none;text-align:center;padding:2.5rem 1rem">
+      <span class="spinner" style="width:26px;height:26px;border-width:3px"></span>
+      <p style="margin-top:14px;font-weight:600">Estamos confirmando tu pago…</p>
+      <p style="font-size:13px;color:var(--tx2);margin-top:5px">No cierres esta ventana. Tarda unos segundos.</p>
+    </div>
+  </div>
+
+  <div class="pl-alt" id="pl-alt">
+    <p>¿Prefieres transferencia SPEI, depósito u OXXO?</p>
+    <button class="btn" onclick="pedirPremium(PLAN_MOTIVO||'finanzas')"><i class="ti ti-brand-whatsapp"></i>Pagar por WhatsApp</button>
+  </div>
+  <div style="text-align:center;margin-top:1.25rem"><button class="sb-btn" id="pl-volver" onclick="cerrarPlanes()">Volver</button></div>
 </div>
 </div>
 
@@ -980,7 +1161,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div id="trial-bar" style="display:none;align-items:center;gap:11px;border:1px solid #F2E3C2;background:#FEF6E7;color:#6B4E12;border-radius:11px;padding:11px 14px;margin-bottom:18px;font-size:13px">
     <i class="ti ti-clock-hour-4" style="font-size:18px;flex-shrink:0"></i>
     <span id="trial-txt" style="flex:1;min-width:0"></span>
-    <button class="btn primary" style="flex-shrink:0;padding:7px 13px;font-size:12.5px" onclick="pedirPremium('finanzas')"><i class="ti ti-crown"></i>Activar mi plan</button>
+    <button class="btn primary" style="flex-shrink:0;padding:7px 13px;font-size:12.5px" onclick="abrirPlanes('trial','s-app')"><i class="ti ti-crown"></i>Activar mi plan</button>
   </div>
   <!-- INICIO / RESUMEN -->
   <div id="sec-inicio">
@@ -1181,7 +1362,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
       </ul>
       <div class="pay-price"><b id="pay-precio">$1,899</b><span>MXN / mes</span></div>
       <p class="pay-anual" id="pay-anual">o <strong>$18,990</strong> al año — te ahorras 2 meses</p>
-      <button class="pay-btn" onclick="pedirPremium('finanzas')"><i class="ti ti-brand-whatsapp" style="font-size:16px"></i>Quiero Premium</button>
+      <button class="pay-btn" onclick="abrirPlanes('finanzas','s-app')"><i class="ti ti-credit-card" style="font-size:16px"></i>Quiero Premium</button>
       <button class="pay-btn alt" id="pay-link" style="display:none;margin-top:9px" onclick="LINK_PAGO&&window.open(LINK_PAGO,'_blank')"><i class="ti ti-credit-card" style="font-size:16px"></i>Pagar en línea</button>
       <button class="pay-btn ghost" onclick="finCerrarPaywall()">Volver</button>
     </div>
@@ -1321,7 +1502,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   </div>
   <p style="font-size:13.5px;color:var(--tx2);line-height:1.55;margin:0 0 4px" id="up-txt"></p>
   <p style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin:10px 0 0">Premium también incluye la versión Finanzas completa: <strong id="up-precio">$1,899</strong> MXN al mes, o <strong id="up-anual">$18,990</strong> al año (te ahorras 2 meses).</p>
-  <div class="mf"><button class="btn" onclick="closeM('m-upgrade')">Ahora no</button><button class="btn primary" id="up-cta"><i class="ti ti-brand-whatsapp"></i>Quiero ampliar mi plan</button></div>
+  <div class="mf"><button class="btn" onclick="closeM('m-upgrade')">Ahora no</button><button class="btn primary" id="up-cta"><i class="ti ti-credit-card"></i>Quiero ampliar mi plan</button></div>
 </div></div>
 
 <!-- Unirse con código -->
@@ -1502,6 +1683,331 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/motion@10.18.0/dist/motion.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+//  STRANDS — fondo animado de la pantalla de inicio
+//
+//  Port a JS plano del componente <Strands/> de React Bits (variante
+//  JS-CSS, https://reactbits.dev/animations/strands). Los shaders van
+//  copiados tal cual del registry oficial; lo único que se reescribió es
+//  el andamio, porque el original usa React + la librería `ogl`.
+//
+//  Se tiró `ogl` a propósito: su fragment shader no tiene varyings —
+//  calcula todo desde gl_FragCoord y uResolution — así que el resultado
+//  en la GPU es idéntico con o sin ella. Lo único que aportaba era crear
+//  el canvas, un triángulo de 3 vértices, compilar el programa y parsear
+//  hex. A cambio nos ahorramos un quinto CDN en la PRIMERA pantalla que
+//  ve el usuario, y no hace falta <script type="module"> (que rompería
+//  el modelo de este archivo, donde todo son onclick="fn()" inline).
+// ═══════════════════════════════════════════════════════════════════════
+(function(){
+'use strict';
+
+var MAX_STRANDS = 12, MAX_COLORS = 8;
+
+var VERT = '#version 300 es\n\
+in vec2 position;\n\
+void main() {\n\
+  gl_Position = vec4(position, 0.0, 1.0);\n\
+}\n';
+
+var FRAG = '#version 300 es\n\
+precision highp float;\n\
+\n\
+uniform float uTime;\n\
+uniform vec2 uResolution;\n\
+uniform vec3 uColors[' + MAX_COLORS + '];\n\
+uniform int uColorCount;\n\
+uniform int uStrandCount;\n\
+uniform float uSpeed;\n\
+uniform float uAmplitude;\n\
+uniform float uWaviness;\n\
+uniform float uThickness;\n\
+uniform float uGlow;\n\
+uniform float uTaper;\n\
+uniform float uSpread;\n\
+uniform float uHueShift;\n\
+uniform float uIntensity;\n\
+uniform float uOpacity;\n\
+uniform float uScale;\n\
+uniform float uSaturation;\n\
+\n\
+out vec4 fragColor;\n\
+\n\
+const float PI = 3.14159265;\n\
+\n\
+vec3 spectrum(float t) {\n\
+  return 0.5 + 0.5 * cos(2.0 * PI * (t + vec3(0.00, 0.33, 0.67)));\n\
+}\n\
+\n\
+vec3 samplePalette(float t) {\n\
+  t = fract(t);\n\
+  float scaled = t * float(uColorCount);\n\
+  int idx = int(floor(scaled));\n\
+  float blend = fract(scaled);\n\
+  int nextIdx = idx + 1;\n\
+  if (nextIdx >= uColorCount) nextIdx = 0;\n\
+  return mix(uColors[idx], uColors[nextIdx], blend);\n\
+}\n\
+\n\
+vec3 strandColor(float t) {\n\
+  if (uColorCount > 0) return samplePalette(t);\n\
+  return spectrum(t);\n\
+}\n\
+\n\
+void main() {\n\
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / uResolution.y;\n\
+  uv /= max(uScale, 0.0001);\n\
+\n\
+  float e = 0.06 + uIntensity * 0.94;\n\
+  float env = pow(max(cos(uv.x * PI * 1.3), 0.0), uTaper);\n\
+\n\
+  vec3 col = vec3(0.0);\n\
+\n\
+  for (int i = 0; i < ' + MAX_STRANDS + '; i++) {\n\
+    if (i >= uStrandCount) break;\n\
+\n\
+    float fi = float(i);\n\
+    float ph = fi * 1.7 * uSpread;\n\
+    float freq = (2.0 + fi * 0.35) * uWaviness;\n\
+    float spd = 1.4 + fi * 1.2;\n\
+\n\
+    float tt = uTime * uSpeed;\n\
+    float w = sin(uv.x * freq + tt * spd + ph) * 0.60\n\
+            + sin(uv.x * freq * 1.1 - tt * spd * 0.7 + ph * 1.7) * 0.40;\n\
+\n\
+    float amp = (0.1 + 0.02 * e) * env * uAmplitude;\n\
+    float y = w * amp;\n\
+\n\
+    float d = abs(uv.y - y);\n\
+    float thick = (0.001 + 0.05 * e) * (0.35 + env) * uThickness;\n\
+    float g = thick / (d + thick * 0.45);\n\
+    g = g * g;\n\
+\n\
+    float h = fi / float(uStrandCount) + uv.x * 0.30 + uTime * 0.04 + uHueShift;\n\
+    col += strandColor(h) * g * env;\n\
+  }\n\
+\n\
+  col *= 0.45 + 0.7 * e;\n\
+  col = 1.0 - exp(-col * uGlow);\n\
+\n\
+  float gray = dot(col, vec3(0.2126, 0.7152, 0.0722));\n\
+  col = max(mix(vec3(gray), col, uSaturation), 0.0);\n\
+\n\
+  float lum = max(max(col.r, col.g), col.b);\n\
+  float alpha = clamp(lum, 0.0, 1.0) * uOpacity;\n\
+\n\
+  fragColor = vec4(col * uOpacity, alpha);\n\
+}\n';
+
+var DEFAULTS = {
+  colors:['#FF4242','#7C3AED','#06B6D4','#EAB308'], count:3, speed:.5,
+  amplitude:1, waviness:1, thickness:.7, glow:2.6, taper:3, spread:1,
+  hueShift:0, intensity:.6, saturation:1.5, opacity:1, scale:1.5
+};
+
+// Equivalente a `new Color(hex)` de ogl: componentes lineales 0..1, sin gamma.
+function hex2rgb(hex){
+  var h = String(hex||'').replace('#','').trim();
+  if(h.length===3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  var n = parseInt(h,16);
+  if(isNaN(n)) return [1,1,1];
+  return [((n>>16)&255)/255, ((n>>8)&255)/255, (n&255)/255];
+}
+
+// El original reconstruye los 8 Color EN CADA FRAME. Aquí se calcula al
+// montar y en setOpts: mismo valor, sin basura por cuadro.
+function buildPalette(colors){
+  var filled = (colors && colors.length) ? colors : ['#ffffff'];
+  var out = new Float32Array(MAX_COLORS*3);
+  for(var i=0;i<MAX_COLORS;i++){
+    var c = hex2rgb(filled[i] != null ? filled[i] : filled[filled.length-1]);
+    out[i*3]=c[0]; out[i*3+1]=c[1]; out[i*3+2]=c[2];
+  }
+  return out;
+}
+
+function compile(gl, type, src){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    console.warn('Strands · shader:', gl.getShaderInfoLog(s));
+    gl.deleteShader(s); return null;
+  }
+  return s;
+}
+
+window.mountStrands = function(container, options){
+  var o = {}; for(var k in DEFAULTS) o[k] = DEFAULTS[k];
+  for(var k2 in (options||{})) if(options[k2] !== undefined) o[k2] = options[k2];
+
+  var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var canvas = document.createElement('canvas');
+  canvas.setAttribute('aria-hidden','true');
+  canvas.style.display='block'; canvas.style.width='100%'; canvas.style.height='100%';
+
+  var gl = null;
+  try{
+    gl = canvas.getContext('webgl2',{alpha:true, premultipliedAlpha:true, antialias:true});
+  }catch(e){ gl = null; }
+
+  // Sin WebGL2 no insertamos nada: el caller pinta el degradado de respaldo.
+  // Esta es la primera pantalla del producto; un rectángulo negro sería
+  // un fallo total, no una degradación.
+  if(!gl) return { ok:false, running:false, start:function(){}, stop:function(){},
+                   setOpts:function(){}, resize:function(){}, destroy:function(){} };
+
+  var vs = compile(gl, gl.VERTEX_SHADER, VERT);
+  var fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
+  var prog = vs && fs ? gl.createProgram() : null;
+  if(prog){
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+      console.warn('Strands · link:', gl.getProgramInfoLog(prog));
+      gl.deleteProgram(prog); prog = null;
+    }
+  }
+  if(!prog) return { ok:false, running:false, start:function(){}, stop:function(){},
+                     setOpts:function(){}, resize:function(){}, destroy:function(){} };
+  if(vs) gl.deleteShader(vs);
+  if(fs) gl.deleteShader(fs);
+
+  // Triángulo que cubre toda la pantalla (reemplaza Triangle de ogl).
+  var vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  var vbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog,'position');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+
+  gl.useProgram(prog);
+  var U = {};
+  ['uTime','uResolution','uColors','uColorCount','uStrandCount','uSpeed','uAmplitude',
+   'uWaviness','uThickness','uGlow','uTaper','uSpread','uHueShift','uIntensity',
+   'uOpacity','uScale','uSaturation'].forEach(function(n){ U[n] = gl.getUniformLocation(prog,n); });
+
+  // ogl arranca con transparent:false -> blending apagado y clearAlpha 0.
+  gl.disable(gl.DEPTH_TEST);
+  gl.disable(gl.BLEND);
+  gl.clearColor(0,0,0,0);
+
+  var palette = buildPalette(o.colors), dirty = true;
+
+  function pushUniforms(){
+    gl.uniform3fv(U.uColors, palette);
+    gl.uniform1i(U.uColorCount, Math.min(o.colors.length, MAX_COLORS));
+    gl.uniform1i(U.uStrandCount, Math.min(Math.max(Math.round(o.count),1), MAX_STRANDS));
+    gl.uniform1f(U.uSpeed, o.speed);           gl.uniform1f(U.uAmplitude, o.amplitude);
+    gl.uniform1f(U.uWaviness, o.waviness);     gl.uniform1f(U.uThickness, o.thickness);
+    gl.uniform1f(U.uGlow, o.glow);             gl.uniform1f(U.uTaper, o.taper);
+    gl.uniform1f(U.uSpread, o.spread);         gl.uniform1f(U.uHueShift, o.hueShift);
+    gl.uniform1f(U.uIntensity, o.intensity);   gl.uniform1f(U.uOpacity, o.opacity);
+    gl.uniform1f(U.uScale, o.scale);           gl.uniform1f(U.uSaturation, o.saturation);
+    dirty = false;
+  }
+
+  var W = 0, H = 0;
+  function resize(){
+    var w = container.offsetWidth, h = container.offsetHeight;
+    // #s-auth alterna display:none <-> flex; con none el offsetWidth es 0
+    // y un buffer de 0 revienta (el shader divide entre uResolution.y).
+    if(!w || !h) return false;
+    var dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth <= 760 ? 1 : 1.5);
+    var nw = Math.round(w*dpr), nh = Math.round(h*dpr);
+    if(nw === W && nh === H) return true;
+    W = nw; H = nh;
+    canvas.width = W; canvas.height = H;
+    gl.viewport(0,0,W,H);
+    gl.useProgram(prog);
+    // OJO: el original manda px CSS aquí y solo le funciona porque ogl usa
+    // dpr:1. Con DPR>1 el patrón sale recortado. Va el drawing buffer.
+    gl.uniform2f(U.uResolution, W, H);
+    return true;
+  }
+
+  function draw(tSec){
+    if(!resize()) return;
+    gl.useProgram(prog);
+    gl.bindVertexArray(vao);
+    if(dirty) pushUniforms();
+    gl.uniform1f(U.uTime, tSec);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.bindVertexArray(null);
+  }
+
+  // Reloj propio: con el timestamp crudo del rAF, pausar y reanudar da un
+  // salto visible en la animación.
+  var raf = 0, running = false, acumulado = 0, t0 = 0, lost = false;
+
+  function frame(now){
+    raf = requestAnimationFrame(frame);
+    draw((acumulado + (now - t0)) * 0.001);
+  }
+  function start(){
+    if(running || lost || mq.matches || document.hidden) return;
+    running = true; t0 = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+  function stop(){
+    if(!running) return;
+    running = false;
+    acumulado += performance.now() - t0;
+    cancelAnimationFrame(raf); raf = 0;
+  }
+  // uTime=8 y no 0: en t=0 las hebras están degeneradas y casi no se ven.
+  function unFrame(){ if(resize()) draw(8.0); }
+
+  function onVis(){ if(document.hidden) stop(); else if(container.dataset.strandsOn === '1') start(); }
+  function onMq(){ if(mq.matches){ stop(); unFrame(); } else if(container.dataset.strandsOn === '1') start(); }
+  function onLost(e){ e.preventDefault(); lost = true; stop(); }   // sin esto, en iOS el canvas
+  function onRestored(){ lost = false; if(container.dataset.strandsOn === '1') start(); }  // queda negro para siempre
+
+  document.addEventListener('visibilitychange', onVis);
+  if(mq.addEventListener) mq.addEventListener('change', onMq);
+  canvas.addEventListener('webglcontextlost', onLost, false);
+  canvas.addEventListener('webglcontextrestored', onRestored, false);
+
+  var ro = null;
+  if(window.ResizeObserver){
+    ro = new ResizeObserver(function(){ if(!running) unFrame(); });
+    ro.observe(container);
+  }else{
+    window.addEventListener('resize', function(){ if(!running) unFrame(); });
+  }
+
+  container.appendChild(canvas);
+  requestAnimationFrame(function(){ unFrame(); });   // primer cuadro aunque nunca arranque el loop
+
+  return {
+    ok: true,
+    get running(){ return running; },
+    start: function(){ container.dataset.strandsOn = '1'; if(mq.matches) unFrame(); else start(); },
+    stop:  function(){ container.dataset.strandsOn = '0'; stop(); },
+    setOpts: function(p){ for(var k in (p||{})) if(p[k] !== undefined) o[k] = p[k];
+                          if(p && p.colors) palette = buildPalette(o.colors);
+                          dirty = true; if(!running) unFrame(); },
+    resize: function(){ W = H = 0; if(!running) unFrame(); },
+    destroy: function(){
+      stop();
+      document.removeEventListener('visibilitychange', onVis);
+      if(mq.removeEventListener) mq.removeEventListener('change', onMq);
+      canvas.removeEventListener('webglcontextlost', onLost);
+      canvas.removeEventListener('webglcontextrestored', onRestored);
+      if(ro) ro.disconnect();
+      gl.deleteProgram(prog); gl.deleteBuffer(vbo); gl.deleteVertexArray(vao);
+      var ext = gl.getExtension('WEBGL_lose_context'); if(ext) ext.loseContext();
+      if(canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    }
+  };
+};
+})();
+</script>
+
 <script>
 // ═══════════════════════════════════════
 //  GLOBALS
@@ -1529,9 +2035,14 @@ let svcSeleccion=null;  // null = todas las facturas en la gráfica; Set(ids) = 
 // ═══════════════════════════════════════
 //  SCREEN HELPERS
 // ═══════════════════════════════════════
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('mobile-nav').classList.toggle('on',id==='s-app')}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('mobile-nav').classList.toggle('on',id==='s-app');
+  // El fondo WebGL solo corre mientras se ve. Con display:none el contenedor
+  // mide 0 y sería GPU quemada a cambio de nada.
+  try{if(window.STRANDS)id==='s-auth'?STRANDS.start():STRANDS.stop()}catch(e){}}
 function openM(id){document.getElementById(id).classList.add('open')}
 function closeM(id){document.getElementById(id).classList.remove('open')}
+// ¿Este modal está en pantalla ahora? refresh() lo usa para repintar también lo que está abierto
+function mAbierto(id){return !!document.getElementById(id)?.classList.contains('open')}
 document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(m=>m.classList.remove('open'))});
 // ── Hover/active inline-style helper (reproduce el style-hover/style-active del diseño con markup inline) ──
@@ -1723,15 +2234,60 @@ async function doSetup(){
 // ═══════════════════════════════════════
 //  AUTH
 // ═══════════════════════════════════════
-function atab(t,btn){document.querySelectorAll('.atab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=t==='login'?'block':'none';document.getElementById('a-reg').style.display=t==='reg'?'block':'none'}
+const AUTH_PANELS=['login','reg','forgot','nueva'];
+function authPanel(p){
+  AUTH_PANELS.forEach(n=>{const el=document.getElementById('a-'+n);if(el)el.style.display=(n===p)?'block':'none'});
+  // Las pestañas solo tienen sentido en login/registro; recuperar y fijar
+  // contraseña son caminos, no alternativas.
+  document.getElementById('auth-tabs').style.display=(p==='login'||p==='reg')?'flex':'none';
+  document.querySelectorAll('.atab').forEach(b=>{const on=b.dataset.panel===p;b.classList.toggle('active',on);b.setAttribute('aria-selected',on?'true':'false')});
+  ['login-err','reg-err','reg-ok','forgot-err','forgot-ok','nueva-err','nueva-ok'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none'});
+}
+function atab(t,btn){authPanel(t)}   // firma conservada: los onclick inline no cambian
+
+// Validación al salir del campo (no al teclear: regañar mientras escribes es hostil).
+function authBlur(inp,tipo){
+  const msg=document.getElementById('msg-'+inp.id); if(!msg)return;
+  const v=inp.value.trim(); let mal='';
+  if(v){
+    if(tipo==='email'&&!/^\S+@\S+\.\S+$/.test(v)) mal='Revisa el correo, parece incompleto.';
+    if(tipo==='pass'&&inp.value.length<6)          mal='Mínimo 6 caracteres.';
+  }
+  msg.textContent=mal;
+  inp.setAttribute('aria-invalid',mal?'true':'false');
+}
 async function doLogin(){
   const em=document.getElementById('a-email').value.trim(),ps=document.getElementById('a-pass').value,err=document.getElementById('login-err'),btn=document.getElementById('btn-login');
   err.style.display='none';if(!em||!ps){se(err,'Completa todos los campos');return}
-  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Entrando…';btn.disabled=true;
   const {data,error}=await sb.auth.signInWithPassword({email:em,password:ps});
   btn.innerHTML='<i class="ti ti-login"></i>Entrar';btn.disabled=false;
   if(error){se(err,'Correo o contraseña incorrectos');return}
   CU=data.user;cargarWS();
+}
+// Mismo mensaje pase lo que pase. Distinguir "ese correo no existe" de "listo"
+// convierte este formulario en un enumerador de la cartera de clientes.
+async function doForgot(){
+  const em=document.getElementById('f-email').value.trim(),err=document.getElementById('forgot-err'),ok=document.getElementById('forgot-ok'),btn=document.getElementById('btn-forgot');
+  err.style.display='none';ok.style.display='none';
+  if(!/^\S+@\S+\.\S+$/.test(em)){se(err,'Escribe un correo válido');return}
+  btn.innerHTML='<span class="spinner"></span>Enviando…';btn.disabled=true;
+  const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});
+  btn.innerHTML='<i class="ti ti-mail"></i>Enviar enlace';btn.disabled=false;
+  if(error)console.warn('reset:',error.message);   // incluye el límite de envíos; no se filtra a la UI
+  ok.textContent='Si esa cuenta existe, te enviamos un enlace para restablecer tu contraseña. Revisa tu correo.';ok.style.display='block';
+}
+async function doNuevaPass(){
+  const p1=document.getElementById('n-pass').value,p2=document.getElementById('n-pass2').value,err=document.getElementById('nueva-err'),ok=document.getElementById('nueva-ok'),btn=document.getElementById('btn-nueva');
+  err.style.display='none';ok.style.display='none';
+  if(p1.length<6){se(err,'La contraseña debe tener mínimo 6 caracteres');return}
+  if(p1!==p2){se(err,'Las dos contraseñas no coinciden');return}
+  btn.innerHTML='<span class="spinner"></span>Guardando…';btn.disabled=true;
+  const {data,error}=await sb.auth.updateUser({password:p1});
+  btn.innerHTML='<i class="ti ti-lock-check"></i>Guardar y entrar';btn.disabled=false;
+  if(error){se(err,error.message);return}
+  ok.textContent='Listo, tu contraseña quedó cambiada.';ok.style.display='block';
+  CU=(data&&data.user)||CU;setTimeout(()=>{authPanel('login');cargarWS()},900);
 }
 async function doReg(){
   const nm=document.getElementById('r-name').value.trim(),em=document.getElementById('r-email').value.trim(),ps=document.getElementById('r-pass').value,err=document.getElementById('reg-err'),ok=document.getElementById('reg-ok'),btn=document.getElementById('btn-reg');
@@ -1741,14 +2297,201 @@ async function doReg(){
   const {data,error}=await sb.auth.signUp({email:em,password:ps,options:{data:{full_name:nm}}});
   btn.innerHTML='<i class="ti ti-user-plus"></i>Crear cuenta';btn.disabled=false;
   if(error){se(err,error.message);return}
-  CU=data.user;ok.textContent='¡Cuenta creada!';ok.style.display='block';setTimeout(()=>cargarWS(),1200);
+  CU=data.user;ok.textContent='¡Cuenta creada!';ok.style.display='block';setTimeout(()=>abrirPlanes('bienvenida','skip'),1200);
 }
 async function doLogout(){await sb.auth.signOut();CU=null;CW=null;show('s-auth')}
 
 // ═══════════════════════════════════════
+//  PLANES — cobro con Stripe (tarjeta, renovación automática)
+// ═══════════════════════════════════════
+// Llave pública de Stripe: es pública por diseño, igual que la anon de Supabase.
+// Al pasar a producción se cambia por la pk_live_...
+const PK_STRIPE='pk_test_PENDIENTE';
+const FN_URL='https://pfkkjpoedvcecgdnxmuy.supabase.co/functions/v1/crear-checkout';
+// Fuente única de precios en el navegador. Espeja precio_lista() de Postgres;
+// lo que de verdad se cobra son los objetos Price de Stripe.
+const PRECIOS={normal:{mensual:999,anual:9990},premium:{mensual:1899,anual:18990}};
+const PLANES_INFO={
+  normal:{nom:'Normal',icono:'ti-building',desc:'Todo lo de cobranza para un negocio.',destacada:false,
+    puntos:['1 negocio, hasta 15 departamentos','Cobranza, alertas de mora y recordatorios','Reparto de agua, luz y gas','Depósitos en garantía y estados de cuenta en PDF','Equipo con roles']},
+  premium:{nom:'Premium',icono:'ti-crown',desc:'Suma la Versión Finanzas y quita los límites.',destacada:true,
+    puntos:['3 negocios, departamentos ilimitados','Todo lo del plan Normal','Versión Finanzas: cascada de rentabilidad','Gastos recurrentes e impuestos por inmueble','Finanzas consolidadas de todos tus negocios']}
+};
+let PLAN_MOTIVO=null,PLAN_RETORNO='s-workspace',PERIODO_SEL='mensual',CHECKOUT=null,_stripeP=null;
+// Si ya existe una suscripción viva en Stripe, contratar otro plan por
+// Checkout crearía una SEGUNDA suscripción y se le cobraría dos veces al
+// mismo cliente. Mientras no exista el portal de facturación, esos cambios
+// pasan por WhatsApp.
+let SUB_STRIPE=null;
+
+const money=n=>'$'+n.toLocaleString('es-MX');
+
+// js.stripe.com TIENE que venir del dominio de Stripe (requisito de PCI y
+// antifraude, no se puede auto-hospedar), pero son ~40KB y una llamada de
+// detección de fraude por carga. Solo hace falta aquí, así que se pide bajo
+// demanda: la pantalla de inicio no lo paga.
+function cargarStripe(){
+  if(!_stripeP)_stripeP=new Promise((ok,fail)=>{
+    if(window.Stripe)return ok(Stripe(PK_STRIPE));
+    const s=document.createElement('script');s.src='https://js.stripe.com/v3';
+    s.onload=()=>ok(Stripe(PK_STRIPE));s.onerror=()=>fail(new Error('No se pudo cargar Stripe'));
+    document.head.appendChild(s);
+  });
+  return _stripeP;
+}
+
+async function abrirPlanes(motivo,retorno){
+  PLAN_MOTIVO=motivo||null;PLAN_RETORNO=retorno||'s-workspace';
+  cancelarCheckout();
+  const bienvenida=(motivo==='bienvenida');
+  document.getElementById('pl-skip-top').innerHTML='';
+  document.getElementById('pl-volver').style.display=bienvenida?'none':'';
+  if(!bienvenida){
+    document.getElementById('pl-ttl').textContent='Elige tu plan';
+    document.getElementById('pl-sub').textContent='Cancela cuando quieras. Tus datos se conservan.';
+  }
+  renderPlanes();show('s-planes');
+  // Refrescar el plan real ANTES de dejar comprar. Recién registrado nadie ha
+  // corrido verificarSuscripcion todavía, y PLAN arranca en 'premium' por
+  // defecto (línea del bloque de globals): sin esto la tarjeta Premium
+  // saldría como "tu plan actual" y no se podría contratar.
+  await refrescarPlan(bienvenida);
+}
+
+async function refrescarPlan(bienvenida){
+  let trialFin=null;
+  try{
+    let {data,error}=await sb.from('clientes').select('plan,trial_fin,stripe_subscription_id').eq('email',CU.email).maybeSingle();
+    // Igual que verificarSuscripcion: si migracion_stripe.sql todavía no se
+    // corre, las columnas no existen y hay que leer el esquema viejo.
+    if(error&&/does not exist|42703|column/i.test(error.message||''))
+      ({data}=await sb.from('clientes').select('plan,trial_fin').eq('email',CU.email).maybeSingle());
+    if(data){PLAN=data.plan||PLAN;trialFin=data.trial_fin||null;SUB_STRIPE=data.stripe_subscription_id||null}
+  }catch(e){}
+  renderPlanes();
+  if(bienvenida)pintarSkip(trialFin);
+}
+function cerrarPlanes(){
+  cancelarCheckout();
+  // 'skip' = venía del registro y no hay pantalla previa a la que volver.
+  PLAN_RETORNO==='skip'?cargarWS():show(PLAN_RETORNO);
+}
+function setPeriodo(p){
+  PERIODO_SEL=p;
+  document.querySelectorAll('.pl-per').forEach(b=>b.classList.toggle('active',b.dataset.per===p));
+  renderPlanes();
+}
+
+// Los días de prueba se leen de la base, nunca se escriben a mano: si el
+// trigger de Postgres cambiara, la pantalla seguiría diciendo la verdad.
+function pintarSkip(trialFin){
+  const cont=document.getElementById('pl-skip-top');
+  let dias=null;
+  if(trialFin){
+    const f=new Date(trialFin+'T00:00:00'),h=new Date();h.setHours(0,0,0,0);
+    dias=Math.ceil((f-h)/86400000);
+  }
+  document.getElementById('pl-ttl').textContent='Tu cuenta está lista';
+  document.getElementById('pl-sub').textContent=dias>0
+    ?'Tienes '+dias+' día'+(dias===1?'':'s')+' de prueba con todo Premium desbloqueado. Puedes elegir tu plan ahora o después.'
+    :'Elige tu plan para empezar.';
+  cont.innerHTML='<button class="btn primary pl-skip" onclick="cerrarPlanes()"><i class="ti ti-arrow-right"></i>'
+    +(dias>0?'Empezar mi prueba de '+dias+' día'+(dias===1?'':'s')+' gratis':'Entrar a InmoPagos')+'</button>';
+}
+
+function renderPlanes(){
+  const g=document.getElementById('pl-grid');
+  g.innerHTML=['normal','premium'].map(k=>{
+    const info=PLANES_INFO[k],precio=PRECIOS[k][PERIODO_SEL];
+    const actual=(PLAN===k);
+    const equiv=PERIODO_SEL==='anual'?money(Math.round(precio/12))+' al mes, pagado de golpe':'&nbsp;';
+    return '<div class="pl-card'+(info.destacada?' destacada':'')+'">'
+      +(info.destacada?'<span class="pl-tag">MÁS COMPLETO</span>':'')
+      +'<div class="pl-nom"><i class="ti '+info.icono+'"></i>'+info.nom+'</div>'
+      +'<div class="pl-desc">'+info.desc+'</div>'
+      +'<div class="pl-precio">'+money(precio)+' <small>MXN / '+(PERIODO_SEL==='anual'?'año':'mes')+'</small></div>'
+      +'<div class="pl-equiv">'+equiv+'</div>'
+      +'<ul class="pl-lista">'+info.puntos.map(p=>'<li><i class="ti ti-check"></i>'+p+'</li>').join('')+'</ul>'
+      +(actual
+         ?'<div class="pl-actual">Tu plan actual</div>'
+         :SUB_STRIPE
+           ?'<button class="btn pl-cta" onclick="pedirPremium(\''+k+'\')"><i class="ti ti-brand-whatsapp"></i>Cambiar a '+info.nom+'</button>'
+           :'<button class="btn '+(info.destacada?'primary':'')+' pl-cta" onclick="iniciarCheckout(\''+k+'\')"><i class="ti ti-credit-card"></i>Contratar '+info.nom+'</button>')
+      +'</div>';
+  }).join('');
+}
+
+async function iniciarCheckout(plan){
+  const caja=document.getElementById('pl-checkout-box');
+  document.getElementById('pl-grid').style.display='none';
+  document.querySelector('.pl-toggle').style.display='none';
+  document.getElementById('pl-skip-top').style.display='none';
+  caja.style.display='block';
+  document.getElementById('stripe-checkout').innerHTML=
+    '<div style="text-align:center;padding:3rem 1rem"><span class="spinner"></span><p style="margin-top:12px;font-size:13px;color:var(--tx2)">Abriendo el pago seguro…</p></div>';
+  try{
+    const stripe=await cargarStripe();
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Tu sesión expiró. Vuelve a entrar.');
+    const r=await fetch(FN_URL,{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({plan,periodo:PERIODO_SEL})});
+    const j=await r.json();
+    if(!r.ok||!j.client_secret)throw new Error(j.error||'No pudimos abrir el pago');
+    if(CHECKOUT){try{CHECKOUT.destroy()}catch(e){}CHECKOUT=null}
+    document.getElementById('stripe-checkout').innerHTML='';
+    CHECKOUT=await stripe.initEmbeddedCheckout({clientSecret:j.client_secret,onComplete:esperarActivacion});
+    CHECKOUT.mount('#stripe-checkout');
+  }catch(e){
+    document.getElementById('stripe-checkout').innerHTML=
+      '<div class="err" style="display:block">'+(e.message||'No pudimos abrir el pago')+'</div>'
+      +'<p style="font-size:13px;color:var(--tx2)">Puedes intentar de nuevo o pagar por WhatsApp aquí abajo.</p>';
+    console.error('checkout:',e);
+  }
+}
+
+function cancelarCheckout(){
+  if(CHECKOUT){try{CHECKOUT.destroy()}catch(e){}CHECKOUT=null}
+  const caja=document.getElementById('pl-checkout-box');if(!caja)return;
+  caja.style.display='none';
+  document.getElementById('pl-confirmando').style.display='none';
+  document.getElementById('stripe-checkout').style.display='';
+  document.getElementById('stripe-checkout').innerHTML='';
+  const g=document.getElementById('pl-grid');if(g)g.style.display='';
+  const t=document.querySelector('.pl-toggle');if(t)t.style.display='';
+  const s=document.getElementById('pl-skip-top');if(s)s.style.display='';
+  const a=document.getElementById('pl-alt');if(a)a.style.display='';
+}
+
+// Regla de oro de toda esta capa: el navegador NO activa nada. Quien activa
+// la cuenta es el webhook cuando Stripe confirma el dinero. Aquí solo se
+// espera a que eso ocurra. Si `onComplete` prendiera el acceso, bastaría con
+// abrir la consola para regalarse Premium.
+async function esperarActivacion(){
+  document.getElementById('stripe-checkout').style.display='none';
+  document.getElementById('pl-alt').style.display='none';
+  document.getElementById('pl-confirmando').style.display='block';
+  for(let i=0;i<12;i++){
+    await new Promise(r=>setTimeout(r,2000));
+    let ok=false;
+    try{ok=await verificarSuscripcion(true)}catch(e){}
+    if(ok){toast('¡Listo! Tu plan quedó activo');cancelarCheckout();cargarWS();return}
+  }
+  document.getElementById('pl-confirmando').innerHTML=
+    '<i class="ti ti-clock-hour-4" style="font-size:32px;color:var(--amber)"></i>'
+    +'<p style="margin-top:12px;font-weight:600">Tu pago se registró correctamente</p>'
+    +'<p style="font-size:13px;color:var(--tx2);margin-top:6px">La activación puede tardar un minuto más. Recarga la página en un momento; si sigue igual, escríbenos.</p>'
+    +'<button class="btn primary" style="margin-top:16px" onclick="location.reload()">Recargar</button>';
+}
+
+// ═══════════════════════════════════════
 //  SUSCRIPCIÓN — verificar antes de entrar
 // ═══════════════════════════════════════
-async function verificarSuscripcion(){
+// `silencioso` = solo responde true/false sin mandar a s-bloqueado. Lo usa el
+// sondeo posterior al pago: mientras el webhook confirma, la respuesta es
+// legítimamente false y no queremos parpadear la pantalla de vencido.
+async function verificarSuscripcion(silencioso){
+  const bloquear=cfg=>{if(!silencioso)mostrarBloqueado(cfg||{})};
   // Todo usuario necesita su propia suscripción activa, colaborador o dueño.
   // La colaboración exige que ambos estén al corriente: esta parte cubre al
   // colaborador; que el dueño del negocio también lo esté se valida del lado
@@ -1764,7 +2507,7 @@ async function verificarSuscripcion(){
     if(data)data.plan='premium';
   }
   // Si no existe el registro o hay error: bloquear por seguridad
-  if(error||!data){mostrarBloqueado({});return false;}
+  if(error||!data){bloquear({});return false;}
   PLAN=data.plan||'premium';
   TRIAL_FIN=data.trial_fin||null;
   PROX_COBRO=data.proximo_cobro||null;
@@ -1777,15 +2520,15 @@ async function verificarSuscripcion(){
     // período vencido (con 3 días de gracia) también cierran el acceso.
     // La base de datos aplica la misma regla; esto solo evita la pantalla vacía.
     const d=diasDePrueba();
-    if(PLAN==='trial'&&d!==null&&d<0){mostrarBloqueado(data);return false;}
+    if(PLAN==='trial'&&d!==null&&d<0){bloquear(data);return false;}
     if(PLAN!=='trial'&&PROX_COBRO){
       const lim=new Date(PROX_COBRO+'T00:00:00');lim.setDate(lim.getDate()+3);
       const h=new Date();h.setHours(0,0,0,0);
-      if(h>lim){mostrarBloqueado(data);return false;}
+      if(h>lim){bloquear(data);return false;}
     }
     return true;
   }
-  mostrarBloqueado(data);return false;
+  bloquear(data);return false;
 }
 function mostrarBloqueado(cfg){
   // Copy distinto según por qué se cerró: no es lo mismo terminar la prueba
@@ -1797,9 +2540,11 @@ function mostrarBloqueado(cfg){
   document.getElementById('blq-sub').textContent=finPrueba
     ? 'Tus datos siguen intactos y te esperan. Activa tu plan para volver a entrar — en cuanto confirmemos el pago, tu cuenta se reabre al instante.'
     : 'Para seguir usando InmoPagos y administrar tus inmuebles, realiza el pago de tu mensualidad. En cuanto lo hagamos efectivo, tu acceso se reactiva al instante.';
+  // Pagar con tarjeta ya no depende de que el admin haya configurado un
+  // link_pago a mano: el checkout de Stripe está siempre disponible.
   const bp=document.getElementById('blq-pagar');
-  if(cfg.link_pago){bp.style.display='inline-flex';bp.onclick=()=>window.open(cfg.link_pago,'_blank');}
-  else bp.style.display='none';
+  bp.style.display='inline-flex';
+  bp.onclick=()=>abrirPlanes('vencido','s-bloqueado');
   document.getElementById('blq-cobrador').textContent=cfg.nombre_cobrador||'InmoPagos';
   document.getElementById('blq-clabe').textContent=cfg.clabe||'Contacta al administrador';
   document.getElementById('blq-scott').textContent=cfg.cuenta_scotiabank||'—';
@@ -1893,7 +2638,7 @@ function modalUpgrade(tipo){
   document.getElementById('up-txt').textContent=t;
   document.getElementById('up-precio').textContent=PRECIO_PREMIUM_MES;
   document.getElementById('up-anual').textContent=PRECIO_PREMIUM_ANIO;
-  document.getElementById('up-cta').onclick=()=>{closeM('m-upgrade');pedirPremium(tipo);};
+  document.getElementById('up-cta').onclick=()=>{closeM('m-upgrade');abrirPlanes(tipo,'s-app');};
   openM('m-upgrade');
 }
 // ¿El error viene de un trigger de límite? Devuelve 'negocios' | 'deptos' | null
@@ -2189,7 +2934,9 @@ function renderPagos(){
   }).join('');
   cont.innerHTML=`<div style="overflow-x:auto"><div style="min-width:950px;font-size:${fs}">${head}${rows}</div></div>`;
 }
-async function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}await ensureAutoPagos(vY,vM);renderStats();renderPagos();renderEC()}
+// Cambiar de mes movía solo 3 vistas; el avance de cobranza de las tarjetas y el Reporte
+// (que también van por mes visible) se quedaban en el mes anterior.
+async function chM(d){vM+=d;if(vM>11){vM=0;vY++}if(vM<0){vM=11;vY--}await ensureAutoPagos(vY,vM);refresh()}
 
 // ═══════════════════════════════════════
 //  DEUDA DEL INQUILINO ACTUAL
@@ -2262,8 +3009,7 @@ function renderDeuda(inmId){
     </div>${filas}`;
 }
 async function cobrarDeuda(pagoId){
-  await marcarPagado(pagoId); // marca, celebra y refresca las vistas de fondo
-  if(deudaInmIdAbierto)renderDeuda(deudaInmIdAbierto); // el modal se actualiza al momento
+  await marcarPagado(pagoId); // marca, celebra y refresca (refresh ya repinta este modal)
 }
 
 // ═══════════════════════════════════════
@@ -2816,7 +3562,7 @@ async function confirmarDevolucion(){
   if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_c,...d2}=d;({data:savedPago,error}=await sb.from('pagos').insert(d2).select().single());}
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
   pagos.unshift(savedPago);closeM('m-dev-dep');toast('Devolución registrada correctamente');
-  devDepContratoId=null;renderDepositos();refresh();
+  devDepContratoId=null;refresh();
 }
 
 // ═══════════════════════════════════════
@@ -3337,7 +4083,7 @@ async function guardarServicio(){
   closeM('m-new-svc');
   toast(editing?'Distribución actualizada · generando imagen…':'Servicio registrado · generando imagen…');
   generarSvcPNG(svc.id);
-  renderSvcList();refresh();
+  refresh();
 }
 
 // Antes esto creaba en Finanzas un gasto por el APOYO del administrador, y solo por él.
@@ -3499,8 +4245,17 @@ async function elimServicio(){
     pagos=pagos.filter(p=>!(p.servicio_id===editSvcId&&Number(p.pagado)===0));
   }catch(e){console.warn('pagos servicio (no bloqueante):',e.message||e);}
   await sb.from('servicio_detalles').delete().eq('servicio_id',editSvcId);
-  await sb.from('servicios').delete().eq('id',editSvcId);
-  closeM('m-svc-det');toast('Servicio eliminado','ti-trash');
+  const {error}=await sb.from('servicios').delete().eq('id',editSvcId);
+  if(error){toast('No se pudo eliminar: '+error.message,'ti-alert-triangle');return}
+  // Espejar el borrado en memoria: sin esto el servicio seguía listado (y contando en
+  // Finanzas y en el Resumen) hasta recargar la página.
+  const idSvc=editSvcId;
+  servicios=servicios.filter(s=>s.id!==idSvc);
+  svcDet=svcDet.filter(d=>d.servicio_id!==idSvc);
+  // Los pagos ya cobrados se conservan como historial; en la BD su servicio_id quedó en NULL
+  pagos.forEach(p=>{if(p.servicio_id===idSvc)p.servicio_id=null});
+  editSvcId=null;
+  closeM('m-svc-det');toast('Servicio eliminado','ti-trash');refresh();
 }
 
 // ═══════════════════════════════════════
@@ -3983,7 +4738,7 @@ async function guardarInm(){
     const idx=inmuebles.findIndex(x=>x.id===inmId);if(idx!==-1)inmuebles[idx]=savedInm;
     nuevoContratoInm=null;closeM('m-inm');toast('Contrato registrado · espacio ocupado');
     await ensureAutoPagos(vY,vM); // la renta del nuevo contrato aparece de inmediato
-    renderInm();refresh();return;
+    refresh();return;
   }
   // ── Modo: editar o crear departamento (mirror del vigente) ──
   // El tope solo aplica al dar de alta un espacio nuevo: editar uno existente
@@ -3998,14 +4753,16 @@ async function guardarInm(){
     toast('Error: '+error.message,'ti-alert-triangle');return;
   }
   let inmId;
-  if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;inmId=editInmId;}
+  // Al editar también se reordena: si le cambias el número al depto, la tarjeta se quedaba
+  // en su posición vieja hasta recargar.
+  if(editInmId){const idx=inmuebles.findIndex(x=>x.id===editInmId);if(idx!==-1)inmuebles[idx]=savedInm;ordenarInmuebles();inmId=editInmId;}
   else{inmuebles.push(savedInm);ordenarInmuebles();inmId=savedInm.id;}
   await upsertContratoVigente(inmId,cf);
   if(!editInmId)await crearPagoDeposito(inmId,contratoVigente(inmId)?.id||null); // depósito del alta
   else await syncRentaPagos(inmId); // renta/día editados → actualizar pagos pendientes
   await ensureAutoPagos(vY,vM);
   closeM('m-inm');toast(editInmId?'Departamento actualizado':'Departamento agregado');
-  renderInm();refresh();
+  refresh();
 }
 // Genera el pago del depósito en garantía capturado en el formulario de contrato (si hay monto)
 async function crearPagoDeposito(inmId,contratoId){
@@ -4040,9 +4797,30 @@ async function registrarSalidaVigente(){
     if(aBorrar.length)pagos=pagos.filter(p=>!aBorrar.some(b=>b.id===p.id));
   }catch(e){console.warn('limpieza rentas salida:',e.message||e);}
   closeM('m-inm');toast('Salida registrada · espacio desocupado','ti-door-exit');
-  renderInm();refresh();
+  refresh();
 }
-async function elimInm(){if(!confirm('¿Eliminar este departamento y todos sus pagos e historial de contratos?'))return;await sb.from('pagos').delete().eq('inmueble_id',editInmId);await sb.from('contratos').delete().eq('inmueble_id',editInmId);await sb.from('inmuebles').delete().eq('id',editInmId);closeM('m-inm');toast('Eliminado','ti-trash')}
+// Borra el espacio en la BD y espeja ese borrado en memoria. Antes solo borraba en la BD:
+// la tarjeta, sus pagos y sus alertas seguían en pantalla hasta recargar. Y como no miraba
+// el error, si el borrado fallaba igual decía "Eliminado" y no pasaba nada.
+async function elimInm(){
+  if(!confirm('¿Eliminar este departamento y todos sus pagos e historial de contratos?'))return;
+  const id=editInmId;if(!id)return;
+  await sb.from('pagos').delete().eq('inmueble_id',id);
+  await sb.from('contratos').delete().eq('inmueble_id',id);
+  const {error}=await sb.from('inmuebles').delete().eq('id',id);
+  if(error){toast('No se pudo eliminar: '+error.message,'ti-alert-triangle');return}
+  // La BD borra en cascada detalles de servicio, gastos e impuestos del depto: mismo corte aquí
+  inmuebles=inmuebles.filter(x=>x.id!==id);
+  pagos=pagos.filter(p=>p.inmueble_id!==id);
+  pagosOmit=pagosOmit.filter(p=>p.inmueble_id!==id);
+  contratos=contratos.filter(c=>c.inmueble_id!==id);
+  svcDet=svcDet.filter(d=>d.inmueble_id!==id);
+  gastosOp=gastosOp.filter(g=>g.inmueble_id!==id);
+  impuestosPag=impuestosPag.filter(x=>x.inmueble_id!==id);
+  finLSave();
+  editInmId=null;
+  closeM('m-inm');toast('Eliminado','ti-trash');refresh();
+}
 
 // ═══════════════════════════════════════
 //  HISTORIAL DE CONTRATOS
@@ -4609,7 +5387,18 @@ function rulToggle(){rulOn=!rulOn;try{localStorage.setItem('ib_ruleta',rulOn?'1'
   });
 })();
 
-function refresh(){renderStats();renderPagos();renderAl();renderEC();renderSvcList();renderDepositos();renderDashboard();}
+// Re-pinta TODO lo que depende de los datos en memoria. Antes solo cubría 7 de las 10
+// secciones: Departamentos, Reporte y Recordatorios quedaban fuera, así que después de
+// cobrar o registrar algo esas vistas seguían con el número viejo hasta recargar la página.
+// Finanzas y los modales abiertos también leen los mismos pagos/servicios, así que entran aquí.
+function refresh(){
+  renderStats();renderPagos();renderInm();renderAl();renderRep();
+  renderSvcList();renderEC();renderDepositos();renderRecList();renderDashboard();
+  if(deudaInmIdAbierto&&mAbierto('m-deuda'))renderDeuda(deudaInmIdAbierto);
+  if(histInmId&&mAbierto('m-hist'))renderHist(histInmId);
+  if(ecselInmId&&mAbierto('m-ecsel'))renderECSel();
+  if(finOn&&document.getElementById('fin-app'))finRenderAll();
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  MODO FINANZAS (fin) — módulo de rentabilidad
@@ -5355,8 +6144,36 @@ document.addEventListener('keydown',e=>{
   const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBma2tqcG9lZHZjZWNnZG54bXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NjIxMTksImV4cCI6MjA5NDUzODExOX0.JyGoO06OgK46eOeeR3CSzrmUcghwB0szpfMlRdC45dE';
 
   sb=supabase.createClient(url,key);
+
+  // Fondo animado de la pantalla de inicio. Se monta antes de decidir la
+  // pantalla para que el primer cuadro ya esté pintado cuando aparezca.
+  try{
+    const host=document.getElementById('strands-host');
+    window.STRANDS=mountStrands(host,{
+      colors:['#7fb22f','#5a00f4','#b9b9b9'],count:3,speed:.6,amplitude:1.6,
+      waviness:1,thickness:.7,glow:2.6,taper:3,spread:1,intensity:.6,
+      saturation:1.55,opacity:1,scale:1.5
+    });
+    if(!STRANDS.ok)document.getElementById('s-auth').classList.add('no-webgl');
+  }catch(e){document.getElementById('s-auth').classList.add('no-webgl');console.warn('Strands:',e)}
+
+  // ANTES de getSession(): el evento de recuperación se dispara mientras
+  // supabase-js resuelve la sesión inicial desde el #hash del enlace. Si el
+  // listener se registra después, el usuario entra a la app sin haber podido
+  // fijar su contraseña nueva.
+  let recuperando=false;
+  sb.auth.onAuthStateChange((ev,session)=>{
+    if(ev==='PASSWORD_RECOVERY'){recuperando=true;CU=session&&session.user;show('s-auth');authPanel('nueva');
+      history.replaceState(null,'',location.pathname+location.search)}
+    if(ev==='SIGNED_OUT'){CU=null;CW=null;show('s-auth');authPanel('login')}
+  });
+
   const {data:{session}}=await sb.auth.getSession();
-  if(session){
+  // El enlace de recuperación SÍ crea sesión válida. Sin este guard, cargarWS()
+  // se lo llevaría al selector de negocios sin haber cambiado la contraseña.
+  if(recuperando){
+    CU=session&&session.user;
+  } else if(session){
     CU=session.user;
     cargarWS();
   } else {
