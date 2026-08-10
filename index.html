@@ -820,6 +820,68 @@ tbody tr:hover td{background:var(--hover)}
 .fin-ws-opt{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;font-family:inherit;font-size:12.5px;color:#EDEBFA;padding:9px 12px;border-radius:9px;cursor:pointer;transition:background .15s;text-align:left}
 .fin-ws-opt:hover{background:rgba(139,92,246,.12)}
 .fin-ws-opt .fin-check{pointer-events:none}
+/* ── Gráfica de líneas por negocio ── */
+.fin-lc{display:block;width:100%;overflow:visible;touch-action:pan-y}
+.fin-lc .lc-ln{fill:none;stroke-linecap:round;stroke-linejoin:round;transition:opacity .18s,stroke-width .18s}
+/* El área solo aparece bajo la serie con el foco: rellenar todas sería ilegible */
+.fin-lc .lc-area{opacity:0;transition:opacity .18s}
+.fin-lc .lc-dot{transition:opacity .18s}
+.fin-lc .lc-hit{fill:none;stroke:transparent;stroke-width:22;cursor:pointer}
+/* Atenuar el resto cuando una serie toma el foco: el highlight es la señal, no el color */
+.fin-lc[data-hi] .lc-ln,.fin-lc[data-hi] .lc-dot{opacity:.13}
+.fin-lc[data-hi] .lc-g.on .lc-ln{opacity:1;stroke-width:3.4}
+.fin-lc[data-hi] .lc-g.on .lc-dot{opacity:1}
+.fin-lc[data-hi] .lc-g.on .lc-area{opacity:1}
+.fin-lc .lc-gd{stroke:rgba(139,92,246,.14)}
+.fin-lc .lc-zero{stroke:rgba(139,92,246,.42);stroke-dasharray:3 4}
+.fin-lc .lc-ax{fill:#8E89A8;font-size:10px;font-family:'DM Mono',monospace}
+.fin-lc .lc-cur{stroke:rgba(196,181,253,.5);stroke-width:1;stroke-dasharray:3 4}
+/* Leyenda: clicable para prender/apagar una serie (MD legend-interactive) */
+.fin-leg{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.fin-leg button{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:5px 11px;border-radius:20px;font-family:inherit;font-size:11.5px;font-weight:600;color:#D6D1EE;background:rgba(19,16,34,.8);border:1px solid rgba(139,92,246,.28);cursor:pointer;transition:background .15s,border-color .15s,opacity .15s}
+.fin-leg button:hover{background:rgba(139,92,246,.16);border-color:rgba(168,85,247,.5)}
+.fin-leg button:focus-visible{outline:2px solid #A855F7;outline-offset:2px}
+.fin-leg button.off{opacity:.42}
+.fin-leg button.off .lgk{background:transparent!important}
+.fin-leg .lgk{width:18px;height:3px;border-radius:2px;flex-shrink:0;border:1px solid currentColor}
+.fin-leg .lgv{font-family:'DM Mono',monospace;font-size:11px;color:#8E89A8}
+/* ── Tooltip compartido (gráfica y tableros) ── */
+#fin-tip{position:fixed;z-index:12;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .13s,transform .13s;max-width:290px;padding:11px 13px;border-radius:12px;background:rgba(12,10,22,.97);border:1px solid rgba(168,85,247,.45);box-shadow:0 20px 50px rgba(0,0,0,.65),0 0 30px rgba(124,58,237,.18);backdrop-filter:blur(10px);font-size:12px;line-height:1.45;color:#EDEBFA}
+#fin-tip.on{opacity:1;transform:translateY(0)}
+#fin-tip .tt-h{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;margin-bottom:2px}
+#fin-tip .tt-s{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8E89A8}
+#fin-tip .tt-big{font-size:19px;font-weight:500;font-family:'DM Mono',monospace;margin:6px 0 4px}
+#fin-tip .tt-r{display:flex;justify-content:space-between;gap:14px;padding:3px 0;font-size:11.5px;color:#A9A3C4}
+#fin-tip .tt-r b{font-family:'DM Mono',monospace;font-weight:500;color:#EDEBFA}
+#fin-tip .tt-sep{height:1px;background:rgba(139,92,246,.22);margin:6px 0}
+/* ── Tableros por negocio (ocupación / cobranza) ── */
+.fin-bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-top:14px}
+.fin-bcard{padding:15px 16px;border-radius:14px;background:linear-gradient(160deg,rgba(30,24,56,.55),rgba(15,13,26,.75));border:1px solid rgba(139,92,246,.2)}
+.fin-bcard h4{margin:0;font-size:13.5px;font-weight:700;color:#EDEBFA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fin-bmeter{height:5px;border-radius:3px;background:rgba(139,92,246,.16);overflow:hidden;margin:11px 0 12px;display:flex}
+.fin-bmeter i{height:100%;display:block;transition:width .5s cubic-bezier(.16,1,.3,1)}
+.fin-cells{display:flex;flex-wrap:wrap;gap:6px}
+/* Celda = un departamento. 44px mínimo para tocarla en móvil (Apple HIG) */
+.fin-cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:46px;height:46px;padding:0 7px;border-radius:10px;font-family:'DM Mono',monospace;font-size:12.5px;font-weight:500;cursor:default;border:1px solid;transition:transform .16s cubic-bezier(.16,1,.3,1),box-shadow .16s}
+.fin-cell:hover,.fin-cell:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.45);z-index:1}
+.fin-cell:focus-visible{outline:2px solid #A855F7;outline-offset:2px}
+.fin-cell i.ci{font-size:10px;line-height:1;opacity:.9}
+/* Ocupado / al corriente: tono neutro del tema. El color se reserva para lo que urge. */
+.fin-cell.st-ok{background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#D6D1EE}
+/* Desocupado → azul (pedido explícito) */
+.fin-cell.st-libre{background:rgba(56,189,248,.16);border-color:rgba(56,189,248,.6);color:#7DD3FC;border-style:dashed}
+/* Vencido → rojo */
+.fin-cell.st-venc{background:rgba(244,63,94,.18);border-color:rgba(251,113,133,.65);color:#FDA4AF}
+.fin-cell.st-tol{background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.55);color:#FCD34D}
+.fin-cell.st-pend{background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#C4B5FD}
+.fin-cell.st-dia{background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.45);color:#6EE7B7}
+.fin-bleg{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:10.5px;color:#8E89A8}
+.fin-bleg span{display:inline-flex;align-items:center;gap:5px}
+.fin-bleg em{width:9px;height:9px;border-radius:3px;border:1px solid;font-style:normal;flex-shrink:0}
+@media(prefers-reduced-motion:reduce){
+  .fin-lc .lc-ln,.fin-cell,.fin-bmeter i,#fin-tip{transition:none}
+  .fin-cell:hover,.fin-cell:focus-visible{transform:none}
+}
 #fin-app ::-webkit-scrollbar-thumb{background:#2A2344;border:2px solid #08070E}
 @keyframes finGlow{0%,100%{box-shadow:0 0 14px rgba(139,92,246,.5),inset 0 0 8px rgba(255,255,255,.25)}50%{box-shadow:0 0 26px rgba(168,85,247,.85),inset 0 0 10px rgba(255,255,255,.35)}}
 @keyframes finSheen{0%,60%{left:-80%}85%,100%{left:130%}}
@@ -1391,11 +1453,11 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 </div>
 
 <nav class="mobile-nav" id="mobile-nav">
-  <button class="active" onclick="setTabM('inicio',this)"><i class="ti ti-layout-dashboard"></i>Inicio</button>
-  <button onclick="setTabM('pagos',this)"><i class="ti ti-receipt"></i>Pagos</button>
-  <button onclick="setTabM('inmuebles',this)"><i class="ti ti-building"></i>Deptos</button>
-  <button onclick="setTabM('servicios',this)"><i class="ti ti-bolt"></i>Servicios</button>
-  <button onclick="setTabM('edocuenta',this)"><i class="ti ti-file-invoice"></i>EDC</button>
+  <button class="active" data-tab="inicio" onclick="setTabM('inicio',this)"><i class="ti ti-layout-dashboard"></i>Inicio</button>
+  <button data-tab="pagos" onclick="setTabM('pagos',this)"><i class="ti ti-receipt"></i>Pagos</button>
+  <button data-tab="inmuebles" onclick="setTabM('inmuebles',this)"><i class="ti ti-building"></i>Deptos</button>
+  <button data-tab="servicios" onclick="setTabM('servicios',this)"><i class="ti ti-bolt"></i>Servicios</button>
+  <button data-tab="edocuenta" onclick="setTabM('edocuenta',this)"><i class="ti ti-file-invoice"></i>EDC</button>
 </nav>
 
 <!-- ══════════ MODO FINANZAS: wipe de transición + app alterna ══════════ -->
@@ -1465,12 +1527,14 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <main class="fin-main"><div class="fin-wrap">
     <div id="fin-cascade"></div>
     <div id="fin-trend" style="margin-top:18px"></div>
+    <div id="fin-boards" style="margin-top:18px"></div>
     <div id="fin-cols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px;margin-top:18px;align-items:start">
       <div id="fin-gastos"></div>
       <div id="fin-imps"></div>
     </div>
   </div></main>
   <div class="fin-drawer" id="fin-drawer"></div>
+  <div id="fin-tip" role="tooltip" aria-hidden="true"></div>
 
   <!-- Modal: gasto de operación -->
   <div class="fin-ov" id="fm-gasto"><div class="fin-modal">
@@ -2084,9 +2148,26 @@ let sb=null,CU=null,CW=null;
 // todo se comporta exactamente como antes: nadie pierde nada por desplegar
 // este archivo antes de correr el SQL.
 let PLAN='premium',TRIAL_FIN=null,PROX_COBRO=null,LINK_PAGO='',LIM_NEG=null,LIM_DEP=null,NEG_PROPIOS=0;
+// 'normal' = paga y se le vence el acceso · 'especial' = cortesía: la fecha
+// nunca lo bloquea, solo el administrador desde el panel.
+let TIPO_CLIENTE='normal';
+// Qué módulos puede ver. null = todavía no se sabe (o la migración no está
+// corrida) y entonces NO se esconde nada: en la duda, se deja pasar. Quitarle
+// un módulo a alguien que sí lo paga es peor error que dejarlo de más un
+// segundo, y el candado que importa (Finanzas) lo aplica el RLS igual.
+let PERMISOS=null;
 const PRECIO_PREMIUM_MES='$1,899', PRECIO_PREMIUM_ANIO='$18,990';
-function esPremium(){return PLAN==='premium'||PLAN==='trial'}
+// Un cliente puede tener Finanzas sin ser Premium (se la dio el admin) o ser
+// Premium y no tenerla. El permiso manda; el plan solo es el valor por
+// defecto que la base ya resolvió antes de mandarlo.
+function puedeVer(k){return !PERMISOS || PERMISOS[k]!==false}
+function esPremium(){
+  if(PERMISOS && typeof PERMISOS.finanzas==='boolean')return PERMISOS.finanzas;
+  return PLAN==='premium'||PLAN==='trial';
+}
 function diasDePrueba(){
+  // A un especial no le corre la prueba: no tiene fecha que se le acabe.
+  if(TIPO_CLIENTE==='especial')return null;
   if(PLAN!=='trial'||!TRIAL_FIN)return null;
   const f=new Date(TRIAL_FIN+'T00:00:00'),h=new Date();h.setHours(0,0,0,0);
   return Math.round((f-h)/86400000);
@@ -2649,7 +2730,14 @@ async function verificarSuscripcion(silencioso){
   // Busca el registro del usuario en la tabla 'clientes' por su email
   const COLS_BASE='suscripcion_activa,clabe,cuenta_scotiabank,tarjeta_oxxo,nombre_cobrador,whatsapp_admin';
   const COLS_PLAN=COLS_BASE+',plan,trial_fin,proximo_cobro,link_pago,limite_negocios,limite_deptos';
-  let {data,error}=await sb.from('clientes').select(COLS_PLAN).eq('email',CU.email).single();
+  // `tipo_cliente` va aparte: es de la migración de clientes especiales, más
+  // nueva que la de planes. Pedirlo junto haría que un despliegue sin esa
+  // migración se cayera al esquema viejo y tratara a todos como premium —
+  // un bug mucho peor que no saber si alguien es especial.
+  const COLS_TIPO=COLS_PLAN+',tipo_cliente';
+  let {data,error}=await sb.from('clientes').select(COLS_TIPO).eq('email',CU.email).single();
+  if(error&&/does not exist|42703|column/i.test(error.message||''))
+    ({data,error}=await sb.from('clientes').select(COLS_PLAN).eq('email',CU.email).single());
   if(error&&/does not exist|42703|column/i.test(error.message||'')){
     // La migración de planes todavía no se corre: leemos el esquema viejo y
     // tratamos a todos como premium, igual que antes. Nunca bloquear por esto.
@@ -2659,16 +2747,21 @@ async function verificarSuscripcion(silencioso){
   // Si no existe el registro o hay error: bloquear por seguridad
   if(error||!data){bloquear({});return false;}
   PLAN=data.plan||'premium';
+  TIPO_CLIENTE=data.tipo_cliente||'normal';
   TRIAL_FIN=data.trial_fin||null;
   PROX_COBRO=data.proximo_cobro||null;
   LINK_PAGO=data.link_pago||'';
   LIM_NEG=(data.limite_negocios===undefined)?null:data.limite_negocios;
   LIM_DEP=(data.limite_deptos===undefined)?null:data.limite_deptos;
   window._adminWA=data.whatsapp_admin||'';
+  await cargarPermisos();
   if(data.suscripcion_activa===true){
     // La bandera está prendida, pero la vigencia manda: prueba terminada o
     // período vencido (con 3 días de gracia) también cierran el acceso.
     // La base de datos aplica la misma regla; esto solo evita la pantalla vacía.
+    // A un especial no se le aplica: su acceso es la bandera y nada más, tal
+    // como lo decide cliente_con_acceso() del lado del servidor.
+    if(TIPO_CLIENTE==='especial')return true;
     const d=diasDePrueba();
     if(PLAN==='trial'&&d!==null&&d<0){bloquear(data);return false;}
     if(PLAN!=='trial'&&PROX_COBRO){
@@ -2679,6 +2772,20 @@ async function verificarSuscripcion(silencioso){
     return true;
   }
   bloquear(data);return false;
+}
+// Qué módulos tiene disponibles este cliente. Sale de mis_permisos(), que
+// mezcla lo que da su plan con lo que el administrador le haya cambiado.
+// Si la RPC no existe todavía, PERMISOS se queda en null y no se esconde
+// nada: la app se comporta exactamente como antes de esta migración.
+async function cargarPermisos(){
+  const {data,error}=await sb.rpc('mis_permisos');
+  if(error||!data||typeof data!=='object'){
+    PERMISOS=null;
+    if(error&&!/does not exist|42883|function/i.test(error.message||''))
+      console.warn('mis_permisos:',error.message);
+    return;
+  }
+  PERMISOS=data;
 }
 function mostrarBloqueado(cfg){
   // Copy distinto según por qué se cerró: no es lo mismo terminar la prueba
@@ -2724,7 +2831,28 @@ function renderPlanUI(){
   });
   const mb=document.getElementById('mode-btn');
   if(mb)mb.title=bloq?'Finanzas — incluida en el plan Premium':'Cambiar al modo Finanzas';
+  aplicarPermisos();
   renderTrialBar();
+}
+// Esconde del menú los módulos que este cliente no tiene. Se esconde, no se
+// deshabilita: un botón gris que no hace nada solo genera la pregunta "¿y
+// esto?", y aquí la respuesta sería "tu plan no lo trae" para algo que nunca
+// contrató. Lo que sí lleva candado visible es Finanzas, porque es lo que se
+// le puede vender.
+function aplicarPermisos(){
+  if(!PERMISOS)return;                       // sin datos no se esconde nada
+  document.querySelectorAll('.dni[data-tab],.mobile-nav button[data-tab]').forEach(b=>{
+    const t=b.getAttribute('data-tab');
+    // 'inicio' y 'config' no son negociables: sin ellos la app no tiene salida.
+    b.style.display=(t==='inicio'||t==='config'||puedeVer(t))?'':'none';
+  });
+  // Si estaba parado justo en un módulo que le acaban de quitar, se le
+  // regresa al Resumen en vez de dejarle una sección en blanco.
+  const abierta=TABS.find(t=>{
+    const s=document.getElementById('sec-'+t);
+    return s&&s.style.display!=='none';
+  });
+  if(abierta&&abierta!=='inicio'&&abierta!=='config'&&!puedeVer(abierta))setTab('inicio');
 }
 // ── Aviso de prueba gratuita (solo mientras PLAN sea 'trial') ──
 function renderTrialBar(){
@@ -4364,9 +4492,8 @@ async function guardarServicio(){
 }
 
 // Antes esto creaba en Finanzas un gasto por el APOYO del administrador, y solo por él.
-// Ese gasto ya no hace falta: el recibo COMPLETO del servicio se contabiliza ahora en
-// finGastosServicios(), y el apoyo está incluido dentro de ese total (lo cobrado a los
-// inquilinos ya viene con el apoyo descontado). Mantenerlo además del recibo lo contaría
+// Ese gasto ya no hace falta: finGastosServicios() calcula lo que absorbes de cada recibo
+// —subsidio + apoyo— y el apoyo ya va dentro de ese número. Mantenerlo además lo contaría
 // dos veces, así que aquí solo se limpia el gasto viejo que hubiera quedado.
 async function syncApoyoGasto(svc,apoyo){
   try{
@@ -5288,6 +5415,10 @@ async function invEmail(){
 // ═══════════════════════════════════════
 const TABS=['inicio','pagos','inmuebles','alertas','reporte','servicios','edocuenta','miembros','config','depositos','recordatorio'];
 function setTab(name,btn){
+  // Segundo cerrojo, por si alguien llega aquí sin pasar por el menú (un
+  // enlace viejo, un botón de otra pantalla). aplicarPermisos() esconde el
+  // botón; esto impide abrir la sección de todos modos.
+  if(name!=='inicio'&&name!=='config'&&!puedeVer(name))name='inicio';
   TABS.forEach(t=>document.getElementById('sec-'+t).style.display=t===name?'block':'none');
   document.querySelectorAll('.dni').forEach(b=>{b.style.color='#6B6963';b.style.background='transparent';b._hbase=b.getAttribute('style');});
   const navBtn=document.querySelector('.dni[data-tab="'+name+'"]');
@@ -5802,20 +5933,40 @@ const FIN_CATC=['#A855F7','#22D3EE','#F59E0B','#34D399','#F472B6','#818CF8','#FB
 let finGlobal=false,finGLoaded=false;
 let finWS=[];                                  // [{id,nombre}] negocios del usuario (memberships)
 let finGSel=new Set();                         // ids seleccionados; Set vacío = TODOS
-let finGData={pagos:[],gastos:[],imps:[],cats:[],inms:[],svcs:[]};
-function finWSok(w){return !finGSel.size||finGSel.has(w);}
+let finGData={pagos:[],gastos:[],imps:[],cats:[],inms:[],svcs:[],svcdets:[],contratos:[],tol:{}};
+// Acotador temporal a UN negocio. La gráfica por negocio necesita la misma cascada que ya
+// existe, pero calculada negocio por negocio: en vez de duplicar las fórmulas (y arriesgar
+// que se desincronicen), se fija este candado, se llama al mismo cálculo de siempre y se
+// suelta. Todos los finDS* pasan por finWSok, así que el acotado es total y sin copias.
+let finWSOnly=null;
+function finWSok(w){if(finWSOnly)return w===finWSOnly;return !finGSel.size||finGSel.has(w);}
+// Corre fn() viendo solo el negocio wsId (null = respetar el filtro normal del usuario)
+function finConWS(wsId,fn){const prev=finWSOnly;finWSOnly=wsId||null;try{return fn();}finally{finWSOnly=prev;}}
+// Negocios que entran hoy a la vista: los seleccionados, o todos si no hay filtro
+function finWSActivos(){return finWS.filter(w=>!finGSel.size||finGSel.has(w.id));}
 function finDSPagos(){return finGlobal?finGData.pagos.filter(p=>finWSok(p.workspace_id)):pagos;}
 // Los gastos con categoría `apoyo_admin` se excluyen del cálculo: el apoyo del
-// administrador ya viene dentro del recibo completo del servicio, que ahora sí se
-// contabiliza como gasto (ver finGastosServicios). Contarlo aparte lo duplicaba.
+// administrador ya entra dentro de lo que absorbes del recibo del servicio
+// (ver finSvcAbsorbido). Contarlo aparte lo duplicaba.
 function finDSGastos(){const a=finGlobal?finGData.gastos.filter(g=>finWSok(g.workspace_id)):gastosOp;return a.filter(g=>g.categoria!=='apoyo_admin');}
 function finDSImps(){return finGlobal?finGData.imps.filter(i=>finWSok(i.workspace_id)):impuestosPag;}
 function finDSCats(){return finGlobal?finGData.cats:gastoCats;}  // pool completo: resolución por id
 function finDSServicios(){return finGlobal?finGData.svcs.filter(s=>finWSok(s.workspace_id)):servicios;}
+function finDSSvcDet(){return finGlobal?finGData.svcdets.filter(d=>finWSok(d.workspace_id)):svcDet;}
 function finGetInm(id){return finGlobal?finGData.inms.find(i=>i.id===id):getInm(id);}
 function finWSName(id){return finWS.find(w=>w.id===id)?.nombre||'—';}
 function finRowLoc(r){const n=finGetInm(r.inmueble_id)?.num||'—';return finGlobal?`${finWSName(r.workspace_id)} · ${n}`:n;}
 function finWSLbl(){if(!finGSel.size)return'Todos los negocios';const a=finWS.filter(w=>finGSel.has(w.id));return a.length===1?a[0].nombre:a.length+' negocios';}
+// ── Qué pagos entran a la cascada como ingreso ──
+// Un pago es de servicio si lo generó un recibo (servicio_id) o si su concepto es
+// agua/luz/gas: eso último cubre los históricos, cuyo servicio_id quedó en NULL cuando
+// se borró el recibo pero el cobro se conservó.
+const FIN_SVC_CONCEPTOS=['agua','luz','gas'];
+function finEsSvcPago(p){return !!p.servicio_id||FIN_SVC_CONCEPTOS.includes(p.concepto);}
+// Fuera de la cascada: el depósito es dinero en garantía (no es tuyo), y los servicios
+// son pass-through —te reembolsan lo que adelantaste—. De los servicios sólo entra, del
+// lado del gasto, lo que absorbes tú (ver finGastosServicios).
+function finEsIngreso(p){return p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito'&&!finEsSvcPago(p);}
 function finF(n){n=Number(n)||0;return(n<0?'−$':'$')+Math.abs(Math.round(n)).toLocaleString('es-MX');}
 function finUUID(){return (crypto&&crypto.randomUUID)?crypto.randomUUID():'l'+Date.now()+Math.random().toString(36).slice(2,8);}
 
@@ -5890,12 +6041,28 @@ function finDemoFondo(){
   </div>`;
   const fmt=n=>'$'+n.toLocaleString('es-MX');
   const t=document.getElementById('fin-trend');if(t)t.innerHTML='';
+  const b=document.getElementById('fin-boards');if(b)b.innerHTML='';
   const cols=document.getElementById('fin-cols');
   if(cols)cols.innerHTML=
     panel('Gastos de operación',[['Mantenimiento',fmt(Math.round(g*.38))],['Limpieza',fmt(Math.round(g*.24))],
       ['Contabilidad',fmt(Math.round(g*.20))],['Predial y agua',fmt(Math.round(g*.18))]])
    +panel('Impuestos pagados',[['ISR arrendamiento',fmt(Math.round(i*.7))],['IVA',fmt(Math.round(i*.3))]]);
 }
+
+// La gráfica se dibuja en píxeles medidos del panel, así que al cambiar el ancho de la
+// ventana hay que volver a trazarla. Solo la gráfica: el resto de la vista es fluido.
+let finRZ=null;
+addEventListener('resize',()=>{
+  clearTimeout(finRZ);
+  finRZ=setTimeout(()=>{
+    if(!finOn)return;
+    const app=document.getElementById('fin-app');
+    if(!app||app.classList.contains('locked'))return;
+    finTip(false);finRenderTrend();
+  },180);
+});
+// Al salir de Finanzas el tooltip flotante no debe quedarse colgado en pantalla
+addEventListener('keydown',e=>{if(e.key==='Escape')finTip(false);});
 
 // ── Toggle del modo (botón junto al nombre del negocio) ──
 async function finToggle(){
@@ -5904,6 +6071,7 @@ async function finToggle(){
   if(!esPremium()&&finOn){finCerrarPaywall();return;}
   finBusy=true;closeModeMenus();
   if(finGlobal){ // cerrar el modo global: vuelve al selector de negocios (screen activa debajo)
+    finTip(false);
     finWipe(false,()=>{
       finOn=false;finGlobal=false;
       document.getElementById('fin-app').style.display='none';
@@ -5913,6 +6081,7 @@ async function finToggle(){
     return;
   }
   const toFin=!finOn;
+  if(!toFin)finTip(false);
   if(toFin&&!finLoaded){try{await (finLoadP||finLoad());}catch(e){}}
   finWipe(toFin,()=>{
     finOn=toFin;
@@ -5929,7 +6098,7 @@ async function finOpenGlobal(){
   finBusy=true;
   try{await finGLoad();}
   catch(e){finBusy=false;toast('No se pudieron cargar las finanzas consolidadas: '+(e.message||e),'ti-alert-triangle');return;}
-  finGlobal=true;finGSel=new Set();finProp='';
+  finGlobal=true;finGSel=new Set();finProp='';finTrendOff.clear();
   finWipe(true,()=>{
     finOn=true;
     document.getElementById('fin-app').style.display='flex';
@@ -5979,6 +6148,8 @@ function finWSSel(id){
   finWSMenuRender();
   document.getElementById('fin-ws-lbl').textContent=finWSLbl();
   document.getElementById('fin-wsn').textContent=finWSLbl().toUpperCase();
+  // Cambió el juego de negocios: las series de la gráfica ya no son las mismas
+  finTrendOff.clear();finTip(false);
   finRenderAll();
 }
 
@@ -6036,17 +6207,63 @@ async function finLoad(){
 async function finGLoad(){
   finGLoaded=false;
   const ids=finWS.map(w=>w.id);
-  const [p,g,i,c,n,sv]=await Promise.all([
+  const [p,g,i,c,n,sv,sd]=await Promise.all([
     sb.from('pagos').select('*').in('workspace_id',ids).order('vencimiento',{ascending:false}),
     sb.from('gastos_operacion').select('*').in('workspace_id',ids).order('fecha',{ascending:false}),
     sb.from('impuestos_pagados').select('*').in('workspace_id',ids).order('fecha',{ascending:false}),
     sb.from('gasto_categorias').select('*').in('workspace_id',ids).order('nombre'),
     sb.from('inmuebles').select('*').in('workspace_id',ids).order('num'),
-    sb.from('servicios').select('*').in('workspace_id',ids).order('periodo_fin',{ascending:false})
+    sb.from('servicios').select('*').in('workspace_id',ids).order('periodo_fin',{ascending:false}),
+    // El reparto de cada recibo: sin él no se sabe cuánto le tocó a los inquilinos y
+    // cuánto absorbes tú, que es lo único del servicio que entra a la cascada.
+    sb.from('servicio_detalles').select('*').in('workspace_id',ids)
   ]);
-  if(p.error||g.error||i.error||c.error||n.error||sv.error)throw(p.error||g.error||i.error||c.error||n.error||sv.error);
-  finGData={pagos:p.data||[],gastos:g.data||[],imps:i.data||[],cats:c.data||[],inms:n.data||[],svcs:sv.data||[]};
+  if(p.error||g.error||i.error||c.error||n.error||sv.error||sd.error)throw(p.error||g.error||i.error||c.error||n.error||sv.error||sd.error);
+  finGData={pagos:p.data||[],gastos:g.data||[],imps:i.data||[],cats:c.data||[],inms:n.data||[],svcs:sv.data||[],svcdets:sd.data||[],contratos:[],tol:{}};
+  // Contratos y tolerancia solo alimentan los tableros de ocupación y cobranza. Si alguna
+  // de las dos consultas falla (RLS, columna sin migrar), los tableros se degradan solos:
+  // la cascada, que es lo que la gente vino a ver, no se cae por eso.
+  try{const ct=await sb.from('contratos').select('*').in('workspace_id',ids).order('created_at',{ascending:true});
+      if(!ct.error)finGData.contratos=ct.data||[];}catch(e){}
+  try{const wc=await sb.from('workspaces').select('id,dias_tolerancia').in('id',ids);
+      if(!wc.error)(wc.data||[]).forEach(w=>{finGData.tol[w.id]=w.dias_tolerancia;});}catch(e){}
   finGLoaded=true;
+}
+// ── Ocupación y cobranza en modo global ──────────────────────
+// Réplica exacta de las reglas de un solo negocio (contratoVigente / getEstado), pero
+// leyendo el dataset consolidado en vez de los arrays del workspace activo.
+function finTolWS(wsId){const v=finGlobal?finGData.tol[wsId]:CW?.cfg?.dias_tolerancia;return v==null?3:Math.max(0,parseInt(v)||0);}
+function finContratosDe(inmId){
+  if(!finGlobal)return contratosDe(inmId);
+  return finGData.contratos.filter(c=>c.inmueble_id===inmId).sort((a,b)=>{
+    const da=(a.fecha_inicio_contrato||a.created_at||''),db=(b.fecha_inicio_contrato||b.created_at||'');
+    return da<db?-1:da>db?1:0;
+  });
+}
+// Vigente: sin fecha de salida o con salida a futuro. Null = el espacio está desocupado.
+function finContratoVigente(inmId){
+  if(!finGlobal)return contratoVigente(inmId);
+  const t=hoyISO(),cs=finContratosDe(inmId);
+  if(cs.length){const vig=cs.filter(c=>!c.fecha_salida||c.fecha_salida>=t);return vig.length?vig[vig.length-1]:null;}
+  const inm=finGetInm(inmId);if(!inm)return null;
+  if(inm.fecha_salida&&inm.fecha_salida<t)return null;
+  return contratoSintetico(inm);
+}
+function finDesocupado(inmId){return !finContratoVigente(inmId);}
+// Estado de un cargo con la tolerancia de SU negocio, no la del workspace que abriste
+function finEstadoPago(p){
+  if(!finGlobal)return getEstado(p);
+  if(saldoPago(p)<=0.005)return'pagado';
+  const t=new Date();t.setHours(0,0,0,0);const v=new Date(p.vencimiento+'T00:00:00');
+  const abono=tieneAbono(p);
+  if(v>=t)return abono?'parcial':'pendiente';
+  const lim=new Date(v.getTime());lim.setDate(lim.getDate()+finTolWS(p.workspace_id));
+  if(t<=lim)return abono?'parcial':'tolerancia';
+  return'vencido';
+}
+// Cargos vivos de un departamento (sin tombstones ni devoluciones de depósito)
+function finCargosInm(inmId){
+  return finDSPagos().filter(p=>p.inmueble_id===inmId&&!p.omitido&&esCobranza(p)&&saldoPago(p)>0.005);
 }
 // CRUD genérico sobre las 3 tablas (reactividad inmediata, como el resto de la app)
 function finArr(t){const G=finGlobal;return t==='gastos_operacion'?(G?finGData.gastos:gastosOp):t==='impuestos_pagados'?(G?finGData.imps:impuestosPag):(G?finGData.cats:gastoCats);}
@@ -6121,17 +6338,28 @@ function finGastosMes(propId,m,y){
   return out;
 }
 
-// ── Recibos de servicio como GASTO de operación ───────────────────────────────
-// El agua, la luz y el gas los paga el arrendador y luego los recobra a los inquilinos.
-// Esos cobros SÍ entraban a la cascada como ingreso, pero el recibo que sale del bolsillo
-// no se registraba en ninguna parte: Finanzas nunca leía la tabla `servicios` y el único
-// gasto que se creaba era el del "apoyo". Resultado: un recibo de $3,000 recobrado en
-// $2,700 se reportaba como +$2,400 de utilidad cuando la realidad eran −$300. Con varios
-// servicios al mes, la Utilidad Neta se inflaba decenas de miles al año.
-// Aquí el recibo entra completo como gasto (por eso el apoyo ya no se cuenta aparte:
-// está incluido en el total, y lo cobrado a los inquilinos ya viene con él descontado).
+// ── Servicios en la cascada: PASS-THROUGH NETO ────────────────────────────────
+// El agua, la luz y el gas los paga el arrendador y luego los recobra a los inquilinos:
+// es dinero que sólo pasa por tus manos, no ingreso ni gasto del negocio. Por eso los
+// servicios se netean en los DOS lados de la cascada:
+//   · lo que te reembolsan los inquilinos NO cuenta como ingreso (ver finEsIngreso), y
+//   · el recibo NO entra como gasto.
+// Lo único que sí es dinero tuyo es la parte que nunca le cargaste a nadie: el subsidio
+// de los departamentos vacíos o de los días sin ocupar, más el apoyo de administración
+// con el que abarataste el recibo. Eso —y sólo eso— entra como gasto.
+// Antes entraba el recibo COMPLETO como gasto y el reembolso como ingreso; la utilidad
+// salía igual, pero inflaba ingresos y gastos con dinero ajeno y ensuciaba la lista de
+// gastos con recibos que no son tuyos.
 // Se calcula, no se escribe en la BD: así vale también para todos los recibos históricos
 // y es imposible que se desincronice.
+function finSvcAbsorbido(s){
+  // total − lo repartido a los departamentos. Cuadra exacto con subsidio + apoyo, porque
+  // el reparto se guarda ya con el apoyo aplicado (ver guardarServicio/recalcAllSvc).
+  const dets=finDSSvcDet().filter(d=>d.servicio_id===s.id);
+  if(!dets.length)return Math.max(0,Number(s.apoyo_admin)||0); // sin reparto guardado: sólo lo explícito
+  const cargado=dets.filter(d=>!d.es_administracion).reduce((a,d)=>a+(Number(d.monto)||0),0);
+  return Math.max(0,Math.round((Number(s.total)-cargado)*100)/100);
+}
 function svcFechaContable(s){
   // El mismo mes en el que se les cobró a los inquilinos, para que el ingreso y el gasto
   // de un mismo recibo jamás caigan en meses distintos.
@@ -6141,23 +6369,25 @@ function svcFechaContable(s){
 }
 const FIN_SVC_NOM={agua:'Agua',luz:'Luz',gas:'Gas'};
 function finGastosServicios(prop,ms){
-  // Un recibo es del edificio completo, no de un departamento: cuando se filtra por una
-  // propiedad concreta no se le puede imputar entero, así que queda fuera.
+  // El subsidio es del edificio completo (departamentos vacíos, días sin ocupar), no de un
+  // departamento: cuando se filtra por una propiedad concreta no se le puede imputar, así
+  // que queda fuera. Los cobros de servicio de ese depto tampoco cuentan como ingreso, de
+  // modo que la vista por departamento queda neteada en los dos lados.
   if(prop)return[];
   const inMs=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return ms.some(x=>v.getMonth()===x.m&&v.getFullYear()===x.y);};
   return finDSServicios().filter(s=>Number(s.total)>0).map(s=>({s,fecha:svcFechaContable(s)}))
     .filter(({fecha})=>inMs(fecha))
     .map(({s,fecha})=>({
       id:'svc:'+s.id,_svc:true,workspace_id:s.workspace_id,inmueble_id:null,categoria_id:null,
-      categoria:'servicios_recibo',monto:Number(s.total),fecha,
-      descripcion:`Recibo de ${FIN_SVC_NOM[s.tipo]||s.tipo} · ${fdS(s.periodo_ini)}–${fdS(s.periodo_fin)}`
-    }));
+      categoria:'servicios_absorbido',monto:finSvcAbsorbido(s),fecha,
+      descripcion:`${FIN_SVC_NOM[s.tipo]||s.tipo} · ${fdS(s.periodo_ini)}–${fdS(s.periodo_fin)} · no recuperado de ${fmt(s.total)}`
+    })).filter(g=>g.monto>0.005);
 }
 // ── Cascada de cálculo (orden estricto del spec) ──
 function finCalc(){
   const ms=finMeses(),prop=finProp||null;
   const inMs=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return ms.some(x=>v.getMonth()===x.m&&v.getFullYear()===x.y);};
-  const esOp=p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito';
+  const esOp=finEsIngreso; // renta y extras; depósitos y servicios quedan fuera
   // 1) Facturado: lo que se emitió en el periodo (referencia, ya no es la base del cálculo)
   const pl=finDSPagos().filter(p=>esOp(p)&&(!prop||p.inmueble_id===prop)&&inMs(p.vencimiento));
   const fact=pl.reduce((s,p)=>s+Number(p.monto),0);
@@ -6205,7 +6435,7 @@ function finRenderAll(){
   if(!document.getElementById('fin-app'))return;
   const lblEl=document.getElementById('fin-per-lbl');if(lblEl)lblEl.textContent=finPerLbl();
   const C=finCalc();
-  finRenderCascade(C);finRenderTrend();finRenderGastos(C);finRenderImps(C);
+  finRenderCascade(C);finRenderTrend();finRenderBoards();finRenderGastos(C);finRenderImps(C);
 }
 function finRenderCascade(C){
   const propLbl=finGlobal?finWSLbl():(finProp?(getInm(finProp)?.num||''):'Consolidado');
@@ -6225,7 +6455,7 @@ function finRenderCascade(C){
     <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap;row-gap:14px">
       ${node('fact','INGRESOS COBRADOS',C.cobr,`de ${finF(C.fact)} facturado${C.porCobrar>0.005?` · ${finF(C.porCobrar)} por cobrar`:''}`,'#C4B5FD')}
       <div class="fin-op">−</div>
-      ${node('gastos','GASTOS OPERACIÓN',C.gTot,C.gl.length+' gastos (incluye recibos de servicios)','#F0ABFC')}
+      ${node('gastos','GASTOS OPERACIÓN',C.gTot,C.gl.length+' gastos (servicios: sólo lo que absorbes)','#F0ABFC')}
       <div class="fin-op">=</div>
       ${node('util','UTILIDAD',C.util,'Cobrado − Gastos',uC)}
       <div class="fin-op">−</div>
@@ -6240,46 +6470,375 @@ function finRenderCascade(C){
   countUp(document.getElementById('fin-v-imp'),C.iTot,finF);
   countUp(document.getElementById('fin-v-neta'),C.neta,finF);
 }
+// ═══════════════════════════════════════════════════════════
+//  GRÁFICA DE TENDENCIA — utilidad neta, una línea por negocio
+// ═══════════════════════════════════════════════════════════
+// Paleta y trazos por negocio. El guion distingue las series aunque no se distinga el
+// color (daltonismo, impresión): el color no es el único portador del dato.
+const FIN_WSC=['#A855F7','#22D3EE','#FBBF24','#34D399','#F472B6','#818CF8','#FB923C','#4ADE80','#E879F9','#38BDF8','#C084FC','#2DD4BF'];
+const FIN_WSD=['','7 5','2 5','12 4 3 4','5 4 1 4','16 5','3 3','9 4 2 4'];
+let finTrendOff=new Set();  // series apagadas desde la leyenda
+let finTrendHi=null;        // índice de la serie con el foco
+let finTrendIdx=-1;         // mes bajo el cursor
+let finTrendM=null;         // modelo ya calculado (no se recalcula al mover el mouse)
+let finTrendXY={x:0,y:0};
+function finEsc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// Etiqueta corta para los ejes: $1.2M, $48k, $320
+function finFK(n){n=Number(n)||0;const a=Math.abs(n),s=n<0?'−':'';
+  if(a>=1e6)return s+'$'+(a/1e6).toFixed(a>=1e7?0:1).replace(/\.0$/,'')+'M';
+  if(a>=1000)return s+'$'+(a/1000).toFixed(a>=1e4?0:1).replace(/\.0$/,'')+'k';
+  return s+'$'+Math.round(a);}
+// Utilidad neta de UN mes. Es literalmente la misma base que finCalc: cobrado real ubicado
+// en el mes del cargo, sin reembolsos de servicio, y con lo que absorbes de cada recibo
+// dentro de los gastos. Se extrajo a función para poder repetirla negocio por negocio.
+function finNetaMes(m,y,prop){
+  const inM=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return v.getMonth()===m&&v.getFullYear()===y;};
+  const esOp=finEsIngreso;
+  const cobr=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inM(fechaPeriodo(p))).reduce((s,p)=>s+Number(p.pagado),0);
+  const gast=finGastosMes(prop,m,y).concat(finGastosServicios(prop,[{m,y}])).reduce((s,x)=>s+Number(x.monto),0);
+  const imp=finDSImps().filter(p=>(!prop||p.inmueble_id===prop)&&inM(p.fecha)).reduce((s,x)=>s+Number(x.monto),0);
+  return{cobr,gast,imp,neta:cobr-gast-imp};
+}
+// Modelo: 6 meses (ancla: fin del periodo visible) × una serie por negocio.
+function finTrendModel(){
+  const ms=finMeses(),last=ms[ms.length-1],prop=finProp||null;
+  const months=[];
+  for(let k=5;k>=0;k--){let m=last.m-k,y=last.y;while(m<0){m+=12;y--;}
+    months.push({m,y,lbl:MESES[m].slice(0,3),full:MESES[m]+' '+y});}
+  const negs=finGlobal?finWSActivos():[];
+  const series=[];
+  // El Total solo tiene sentido cuando hay varios negocios que sumar
+  if(negs.length>1)series.push({id:'__tot',nombre:'Total',color:'#EDEBFA',dash:'',w:3,tot:true,
+    pts:months.map(x=>finNetaMes(x.m,x.y,prop))});
+  negs.forEach((w,k)=>series.push({id:w.id,nombre:w.nombre,color:FIN_WSC[k%FIN_WSC.length],dash:FIN_WSD[k%FIN_WSD.length],w:2.2,
+    pts:months.map(x=>finConWS(w.id,()=>finNetaMes(x.m,x.y,prop)))}));
+  // Un solo negocio (modo normal): la misma gráfica de líneas, con una sola serie
+  if(!series.length)series.push({id:'__uni',nombre:CW?.nombre||'Este negocio',color:'#A855F7',dash:'',w:2.8,
+    pts:months.map(x=>finNetaMes(x.m,x.y,prop))});
+  return{months,series};
+}
+// Interpolación monótona (Fritsch–Carlson): curva suave que NUNCA se pasa de los datos,
+// así la línea no inventa un pico que no existe entre dos meses.
+function finMonoPath(pts){
+  const n=pts.length;if(n<2)return n?`M${pts[0].x},${pts[0].y}`:'';
+  const dx=[],dy=[],m=[],t=[];
+  for(let i=0;i<n-1;i++){dx[i]=pts[i+1].x-pts[i].x;dy[i]=pts[i+1].y-pts[i].y;m[i]=dy[i]/(dx[i]||1);}
+  t[0]=m[0];for(let i=1;i<n-1;i++)t[i]=(m[i-1]*m[i]<=0)?0:(m[i-1]+m[i])/2;t[n-1]=m[n-2];
+  for(let i=0;i<n-1;i++){
+    if(m[i]===0){t[i]=0;t[i+1]=0;continue;}
+    const a=t[i]/m[i],b=t[i+1]/m[i],h=Math.hypot(a,b);
+    if(h>3){const k=3/h;t[i]=k*a*m[i];t[i+1]=k*b*m[i];}
+  }
+  const r=v=>Math.round(v*10)/10;
+  let d=`M${r(pts[0].x)},${r(pts[0].y)}`;
+  for(let i=0;i<n-1;i++){const h=dx[i]/3;
+    d+=` C${r(pts[i].x+h)},${r(pts[i].y+t[i]*h)} ${r(pts[i+1].x-h)},${r(pts[i+1].y-t[i+1]*h)} ${r(pts[i+1].x)},${r(pts[i+1].y)}`;}
+  return d;
+}
+function finNiceStep(range,target){
+  const raw=(range||1)/target,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;
+  return (n<=1?1:n<=2?2:n<=5?5:10)*p;
+}
 function finRenderTrend(){
-  // Últimos 6 meses (ancla: fin del periodo visible) — Utilidad Neta por mes
-  const ms=finMeses(),last=ms[ms.length-1];
-  const arr=[];for(let k=5;k>=0;k--){let m=last.m-k,y=last.y;while(m<0){m+=12;y--;}
-    const inM=d=>{if(!d)return false;const v=new Date(d+'T00:00:00');return v.getMonth()===m&&v.getFullYear()===y;};
-    const prop=finProp||null;
-    const esOp=p=>p.concepto!=='deposito'&&p.concepto!=='devolucion_deposito';
-    // Misma base que finCalc: cobrado real ubicado en el mes del cargo, y los recibos de
-    // servicio dentro de los gastos
-    const f=finDSPagos().filter(p=>esOp(p)&&Number(p.pagado)>0&&(!prop||p.inmueble_id===prop)&&inM(fechaPeriodo(p))).reduce((s,p)=>s+Number(p.pagado),0);
-    const g=finGastosMes(prop,m,y).concat(finGastosServicios(prop,[{m,y}])).reduce((s,x)=>s+Number(x.monto),0);
-    const i=finDSImps().filter(p=>(!prop||p.inmueble_id===prop)&&inM(p.fecha)).reduce((s,x)=>s+Number(x.monto),0);
-    arr.push({lbl:MESES[m].slice(0,3),neta:f-g-i});}
-  const maxA=Math.max(1,...arr.map(a=>Math.abs(a.neta)));
-  const hasNeg=arr.some(a=>a.neta<0);
-  const base=hasNeg?58:96; // % desde arriba donde vive la línea base
-  document.getElementById('fin-trend').innerHTML=`
+  const host=document.getElementById('fin-trend');if(!host)return;
+  const M=finTrendM=finTrendModel();
+  const {months,series}=M;
+  const hayDatos=series.some(s=>s.pts.some(p=>p.cobr||p.gast||p.imp));
+  // Si el filtro dejó fuera todas las series, se vuelve a encender todo
+  if(series.every(s=>finTrendOff.has(s.id)))finTrendOff.clear();
+  const vis=series.filter(s=>!finTrendOff.has(s.id));
+  // Geometría en píxeles reales: el SVG se mide contra el ancho vivo del panel
+  const W=Math.max(300,(host.clientWidth||900)-48),H=254;
+  const PL=58,PR=18,PT=20,PB=30,iw=W-PL-PR,ih=H-PT-PB;
+  let vals=[];vis.forEach(s=>s.pts.forEach(p=>vals.push(p.neta)));
+  if(!vals.length)vals=[0];
+  let mx=Math.max(0,...vals),mn=Math.min(0,...vals);
+  if(mx-mn<1){mx+=500;mn-=500;}
+  const padY=(mx-mn)*.14;mx+=padY;mn-=padY;
+  const X=i=>PL+(months.length<2?iw/2:(i/(months.length-1))*iw);
+  const Y=v=>PT+ih-((v-mn)/(mx-mn))*ih;
+  M.geo={W,H,PL,iw,X};
+  // Rejilla en valores redondos, con el cero siempre marcado aparte
+  const step=finNiceStep(mx-mn,4);
+  const ticks=[];for(let v=Math.ceil(mn/step)*step;v<=mx+1e-6;v+=step)ticks.push(v);
+  const zeroY=Y(0);
+  const defs=vis.map((s,k)=>`<linearGradient id="lcg${k}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${s.color}" stop-opacity=".30"/><stop offset="100%" stop-color="${s.color}" stop-opacity="0"/></linearGradient>`).join('');
+  const grid=ticks.map(v=>`<line class="lc-gd" x1="${PL}" y1="${Y(v).toFixed(1)}" x2="${PL+iw}" y2="${Y(v).toFixed(1)}"/>
+      <text class="lc-ax" x="${PL-9}" y="${(Y(v)+3.5).toFixed(1)}" text-anchor="end">${finFK(v)}</text>`).join('');
+  const xlbl=months.map((mo,i)=>`<text class="lc-ax" x="${X(i).toFixed(1)}" y="${H-9}" text-anchor="middle">${mo.lbl}</text>`).join('');
+  const paths=vis.map((s,k)=>{
+    const pts=s.pts.map((p,i)=>({x:X(i),y:Y(p.neta)}));
+    const d=finMonoPath(pts);
+    const si=series.indexOf(s);
+    const area=`${d} L${X(months.length-1).toFixed(1)},${zeroY.toFixed(1)} L${X(0).toFixed(1)},${zeroY.toFixed(1)} Z`;
+    const dots=pts.map((p,i)=>`<circle class="lc-dot" data-i="${i}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.6" fill="${s.color}" stroke="#0B0A12" stroke-width="1.4"/>`).join('');
+    return`<g class="lc-g" data-s="${si}">
+      <path class="lc-area" d="${area}" fill="url(#lcg${k})"/>
+      <path class="lc-ln" d="${d}" stroke="${s.color}" stroke-width="${s.w}" ${s.dash?`stroke-dasharray="${s.dash}"`:''}/>
+      ${dots}
+      <path class="lc-hit" d="${d}" onmouseenter="finTrendFocus(${si})"/>
+    </g>`;}).join('');
+  const leg=series.map((s,k)=>{
+    const off=finTrendOff.has(s.id);
+    const ult=s.pts[s.pts.length-1].neta;
+    return`<button class="${off?'off':''}" aria-pressed="${!off}" onclick="finTrendToggle('${finEsc(s.id)}')"
+      onmouseenter="finTrendFocus(${k})" onmouseleave="finTrendBlur()" onfocus="finTrendFocus(${k})" onblur="finTrendBlur()"
+      title="${off?'Mostrar':'Ocultar'} ${finEsc(s.nombre)}">
+      <em class="lgk" style="background:${s.color};color:${s.color};${s.dash?'border-style:dashed':''}"></em>
+      <span>${finEsc(s.nombre)}</span><span class="lgv">${finF(ult)}</span></button>`;}).join('');
+  host.innerHTML=`
   <div class="fin-panel" style="padding:20px 24px">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      <div class="fin-lbl" style="color:#A78BFA">Utilidad neta · últimos 6 meses</div>
-      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace"><span style="color:#A855F7">■</span> positiva&nbsp;&nbsp;<span style="color:#FB7185">■</span> negativa</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <div><div class="fin-lbl" style="color:#A78BFA">Utilidad neta · últimos 6 meses</div>
+        <div style="font-size:12.5px;color:#8E89A8;margin-top:3px">${finGlobal?'Una línea por negocio':'Tu negocio'} · ${months[0].full} → ${months[5].full}</div></div>
+      <span class="fin-chip"><i class="ti ti-pointer" style="font-size:11px"></i>pasa el cursor por una línea para verla sola</span>
     </div>
-    <div style="position:relative;height:150px">
-      <div style="position:absolute;left:0;right:0;top:${base}%;height:1px;background:rgba(139,92,246,.35)"></div>
-      <div style="display:flex;align-items:stretch;gap:14px;height:100%">
-      ${arr.map((a,i2)=>{
-        const hPct=Math.max(3,Math.abs(a.neta)/maxA*(a.neta>=0?base-8:92-base));
-        const up=a.neta>=0;
-        return`<div style="flex:1;position:relative">
-          <div style="position:absolute;left:50%;transform:translateX(-50%);${up?`bottom:${100-base}%`:`top:${base}%`};width:min(46px,80%);height:${hPct}%;border-radius:${up?'7px 7px 2px 2px':'2px 2px 7px 7px'};background:${up?'linear-gradient(180deg,#A855F7,#6D28D9)':'linear-gradient(180deg,#9F1239,#FB7185)'};box-shadow:0 0 18px ${up?'rgba(168,85,247,.4)':'rgba(251,113,133,.35)'};animation:barUp .7s cubic-bezier(.16,1,.3,1) ${(i2*.08).toFixed(2)}s both;transform-origin:${up?'bottom':'top'}"></div>
-          <div style="position:absolute;left:0;right:0;top:calc(${base}% ${up?'-':'+'} ${hPct}% ${up?'- 16px':'+ 4px'});text-align:center;font-family:'DM Mono',monospace;font-size:9.5px;color:${up?'#C4B5FD':'#FDA4AF'}">${finF(a.neta)}</div>
-          <div style="position:absolute;left:0;right:0;bottom:-4px;text-align:center;font-size:10px;font-weight:600;color:#8E89A8;text-transform:uppercase;letter-spacing:.08em">${a.lbl}</div>
-        </div>`;}).join('')}
-      </div>
-    </div>
+    ${hayDatos?`
+    <svg id="fin-lc" class="fin-lc" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="width:100%;height:auto"
+         role="img" aria-label="Utilidad neta mensual de ${vis.length} ${vis.length===1?'negocio':'negocios'}, de ${months[0].full} a ${months[5].full}"
+         onmousemove="finTrendMove(event)" onmouseleave="finTrendOut()">
+      <defs>${defs}</defs>
+      ${grid}
+      <line class="lc-zero" x1="${PL}" y1="${zeroY.toFixed(1)}" x2="${PL+iw}" y2="${zeroY.toFixed(1)}"/>
+      <line id="lc-cursor" class="lc-cur" x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+ih}" style="opacity:0"/>
+      ${xlbl}
+      ${paths}
+    </svg>
+    <div class="fin-leg" role="group" aria-label="Series de la gráfica">${leg}</div>`
+    :`<div style="padding:44px 16px;text-align:center">
+      <i class="ti ti-chart-line" style="font-size:26px;color:#4C4470"></i>
+      <div style="font-size:13.5px;color:#8E89A8;margin-top:10px">Sin movimientos en estos 6 meses</div>
+      <div style="font-size:12px;color:#5F5980;margin-top:3px">Registra cobros o gastos y la tendencia aparece aquí.</div></div>`}
   </div>`;
+  finTrendHi=null;finTrendIdx=-1;
+}
+// ── Interacción de la gráfica ──
+function finTrendFocus(k){
+  finTrendHi=k;const svg=document.getElementById('fin-lc');
+  if(svg){svg.setAttribute('data-hi','1');
+    svg.querySelectorAll('.lc-g').forEach(g=>g.classList.toggle('on',+g.dataset.s===k));}
+  finTrendTip();
+}
+function finTrendBlur(){
+  finTrendHi=null;const svg=document.getElementById('fin-lc');
+  if(svg){svg.removeAttribute('data-hi');svg.querySelectorAll('.lc-g').forEach(g=>g.classList.remove('on'));}
+  finTrendTip();
+}
+function finTrendMove(ev){
+  const svg=document.getElementById('fin-lc');if(!svg||!finTrendM||!finTrendM.geo)return;
+  const r=svg.getBoundingClientRect(),G=finTrendM.geo,n=finTrendM.months.length;
+  const sx=(ev.clientX-r.left)*(G.W/(r.width||G.W));
+  let i=Math.round(((sx-G.PL)/(G.iw||1))*(n-1));
+  i=Math.max(0,Math.min(n-1,i));
+  finTrendXY={x:ev.clientX,y:ev.clientY};
+  if(i!==finTrendIdx){
+    finTrendIdx=i;
+    const c=svg.querySelector('#lc-cursor');
+    if(c){const x=G.X(i).toFixed(1);c.setAttribute('x1',x);c.setAttribute('x2',x);c.style.opacity='1';}
+    svg.querySelectorAll('.lc-dot').forEach(d=>d.setAttribute('r',+d.dataset.i===i?5:2.6));
+  }
+  finTrendTip();
+}
+function finTrendOut(){
+  const svg=document.getElementById('fin-lc');
+  if(svg){const c=svg.querySelector('#lc-cursor');if(c)c.style.opacity='0';
+    svg.querySelectorAll('.lc-dot').forEach(d=>d.setAttribute('r',2.6));}
+  finTrendIdx=-1;finTrendBlur();finTip(false);
+}
+function finTrendToggle(id){
+  const M=finTrendM;if(!M)return;
+  const quedan=M.series.filter(s=>s.id!==id&&!finTrendOff.has(s.id)).length;
+  if(!finTrendOff.has(id)&&!quedan){toast('Deja al menos una línea visible','ti-info-circle');return;}
+  finTrendOff.has(id)?finTrendOff.delete(id):finTrendOff.add(id);
+  finTip(false);finRenderTrend();
+}
+function finTrendTip(){
+  const M=finTrendM;
+  if(!M||finTrendIdx<0)return finTip(false);
+  const mo=M.months[finTrendIdx];
+  const vis=M.series.filter(s=>!finTrendOff.has(s.id));
+  if(!vis.length)return finTip(false);
+  const hi=finTrendHi!=null?M.series[finTrendHi]:null;
+  let html;
+  if(hi&&!finTrendOff.has(hi.id)){
+    // Foco en una serie: el detalle completo de ese negocio en ese mes
+    const p=hi.pts[finTrendIdx],prev=finTrendIdx>0?hi.pts[finTrendIdx-1]:null;
+    const dl=prev?p.neta-prev.neta:null;
+    html=`<div class="tt-h"><span style="width:10px;height:10px;border-radius:3px;background:${hi.color};flex-shrink:0"></span>${finEsc(hi.nombre)}</div>
+      <div class="tt-s">${finEsc(mo.full)}</div>
+      <div class="tt-big" style="color:${p.neta<0?'#FB7185':'#6EE7B7'}">${finF(p.neta)}</div>
+      <div class="tt-s" style="margin-bottom:6px">utilidad neta${dl!=null?` · <span style="color:${dl>=0?'#6EE7B7':'#FB7185'}">${dl>=0?'▲':'▼'} ${finF(Math.abs(dl))} vs ${finEsc(M.months[finTrendIdx-1].lbl)}</span>`:''}</div>
+      <div class="tt-sep"></div>
+      <div class="tt-r"><span>Cobrado</span><b style="color:#C4B5FD">${finF(p.cobr)}</b></div>
+      <div class="tt-r"><span>Gastos</span><b style="color:#F0ABFC">−${finF(p.gast)}</b></div>
+      <div class="tt-r"><span>Impuestos</span><b style="color:#FBBF24">−${finF(p.imp)}</b></div>`;
+  }else{
+    // Sin foco: el corte del mes, todas las series de mayor a menor
+    const filas=[...vis].sort((a,b)=>b.pts[finTrendIdx].neta-a.pts[finTrendIdx].neta).map(s=>{
+      const v=s.pts[finTrendIdx].neta;
+      return`<div class="tt-r"><span style="display:flex;align-items:center;gap:7px;min-width:0">
+        <em style="width:10px;height:3px;border-radius:2px;background:${s.color};flex-shrink:0"></em>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${s.tot?'#EDEBFA':'#A9A3C4'};font-weight:${s.tot?'700':'400'}">${finEsc(s.nombre)}</span></span>
+        <b style="color:${v<0?'#FB7185':'#EDEBFA'}">${finF(v)}</b></div>`;}).join('');
+    html=`<div class="tt-h"><i class="ti ti-calendar-month" style="font-size:13px;color:#A78BFA"></i>${finEsc(mo.full)}</div>
+      <div class="tt-s" style="margin-bottom:6px">utilidad neta por negocio</div>${filas}`;
+  }
+  finTip(true,html,finTrendXY.x,finTrendXY.y);
+}
+// ── Tooltip compartido (gráfica y tableros) ──
+function finTip(on,html,x,y,center){
+  const t=document.getElementById('fin-tip');if(!t)return;
+  if(!on){t.classList.remove('on');t.setAttribute('aria-hidden','true');return;}
+  t.innerHTML=html;t.setAttribute('aria-hidden','false');t.classList.add('on');
+  const r=t.getBoundingClientRect();
+  let L=center?x-r.width/2:x+16,T=y-r.height-14;
+  if(L+r.width>innerWidth-10)L=x-r.width-16;
+  if(L<10)L=10;
+  if(T<10)T=y+20;
+  if(T+r.height>innerHeight-10)T=Math.max(10,innerHeight-r.height-10);
+  t.style.left=L+'px';t.style.top=T+'px';
+}
+// ═══════════════════════════════════════════════════════════
+//  TABLEROS POR NEGOCIO — ocupación y cobranza
+// ═══════════════════════════════════════════════════════════
+// Retrato de HOY, no del periodo del selector: un departamento está desocupado o no lo
+// está, y un cargo está vencido o no lo está, siempre respecto a la fecha de hoy. Por eso
+// los paneles lo dicen en su encabezado, para que nadie los lea como si fueran del mes.
+let finBoardsCache=[];
+function finBoardsData(){
+  const t0=new Date();t0.setHours(0,0,0,0);
+  // 3 = vencido · 2 = pasó el día de pago pero sigue en tolerancia · 1 = aún por vencer
+  const rango=p=>{if(finEstadoPago(p)==='vencido')return 3;
+    return new Date(p.vencimiento+'T00:00:00')<t0?2:1;};
+  return finWSActivos().map(w=>{
+    const inms=finGData.inms.filter(i=>i.workspace_id===w.id).slice().sort((a,b)=>cmpNum(a.num,b.num));
+    const deptos=inms.map(i=>{
+      const vig=finContratoVigente(i.id),desoc=!vig;
+      const cargos=desoc?[]:finCargosInm(i.id);
+      const venc=cargos.filter(p=>finEstadoPago(p)==='vencido');
+      const top=cargos.length?Math.max(...cargos.map(rango)):0;
+      const st=desoc?'libre':top===3?'venc':top===2?'tol':top===1?'pend':'dia';
+      const dias=venc.length?Math.max(...venc.map(p=>Math.abs(dB(t0,new Date(p.vencimiento+'T00:00:00'))))):0;
+      const cs=finContratosDe(i.id);
+      // Cuándo se desocupó: la salida más reciente del historial, o la del propio espacio
+      const salida=desoc?(cs.map(c=>c.fecha_salida).filter(Boolean).sort().pop()||i.fecha_salida||null):null;
+      return{i,vig,desoc,st,n:cargos.length,salida,
+        deuda:cargos.reduce((s,p)=>s+saldoPago(p),0),
+        mVenc:venc.reduce((s,p)=>s+saldoPago(p),0),dias,
+        hist:Math.max(1,cs.length)};
+    });
+    return{w,deptos};
+  });
+}
+const FIN_ST={
+  libre:{c:'#38BDF8',ico:'ti-door-exit',lbl:'Desocupado'},
+  venc :{c:'#FB7185',ico:'ti-alert-triangle',lbl:'Vencido'},
+  tol  :{c:'#FBBF24',ico:'ti-hourglass',lbl:'En tolerancia'},
+  pend :{c:'#A78BFA',ico:'ti-clock',lbl:'Por vencer'},
+  dia  :{c:'#34D399',ico:'ti-circle-check',lbl:'Al día'},
+  ok   :{c:'#A78BFA',ico:'ti-user',lbl:'Ocupado'}
+};
+function finRenderBoards(){
+  const host=document.getElementById('fin-boards');if(!host)return;
+  // El tablero compara negocios entre sí: sin modo global no hay nada que comparar
+  if(!finGlobal){host.innerHTML='';finBoardsCache=[];return;}
+  const D=finBoardsCache=finBoardsData();
+  const tot=D.reduce((s,x)=>s+x.deptos.length,0);
+  if(!tot){host.innerHTML='';return;}
+  const libres=D.reduce((s,x)=>s+x.deptos.filter(d=>d.desoc).length,0);
+  const vencs=D.reduce((s,x)=>s+x.deptos.filter(d=>d.st==='venc').length,0);
+  const mVenc=D.reduce((s,x)=>s+x.deptos.reduce((a,d)=>a+d.mVenc,0),0);
+  const key=k=>`<span><em style="background:${FIN_ST[k].c}22;border-color:${FIN_ST[k].c}"></em>${FIN_ST[k].lbl}</span>`;
+  const cell=(kind,wi,di,d,st)=>{
+    const S=FIN_ST[st];
+    return`<div class="fin-cell st-${st}" tabindex="0" role="listitem"
+      aria-label="Depto ${finEsc(d.i.num)} · ${S.lbl}${d.deuda>0.005?' · debe '+finF(d.deuda):''}"
+      onmouseenter="finCellTip(event,'${kind}',${wi},${di})" onmouseleave="finTip(false)"
+      onfocus="finCellTip(event,'${kind}',${wi},${di})" onblur="finTip(false)">
+      <i class="ti ${S.ico} ci"></i><span>${finEsc(d.i.num)}</span></div>`;
+  };
+  const meter=segs=>`<div class="fin-bmeter">${segs.filter(s=>s[1]>0).map(s=>`<i style="width:${s[1]}%;background:${s[0]}"></i>`).join('')}</div>`;
+  // ── Tablero 1: ocupación ──
+  const ocup=D.map((x,wi)=>{
+    const n=x.deptos.length,lib=x.deptos.filter(d=>d.desoc).length,oc=n-lib;
+    const pct=n?Math.round(oc/n*100):0;
+    return`<div class="fin-bcard">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+        <h4 title="${finEsc(x.w.nombre)}">${finEsc(x.w.nombre)}</h4>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;color:${lib?'#7DD3FC':'#6EE7B7'};flex-shrink:0">${pct}%</span>
+      </div>
+      <div style="font-size:11.5px;color:#8E89A8;margin-top:2px">${n} depto${n===1?'':'s'} · ${lib?`<span style="color:#7DD3FC;font-weight:600">${lib} desocupado${lib===1?'':'s'}</span>`:'todos ocupados'}</div>
+      ${meter([['#A855F7',n?oc/n*100:0],['#38BDF8',n?lib/n*100:0]])}
+      <div class="fin-cells" role="list" aria-label="Departamentos de ${finEsc(x.w.nombre)}">${x.deptos.map((d,di)=>cell('o',wi,di,d,d.desoc?'libre':'ok')).join('')}</div>
+    </div>`;}).join('');
+  // ── Tablero 2: cobranza ──
+  const cobr=D.map((x,wi)=>{
+    const n=x.deptos.length,act=x.deptos.filter(d=>!d.desoc);
+    const cv=act.filter(d=>d.st==='venc').length,ct=act.filter(d=>d.st==='tol').length,cp=act.filter(d=>d.st==='pend').length,cd=act.filter(d=>d.st==='dia').length;
+    const deuda=x.deptos.reduce((s,d)=>s+d.mVenc,0);
+    const T=act.length||1;
+    return`<div class="fin-bcard"${cv?' style="border-color:rgba(251,113,133,.4)"':''}>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+        <h4 title="${finEsc(x.w.nombre)}">${finEsc(x.w.nombre)}</h4>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;color:${cv?'#FB7185':'#6EE7B7'};flex-shrink:0">${cv?finF(deuda):'al día'}</span>
+      </div>
+      <div style="font-size:11.5px;color:#8E89A8;margin-top:2px">${cv?`<span style="color:#FDA4AF;font-weight:600">${cv} vencido${cv===1?'':'s'}</span>`:`${act.length} ocupado${act.length===1?'':'s'} sin atraso`}${ct?` · ${ct} en tolerancia`:''}</div>
+      ${meter([['#FB7185',cv/T*100],['#FBBF24',ct/T*100],['#A855F7',cp/T*100],['#34D399',cd/T*100]])}
+      <div class="fin-cells" role="list" aria-label="Cobranza de ${finEsc(x.w.nombre)}">${x.deptos.map((d,di)=>cell('c',wi,di,d,d.st)).join('')}</div>
+    </div>`;}).join('');
+  const panel=(ttl,sub,chip,legs,body)=>`<div class="fin-panel" style="padding:20px 24px;margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px">
+      <div><div class="fin-lbl" style="color:#A78BFA">${ttl}</div>
+        <div style="font-size:12.5px;color:#8E89A8;margin-top:3px">${sub}</div></div>
+      ${chip}
+    </div>
+    <div class="fin-bleg" style="margin-top:12px">${legs}</div>
+    <div class="fin-bgrid">${body}</div>
+  </div>`;
+  const hoyChip=`<span class="fin-chip"><i class="ti ti-clock-hour-4" style="font-size:11px"></i>estado de hoy · no depende del periodo</span>`;
+  host.innerHTML=
+    panel('Ocupación por negocio',
+      `${tot} departamento${tot===1?'':'s'} en ${D.length} negocio${D.length===1?'':'s'} · <b style="color:${libres?'#7DD3FC':'#6EE7B7'};font-weight:600">${libres} desocupado${libres===1?'':'s'}</b>`,
+      hoyChip,key('ok')+key('libre'),ocup)
+   +panel('Cobranza por negocio',
+      vencs?`<b style="color:#FDA4AF;font-weight:600">${vencs} depto${vencs===1?'':'s'} vencido${vencs===1?'':'s'}</b> · ${finF(mVenc)} de atraso`:'Nadie con pagos vencidos · todo al corriente',
+      hoyChip,key('venc')+key('tol')+key('pend')+key('dia')+key('libre'),cobr);
+}
+// Tooltip de una celda del tablero. Se ancla a la celda, no al puntero: así sale igual
+// con el mouse que con el teclado (Tab), y no baila mientras te mueves dentro del cuadro.
+function finCellTip(ev,kind,wi,di){
+  const x=finBoardsCache[wi];if(!x)return;
+  const d=x.deptos[di];if(!d)return;
+  const st=kind==='o'?(d.desoc?'libre':'ok'):d.st,S=FIN_ST[st];
+  const nom=d.desoc?'Espacio disponible':(d.vig?.inquilino||d.i.inquilino||'—');
+  let cuerpo;
+  if(kind==='o'){
+    cuerpo=d.desoc
+      ? `<div class="tt-r"><span>Contratos en historial</span><b>${d.hist}</b></div>
+         <div class="tt-r"><span>Última salida</span><b>${finEsc(fd(d.salida))}</b></div>`
+      : `<div class="tt-r"><span>Renta</span><b>${finF(d.vig?.renta||d.i.renta)}</b></div>
+         <div class="tt-r"><span>Paga el día</span><b>${finEsc(String(d.vig?.dia||d.i.dia||'—'))}</b></div>
+         <div class="tt-r"><span>Personas</span><b>${finEsc(String(d.vig?.personas||d.i.personas||1))}</b></div>`;
+  }else{
+    cuerpo=d.desoc
+      ? `<div class="tt-r"><span>Sin inquilino</span><b>no genera cobranza</b></div>`
+      : `<div class="tt-r"><span>Cargos abiertos</span><b>${d.n}</b></div>
+         <div class="tt-r"><span>Debe</span><b style="color:${d.deuda>0.005?'#F0ABFC':'#EDEBFA'}">${finF(d.deuda)}</b></div>
+         ${d.mVenc>0.005?`<div class="tt-r"><span>Vencido</span><b style="color:#FB7185">${finF(d.mVenc)}</b></div>`:''}
+         ${d.dias?`<div class="tt-r"><span>Atraso</span><b style="color:#FB7185">${d.dias} día${d.dias===1?'':'s'}</b></div>`:''}`;
+  }
+  const html=`<div class="tt-h"><i class="ti ${S.ico}" style="font-size:13px;color:${S.c}"></i>Depto. ${finEsc(d.i.num)}</div>
+    <div class="tt-s">${finEsc(x.w.nombre)}</div>
+    <div style="font-size:13px;font-weight:600;margin:6px 0 2px;${d.desoc?'color:#7DD3FC;font-style:italic':''}">${finEsc(nom)}</div>
+    <div style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;background:${S.c}22;color:${S.c};margin-bottom:4px">${S.lbl}${st==='venc'&&d.dias?` · ${d.dias}d`:''}</div>
+    <div class="tt-sep"></div>${cuerpo}`;
+  const r=ev.currentTarget.getBoundingClientRect();
+  finTip(true,html,r.left+r.width/2,r.top-4,true);
 }
 function finCatColor(catId){const k=Math.max(0,finDSCats().findIndex(c=>c.id===catId));return FIN_CATC[k%FIN_CATC.length];}
 function finCatNombre(g){
-  if(g._svc)return'Servicios (agua, luz, gas)';
+  if(g._svc)return'Servicios que absorbes';
   const c=finDSCats().find(x=>x.id===g.categoria_id);return c?c.nombre:(g.categoria||'Sin categoría');
 }
 function finRenderGastos(C){
@@ -6341,7 +6900,7 @@ function finRenderImps(C){
 // ── Drill-down (trazabilidad: cada cifra se abre a su desglose) ──
 function finDrawer(kind){
   const C=finCalc(),d=document.getElementById('fin-drawer');
-  const T={fact:['INGRESOS COBRADOS','Dinero efectivamente cobrado en el periodo','#C4B5FD'],gastos:['GASTOS DE OPERACIÓN','Gastos y recibos de servicios del periodo','#F0ABFC'],util:['UTILIDAD','Cobrado − Gastos de operación',C.util<0?'#FB7185':'#6EE7B7'],imp:['IMPUESTOS','Pagos de impuestos capturados','#FBBF24'],neta:['UTILIDAD NETA','La cascada completa del periodo',C.neta<0?'#FB7185':'#6EE7B7']};
+  const T={fact:['INGRESOS COBRADOS','Dinero efectivamente cobrado en el periodo','#C4B5FD'],gastos:['GASTOS DE OPERACIÓN','Gastos del periodo y lo que absorbes de servicios','#F0ABFC'],util:['UTILIDAD','Cobrado − Gastos de operación',C.util<0?'#FB7185':'#6EE7B7'],imp:['IMPUESTOS','Pagos de impuestos capturados','#FBBF24'],neta:['UTILIDAD NETA','La cascada completa del periodo',C.neta<0?'#FB7185':'#6EE7B7']};
   const [ttl,sub,col]=T[kind];
   const line=(l,v,c,b)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px ${b?'solid':'dashed'} rgba(139,92,246,.2);font-size:${b?'14px':'12.5px'};${b?'font-weight:700':''}"><span style="color:${b?'#EDEBFA':'#8E89A8'}">${l}</span><span style="font-family:'DM Mono',monospace;color:${c||'#EDEBFA'}">${typeof v==='number'?fmt(v):v}</span></div>`;
   const nota=t=>`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">${t}</p>`;
@@ -6350,9 +6909,9 @@ function finDrawer(kind){
     +line('Total cobrado',C.cobr,'#C4B5FD',1)
     +line('Facturado en el periodo',C.fact,'#8E89A8')
     +(C.porCobrar>0.005?line('Aún por cobrar',C.porCobrar,'#FB7185'):'')
-    +nota('La cascada parte de lo <b>cobrado</b>, no de lo facturado: la renta que todavía no entra no es utilidad. Cada cobro cuenta en el <b>mes del cargo</b> que liquida, no en el día en que se capturó, para que registrar hoy una renta atrasada no vacíe su mes.');
+    +nota('La cascada parte de lo <b>cobrado</b>, no de lo facturado: la renta que todavía no entra no es utilidad. Cada cobro cuenta en el <b>mes del cargo</b> que liquida, no en el día en que se capturó, para que registrar hoy una renta atrasada no vacíe su mes. <b>Los cobros de agua, luz y gas no aparecen aquí</b>: son un reembolso de lo que adelantaste, no ingreso del negocio.');
   else if(kind==='gastos')body=C.gl.map(g=>line(`${g._svc?finCatNombre(g):finRowLoc(g)+' · '+finCatNombre(g)}${g._inst==='virtual'?' ↻':''} · ${fdS(g.fecha)}`,Number(g.monto))).join('')+line('Total gastos',C.gTot,'#F0ABFC',1)
-    +nota('Incluye los <b>recibos completos de agua, luz y gas</b> que pagas tú. Lo que recobras a los inquilinos entra como ingreso arriba, así que la diferencia entre ambos es lo que el servicio te cuesta de verdad.');
+    +nota('Los recibos de agua, luz y gas <b>no entran como gasto</b>: los adelantas y te los reembolsan. De cada recibo sólo se cuenta la parte que <b>nunca le cargaste a nadie</b> —el subsidio de los departamentos vacíos o de los días sin ocupar, más tu apoyo de administración—, porque ése sí es dinero tuyo.');
   else if(kind==='imp')body=C.il.map(x=>line(`${finRowLoc(x)} · ${x.concepto||'Impuesto'} · ${fdS(x.fecha)}`,Number(x.monto))).join('')+line('Total impuestos',C.iTot,'#FBBF24',1);
   else if(kind==='util')body=line('Ingresos cobrados',C.cobr,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,col,1)+nota(`Valor calculado — no es editable. Se recalcula al cambiar cualquier cobro o gasto del periodo.${C.util<0?' <b style="color:#FB7185">Utilidad negativa</b>: hubo más gastos que cobranza (p. ej. vacancia o un recibo alto).':''}`);
   else body=line('Ingresos cobrados',C.cobr,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,C.util<0?'#FB7185':'#6EE7B7',1)+line('− Impuestos',-C.iTot,'#FBBF24')+line('= Utilidad neta',C.neta,col,1)+nota('Lo que realmente queda después de gastos operativos e impuestos, sobre dinero cobrado. Calculado en cascada estricta; nunca editable.');
