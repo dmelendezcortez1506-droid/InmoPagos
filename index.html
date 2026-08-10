@@ -342,6 +342,9 @@ input[type=number]{-moz-appearance:textfield}
 .mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--bd);z-index:100;justify-content:space-around;padding:6px 0}
 .mobile-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--tx3);font-family:inherit}
 .mobile-nav button.active{color:var(--tx);font-weight:600}
+/* Módulo que este cliente no tiene. !important porque los botones del menú
+   traen su display en el atributo style y una regla normal no le gana. */
+.sin-permiso{display:none!important}
 .mobile-nav button i{font-size:20px}
 .dep-panel{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;box-shadow:var(--sh);margin-bottom:10px}
 .dep-panel.retenido{border-left:4px solid var(--red)}.dep-panel.devuelto{border-left:4px solid var(--teal);opacity:.7}
@@ -470,6 +473,17 @@ main.main>div[id^="sec-"]{max-width:1180px;margin:0 auto;animation:fadeUp .26s c
 .ni.active::before{display:none}
 .nb{font-family:'DM Mono',monospace;font-weight:700}
 .sb-foot{border-top:1px solid var(--bd-soft)}
+/* Botones del menú lateral. La FORMA vive aquí, no en el atributo style: de ese
+   lado solo quedan color y background, que son los únicos que el JS mueve
+   (setTab para marcar la sección abierta, data-hs para el hover). Mientras el
+   display:flex estuvo inline, cualquier código que tocara b.style.display lo
+   borraba y los botones caían a inline-block: ícono pegado al texto, el globito
+   de Alertas a media línea y todo recorrido. Que no vuelva a pasar. */
+.dni{display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;
+  width:calc(100% - 24px);font-family:inherit;font-size:13.5px;font-weight:500;
+  text-align:left;border:none;border-radius:8px;cursor:pointer;
+  transition:background .15s,color .15s}
+.dni i{font-size:17px;width:18px;text-align:center}
 
 /* ── BOTONES ── */
 .btn{border-radius:8px;font-weight:600;transition:background .15s,border-color .15s,color .15s,transform .1s,box-shadow .15s}
@@ -1240,19 +1254,19 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   </div>
   <nav style="padding:12px 0;flex:1">
     <div style="padding:4px 24px 6px;font-size:10.5px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.09em">Principal</div>
-    <button class="dni" data-tab="inicio" onclick="setTab('inicio',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-layout-dashboard" style="font-size:17px;width:18px;text-align:center"></i>Resumen</button>
-    <button class="dni" data-tab="pagos" onclick="setTab('pagos',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-receipt" style="font-size:17px;width:18px;text-align:center"></i>Pagos</button>
-    <button class="dni" data-tab="inmuebles" onclick="setTab('inmuebles',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-building" style="font-size:17px;width:18px;text-align:center"></i>Departamentos</button>
-    <button class="dni" data-tab="alertas" onclick="setTab('alertas',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-bell" style="font-size:17px;width:18px;text-align:center"></i>Alertas<span id="nb-al" style="margin-left:auto;background:#E24B4A;color:#fff;border-radius:10px;padding:1px 7px;font-size:10.5px;font-weight:700;font-family:'DM Mono',monospace;display:none"></span></button>
+    <button class="dni" data-tab="inicio" onclick="setTab('inicio',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-layout-dashboard"></i>Resumen</button>
+    <button class="dni" data-tab="pagos" onclick="setTab('pagos',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-receipt"></i>Pagos</button>
+    <button class="dni" data-tab="inmuebles" onclick="setTab('inmuebles',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-building"></i>Departamentos</button>
+    <button class="dni" data-tab="alertas" onclick="setTab('alertas',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-bell"></i>Alertas<span id="nb-al" style="margin-left:auto;background:#E24B4A;color:#fff;border-radius:10px;padding:1px 7px;font-size:10.5px;font-weight:700;font-family:'DM Mono',monospace;display:none"></span></button>
     <div style="padding:16px 24px 6px;font-size:10.5px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.09em">Operación</div>
-    <button class="dni" data-tab="servicios" onclick="setTab('servicios',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-bolt" style="font-size:17px;width:18px;text-align:center"></i>Servicios</button>
-    <button class="dni" data-tab="depositos" onclick="setTab('depositos',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-shield-lock" style="font-size:17px;width:18px;text-align:center"></i>Depósitos</button>
-    <button class="dni" data-tab="recordatorio" onclick="setTab('recordatorio',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-send" style="font-size:17px;width:18px;text-align:center"></i>Recordatorios</button>
+    <button class="dni" data-tab="servicios" onclick="setTab('servicios',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-bolt"></i>Servicios</button>
+    <button class="dni" data-tab="depositos" onclick="setTab('depositos',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-shield-lock"></i>Depósitos</button>
+    <button class="dni" data-tab="recordatorio" onclick="setTab('recordatorio',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-send"></i>Recordatorios</button>
     <div style="padding:16px 24px 6px;font-size:10.5px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.09em">Cuenta</div>
-    <button class="dni" data-tab="edocuenta" onclick="setTab('edocuenta',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-file-invoice" style="font-size:17px;width:18px;text-align:center"></i>Estado de cuenta</button>
-    <button class="dni" data-tab="reporte" onclick="setTab('reporte',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-chart-bar" style="font-size:17px;width:18px;text-align:center"></i>Reporte</button>
-    <button class="dni" data-tab="miembros" onclick="setTab('miembros',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-users" style="font-size:17px;width:18px;text-align:center"></i>Equipo</button>
-    <button class="dni" data-tab="config" onclick="setTab('config',this)" data-hs="color:#1A1917" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 12px 2px;font-size:13.5px;font-weight:500;border:none;border-radius:8px;cursor:pointer;font-family:inherit;width:calc(100% - 24px);text-align:left;transition:background .15s,color .15s;color:#6B6963;background:transparent"><i class="ti ti-settings" style="font-size:17px;width:18px;text-align:center"></i>Configuración</button>
+    <button class="dni" data-tab="edocuenta" onclick="setTab('edocuenta',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-file-invoice"></i>Estado de cuenta</button>
+    <button class="dni" data-tab="reporte" onclick="setTab('reporte',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-chart-bar"></i>Reporte</button>
+    <button class="dni" data-tab="miembros" onclick="setTab('miembros',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-users"></i>Equipo</button>
+    <button class="dni" data-tab="config" onclick="setTab('config',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-settings"></i>Configuración</button>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid #EEECE4;display:flex;align-items:center;gap:10px">
     <div id="sb-av" style="width:32px;height:32px;border-radius:50%;background:#E1F5EE;color:#085041;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0"></div>
@@ -2843,8 +2857,13 @@ function aplicarPermisos(){
   if(!PERMISOS)return;                       // sin datos no se esconde nada
   document.querySelectorAll('.dni[data-tab],.mobile-nav button[data-tab]').forEach(b=>{
     const t=b.getAttribute('data-tab');
+    // Se oculta con una clase, NO tocando b.style.display. Estos botones
+    // llevan su `display:flex` en el atributo style; ponerles display=''
+    // para volver a mostrarlos borraría ese flex y quedarían como
+    // inline-block, con el ícono y el texto desalineados.
     // 'inicio' y 'config' no son negociables: sin ellos la app no tiene salida.
-    b.style.display=(t==='inicio'||t==='config'||puedeVer(t))?'':'none';
+    b.classList.toggle('sin-permiso',
+      !(t==='inicio'||t==='config'||puedeVer(t)));
   });
   // Si estaba parado justo en un módulo que le acaban de quitar, se le
   // regresa al Resumen en vez de dejarle una sección en blanco.
