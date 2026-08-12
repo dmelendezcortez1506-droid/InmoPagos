@@ -1042,9 +1042,6 @@ tbody tr:hover td{background:var(--hover)}
 .rol-go{margin-top:9px;display:inline-flex;align-items:center;gap:6px;font-size:13px;
   font-weight:600;color:var(--p-teal)}
 .rol-foot{display:flex;flex-direction:column;align-items:center;gap:12px}
-.rol-check{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--p-mut);
-  cursor:pointer;padding:8px 10px;border-radius:9px;min-height:44px}
-.rol-check input{width:17px;height:17px;accent-color:var(--p-teal);cursor:pointer}
 .rol-salir{background:none;border:none;font-family:inherit;font-size:13px;color:var(--p-dim);
   cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:10px;min-height:44px}
 .rol-salir:hover{color:var(--p-tx)}
@@ -1588,8 +1585,8 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <div class="p-blobs" aria-hidden="true"><div class="p-blob b1"></div><div class="p-blob b2"></div></div>
 <div class="rol-wrap">
   <div class="rol-head">
-    <h1>¿Cómo quieres entrar?</h1>
-    <p id="rol-sub">Elige la vista con la que vas a trabajar hoy</p>
+    <h1 id="rol-ttl">¿Cómo vas a usar InmoPagos?</h1>
+    <p id="rol-sub">Solo te lo preguntamos esta vez</p>
   </div>
 
   <div class="rol-grid">
@@ -1602,9 +1599,9 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <span class="rol-row"><i class="ti ti-chart-bar"></i><span class="rol-bar" style="width:62%;background:#EEECE4"></span></span>
       </span>
       <span class="rol-body">
-        <strong><i class="ti ti-layout-dashboard" style="color:var(--p-teal);font-size:17px"></i>Administrador</strong>
-        <span>Tus negocios, cobranza, servicios, depósitos y finanzas. La app de siempre.</span>
-        <span class="rol-go">Entrar<i class="ti ti-arrow-right" style="font-size:14px"></i></span>
+        <strong><i class="ti ti-layout-dashboard" style="color:var(--p-teal);font-size:17px"></i><span id="rol-admin-ttl">Administro rentas</span></strong>
+        <span id="rol-admin-desc">Doy de alta mis departamentos, cobro las rentas, reparto agua, luz y gas, y llevo mis números.</span>
+        <span class="rol-go" id="rol-admin-go">Empezar<i class="ti ti-arrow-right" style="font-size:14px"></i></span>
       </span>
     </button>
 
@@ -1616,15 +1613,14 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <span class="rol-bar" style="width:48%;background:rgba(237,233,223,.09)"></span>
       </span>
       <span class="rol-body">
-        <strong><i class="ti ti-home-heart" style="color:var(--p-teal);font-size:17px"></i>Inquilino<span class="p-chip p-mut" id="rol-inq-tag" style="display:none"></span></strong>
-        <span id="rol-inq-desc">Tu saldo, tus estados de cuenta, tus recordatorios y hablar con tu administrador.</span>
-        <span class="rol-go" id="rol-inq-go">Entrar<i class="ti ti-arrow-right" style="font-size:14px"></i></span>
+        <strong><i class="ti ti-home-heart" style="color:var(--p-teal);font-size:17px"></i><span id="rol-inq-ttl">Rento un departamento</span><span class="p-chip p-mut" id="rol-inq-tag" style="display:none"></span></strong>
+        <span id="rol-inq-desc">Mi arrendador me mandó un código. Quiero ver cuánto debo, mis recibos y poder escribirle.</span>
+        <span class="rol-go" id="rol-inq-go">Tengo un código<i class="ti ti-arrow-right" style="font-size:14px"></i></span>
       </span>
     </button>
   </div>
 
   <div class="rol-foot">
-    <label class="rol-check"><input type="checkbox" id="rol-recordar" onchange="guardarRolPref(this.checked)">Entrar siempre como administrador</label>
     <button class="rol-salir" onclick="doLogout()">Cerrar sesión</button>
   </div>
 </div>
@@ -3044,11 +3040,11 @@ async function doReg(){
   btn.innerHTML='<i class="ti ti-user-plus"></i>Crear cuenta';btn.disabled=false;
   if(error){se(err,error.message);return}
   CU=data.user;ok.textContent='¡Cuenta creada!';ok.style.display='block';
-  // Quien llegó con una invitación de su arrendador es un inquilino, no un
-  // cliente: mandarlo a "Elige tu plan" sería cobrarle por entrar a ver su
-  // propio recibo.
-  if(INV_PEND){setTimeout(()=>entrarSegunRol(),900);return}
-  setTimeout(()=>abrirPlanes('bienvenida','skip'),1200);
+  // Única vez que se pregunta el rol: la cuenta todavía no es nada, así que
+  // entrarSegunRol() cae en la pantalla de bienvenida. Si eligió "Administro
+  // rentas" sigue el camino de siempre (planes + prueba); si trae invitación
+  // de su arrendador, ni se le enseña —es inquilino y no paga nada—.
+  setTimeout(()=>entrarSegunRol(),900);
 }
 async function doLogout(){await sb.auth.signOut();CU=null;CW=null;show('s-auth')}
 
@@ -8723,10 +8719,12 @@ async function pCanjear(){
 }
 function pSalirACuenta(){pSheet('ps-codigo',false);show('s-rol');}
 function pSalir(){
-  // Desde la vista previa se vuelve a la app, no a elegir puerta: el
+  // Desde la vista previa se vuelve a la app, no se cierra sesión: el
   // administrador estaba trabajando y no tiene por qué perder su negocio abierto.
   if(P.preview){P.preview=false;show('s-app');setTab('inquilinos');return}
-  show('s-rol');renderRolUI();
+  // Para el inquilino, "salir" es salir de verdad. Ya no hay pantalla de roles
+  // a la cual volver: su cuenta es su portal y nada más.
+  doLogout();
 }
 
 // ── Abrir el portal ──
@@ -8796,20 +8794,29 @@ async function detectarRol(){
        suspendido:!!data?.suspendido,migracion:true};
   return ROL;
 }
+// Esta pantalla es de bienvenida, no un menú: se ve al crear la cuenta y ya.
+// Por eso el copy pregunta para qué va a usar InmoPagos, no "por dónde entras
+// hoy".
 function renderRolUI(){
   const tag=document.getElementById('rol-inq-tag');
   const desc=document.getElementById('rol-inq-desc');
   const go=document.getElementById('rol-inq-go');
   const sub=document.getElementById('rol-sub');
   const card=document.getElementById('rol-inq');
+  const ambos=ROL.esAdmin&&ROL.tienePortal;
   card.disabled=false;
-  document.getElementById('rol-admin').style.display=ROL.esAdmin?'':'none';
-  sub.textContent=ROL.esAdmin&&ROL.tienePortal?'Tienes las dos: entra por donde necesites'
-    :ROL.esAdmin?'Elige la vista con la que vas a trabajar hoy'
-    :'Bienvenido a tu portal';
+  document.getElementById('rol-ttl').textContent=ambos?'¿A dónde entras?':'¿Cómo vas a usar InmoPagos?';
+  sub.textContent=ambos?'Tienes negocio propio y también rentas un departamento'
+                       :'Solo te lo preguntamos esta vez';
+  document.getElementById('rol-admin-desc').textContent=ROL.esAdmin
+    ? 'Tus negocios, cobranza, servicios, depósitos y finanzas.'
+    : 'Doy de alta mis departamentos, cobro las rentas, reparto agua, luz y gas, y llevo mis números.';
+  document.getElementById('rol-admin-ttl').textContent=ROL.esAdmin?'Administrador':'Administro rentas';
+  document.getElementById('rol-admin-go').innerHTML=(ROL.esAdmin?'Entrar':'Empezar')+'<i class="ti ti-arrow-right" style="font-size:14px"></i>';
 
   if(ROL.tienePortal){
     tag.style.display='none';
+    document.getElementById('rol-inq-ttl').textContent='Inquilino';
     desc.textContent='Tu saldo, tus estados de cuenta, tus recordatorios y hablar con tu administrador.';
     go.innerHTML='Entrar<i class="ti ti-arrow-right" style="font-size:14px"></i>';
   }else if(!ROL.migracion){
@@ -8820,37 +8827,25 @@ function renderRolUI(){
     tag.style.display='';tag.innerHTML='<i class="ti ti-lock"></i>Suspendido';
     desc.textContent='Tu acceso está pausado. Escríbele a tu administrador para reactivarlo.';
     go.innerHTML='';card.disabled=true;
-  }else if(ROL.esAdmin){
-    tag.style.display='';tag.innerHTML='<i class="ti ti-eye"></i>Vista previa';
-    desc.textContent='Mira exactamente lo que ve tu inquilino en su celular, sin salir de tu cuenta.';
-    go.innerHTML='Ver como inquilino<i class="ti ti-arrow-right" style="font-size:14px"></i>';
   }else{
     tag.style.display='none';
-    desc.textContent='¿Tu administrador te mandó un código? Conéctalo aquí y ve tu saldo, tus recibos y sus avisos.';
-    go.innerHTML='Conectar con mi código<i class="ti ti-arrow-right" style="font-size:14px"></i>';
+    document.getElementById('rol-inq-ttl').textContent='Rento un departamento';
+    desc.textContent='Mi arrendador me mandó un código. Quiero ver cuánto debo, mis recibos y poder escribirle.';
+    go.innerHTML='Tengo un código<i class="ti ti-arrow-right" style="font-size:14px"></i>';
   }
-  const chk=document.getElementById('rol-recordar');
-  if(chk)chk.checked=localStorage.getItem('ib_rol')==='admin';
-}
-function guardarRolPref(on){
-  try{on?localStorage.setItem('ib_rol','admin'):localStorage.removeItem('ib_rol')}catch(e){}
 }
 async function elegirRol(cual){
-  if(cual==='admin'){cargarWS();return}
+  if(cual==='admin'){
+    // Cuenta nueva: sigue el camino de siempre —planes, prueba de 7 días y de
+    // ahí a crear su primer negocio—. Quien ya tiene negocios entra directo.
+    if(!ROL.esAdmin)abrirPlanes('bienvenida','skip');
+    else cargarWS();
+    return;
+  }
   if(ROL.tienePortal){abrirPortal(false);return}
   if(!ROL.migracion||ROL.suspendido)return;
-  if(ROL.esAdmin){abrirVistaPrevia();return}
   show('s-portal');pSheet('ps-codigo',true);
   setTimeout(()=>document.getElementById('pc-codigo')?.focus(),320);
-}
-// El administrador eligiendo qué departamento quiere espiar.
-async function abrirVistaPrevia(){
-  if(!CW){
-    // Todavía no entró a ningún negocio: primero el selector, luego el ojo.
-    toast('Entra a un negocio y usa "Ver como inquilino" desde Inquilinos','ti-info-circle');
-    cargarWS();return;
-  }
-  previewInquilino(null);
 }
 
 // ═══════════════════════════════════════
@@ -8909,10 +8904,15 @@ async function abrirVistaPrevia(){
 async function entrarSegunRol(){
   if(INV_PEND)await canjearPendiente();
   await detectarRol();
-  // Inquilino puro (sin negocios propios): derecho a su portal, sin escalas.
-  if(ROL.tienePortal&&!ROL.esAdmin){abrirPortal(false);return}
-  // Administrador que pidió no volver a elegir.
-  if(ROL.esAdmin&&!ROL.tienePortal&&localStorage.getItem('ib_rol')==='admin'){cargarWS();return}
+  // La pregunta se hace UNA sola vez: cuando la cuenta todavía no es nada. En
+  // cuanto tiene un negocio o un portal, la respuesta ya está en los datos y
+  // volver a preguntarla sería un clic diario a cambio de nada. No se guarda
+  // ninguna preferencia: al deducirse de la base, funciona igual en cualquier
+  // teléfono y sobrevive a limpiar el navegador.
+  if(ROL.esAdmin&&!ROL.tienePortal){cargarWS();return}          // administrador
+  if(ROL.tienePortal&&!ROL.esAdmin){abrirPortal(false);return}  // inquilino
+  // Cuenta recién creada (ninguna de las dos) o el caso raro de tener las dos:
+  // aquí sí hay algo genuino que elegir.
   renderRolUI();show('s-rol');
 }
 </script>
