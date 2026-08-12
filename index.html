@@ -7,7 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InmoPagos — MC Conecta Living</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Space Grotesk es exclusiva del portal del inquilino: los displays (el saldo,
+     los títulos de sección) en una tipografía distinta son lo que más rápido
+     hace que se lea como otra app. La interfaz sigue en DM Sans y las cifras
+     en DM Mono. -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -931,6 +935,345 @@ tbody tr:hover td{background:var(--hover)}
 .up-hero{display:flex;align-items:center;gap:13px;background:linear-gradient(90deg,#F5F2FF,#FAF8FF);border:1px solid #DDD6FE;border-radius:12px;padding:14px;margin-bottom:16px}
 .up-gem{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
+/* ══════════════════════════════════════════════════════════════════════════
+   ELEGIR VISTA (#s-rol) + PORTAL DEL INQUILINO (#s-portal)
+   ─────────────────────────────────────────────────────────────────────────
+   Oscuro, vidrio y luz ambiental. Continúa el recorrido que ya empieza en la
+   pantalla de inicio: landing oscura → login oscuro → portal oscuro, mientras
+   la app del administrador se queda en papel claro. Ese contraste es el que
+   hace que el inquilino sienta que abrió OTRA app.
+
+   Los tokens van con prefijo propio (--p-*) y SIEMPRE sobre #s-rol/#s-portal,
+   nunca en :root: redefinir --tx o --bg aquí teñiría de oscuro cualquier
+   componente compartido (modales, toasts) que también usa la app clara.
+   ══════════════════════════════════════════════════════════════════════════ */
+#s-rol,#s-portal{
+  --p-bg:#0B0A09;          /* la misma tinta del login, sin corte visual */
+  --p-bg2:#141210;         /* superficie elevada */
+  --p-glass:rgba(255,255,255,.055);
+  --p-glass2:rgba(255,255,255,.085);
+  --p-line:rgba(237,233,223,.12);
+  --p-line2:rgba(237,233,223,.2);
+  --p-tx:#EDE9DF;          /* 13.8:1 sobre --p-bg */
+  --p-mut:#A8A395;         /* 6.9:1  sobre --p-bg */
+  --p-dim:#878176;         /* 5.1:1 — el gris del login (#77736A) se queda en
+                              4.19:1 y aquí lo llevan etiquetas de 10-11px */
+  --p-teal:#3BC98F;--p-teal-bg:rgba(59,201,143,.14);
+  --p-red:#FF6B68; --p-red-bg:rgba(255,107,104,.14);
+  --p-amber:#F5B544;--p-amber-bg:rgba(245,181,68,.14);
+  --p-blue:#6BA8FF;--p-blue-bg:rgba(107,168,255,.14);
+  --p-r:18px;--p-r2:12px;
+  --p-ease:cubic-bezier(.16,1,.3,1);   /* Expo.out, el mismo de mo() */
+  background:var(--p-bg);color:var(--p-tx);
+  flex-direction:column;position:relative;overflow:hidden;
+  font-family:'DM Sans',sans-serif;
+}
+/* Nunca #000 puro: en OLED el negro absoluto deja estela al hacer scroll. */
+#s-rol::before,#s-portal::before{
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(#0F0D0C,#080807 70%)}
+
+/* ── Luz ambiental ──
+   Dos manchas de color que respiran despacio detrás del contenido. Son CSS
+   puro a propósito: el fondo WebGL del login es precioso pero es GPU, y esto
+   corre en el celular del inquilino. El color lo pone .p-est-* según cómo va
+   de pagos, así que la pantalla comunica su estado antes de leerse. */
+.p-blobs{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.p-blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;
+  will-change:transform;animation:pFloat 22s var(--p-ease) infinite alternate}
+.p-blob.b1{width:66vw;height:66vw;max-width:460px;max-height:460px;top:-16%;left:-14%;
+  background:radial-gradient(circle,var(--p-glow,#3BC98F),transparent 68%)}
+.p-blob.b2{width:54vw;height:54vw;max-width:380px;max-height:380px;top:22%;right:-20%;
+  background:radial-gradient(circle,var(--p-glow2,#5A00F4),transparent 70%);
+  animation-duration:29s;animation-delay:-6s;opacity:.32}
+@keyframes pFloat{from{transform:translate3d(0,0,0) scale(1)}
+                  to{transform:translate3d(6%,7%,0) scale(1.12)}}
+/* Al día = teal · en tolerancia/por vencer = ámbar · vencido = rojo */
+#s-portal.p-est-ok  {--p-glow:#3BC98F;--p-glow2:#5A00F4}
+#s-portal.p-est-tol {--p-glow:#F5B544;--p-glow2:#B06B00}
+#s-portal.p-est-mal {--p-glow:#FF6B68;--p-glow2:#7A1B6B}
+
+/* ── Piezas compartidas por las dos pantallas ── */
+#s-rol .p-card,#s-portal .p-card{
+  background:var(--p-glass);border:1px solid var(--p-line);border-radius:var(--p-r);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);position:relative}
+#s-portal h1,#s-portal h2,#s-portal .p-display,#s-rol h1,#s-rol .p-display{
+  font-family:'Space Grotesk','DM Sans',sans-serif;letter-spacing:-.02em}
+#s-portal .p-num{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums}
+#s-rol :focus-visible,#s-portal :focus-visible{outline:2px solid var(--p-teal);outline-offset:2px;border-radius:6px}
+#s-portal ::selection{background:rgba(59,201,143,.28)}
+
+/* ══ ELEGIR VISTA ══
+   Dos puertas, y cada una enseña a dónde lleva con una maqueta en miniatura:
+   la del administrador en papel claro, la del inquilino en oscuro. Un botón
+   con texto obligaría a leer; esto se entiende de un vistazo. */
+#s-rol{align-items:center;justify-content:center;padding:1.5rem 1rem}
+.rol-wrap{position:relative;z-index:2;width:100%;max-width:840px;
+  display:flex;flex-direction:column;gap:1.6rem;align-items:center}
+.rol-head{text-align:center}
+.rol-head h1{font-size:27px;font-weight:600;color:var(--p-tx);line-height:1.2}
+.rol-head p{font-size:14.5px;color:var(--p-mut);margin-top:7px}
+.rol-grid{display:grid;grid-template-columns:1fr;gap:16px;width:100%}
+@media(min-width:720px){.rol-grid{grid-template-columns:1fr 1fr}}
+.rol-card{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;
+  cursor:pointer;text-align:left;font-family:inherit;color:inherit;
+  transition:transform .3s var(--p-ease),box-shadow .3s var(--p-ease),border-color .3s}
+.rol-card:hover,.rol-card:focus-visible{transform:translateY(-4px);
+  border-color:var(--p-line2);box-shadow:0 22px 50px rgba(0,0,0,.5)}
+.rol-card:active{transform:translateY(-1px) scale(.99)}
+.rol-card[disabled]{opacity:.5;cursor:not-allowed;transform:none!important}
+/* Maqueta: una miniatura sin texto real, solo la silueta de cada mundo. */
+.rol-mock{height:132px;padding:14px;display:flex;flex-direction:column;gap:7px;overflow:hidden;
+  border-bottom:1px solid var(--p-line);transition:transform .45s var(--p-ease)}
+.rol-card:hover .rol-mock{transform:scale(1.035)}
+.rol-mock.admin{background:linear-gradient(160deg,#FBFAF7,#EFEDE5)}
+.rol-mock.inq{background:linear-gradient(160deg,#17150F,#0B0A09)}
+.rol-bar{height:9px;border-radius:5px;background:#E2E0D8}
+.rol-mock.admin .rol-row{display:flex;gap:6px;align-items:center}
+.rol-mock.admin .rol-row i{font-size:11px;color:#1D9E75}
+.rol-mock.inq .rol-saldo{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;
+  color:#EDE9DF;letter-spacing:-.02em}
+.rol-mock.inq .rol-chip{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;
+  padding:2px 8px;border-radius:20px;font-size:9.5px;font-weight:700;
+  background:rgba(59,201,143,.16);color:#3BC98F}
+.rol-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:5px}
+.rol-body strong{font-size:16px;font-weight:600;color:var(--p-tx);display:flex;align-items:center;gap:8px}
+.rol-body span{font-size:13px;color:var(--p-mut);line-height:1.5}
+.rol-go{margin-top:9px;display:inline-flex;align-items:center;gap:6px;font-size:13px;
+  font-weight:600;color:var(--p-teal)}
+.rol-foot{display:flex;flex-direction:column;align-items:center;gap:12px}
+.rol-check{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--p-mut);
+  cursor:pointer;padding:8px 10px;border-radius:9px;min-height:44px}
+.rol-check input{width:17px;height:17px;accent-color:var(--p-teal);cursor:pointer}
+.rol-salir{background:none;border:none;font-family:inherit;font-size:13px;color:var(--p-dim);
+  cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:10px;min-height:44px}
+.rol-salir:hover{color:var(--p-tx)}
+
+/* ══ PORTAL ══ */
+#s-portal{display:none}
+#s-portal.active{display:flex}
+.p-shell{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;min-height:0;width:100%}
+.p-top{display:flex;align-items:center;gap:11px;padding:calc(env(safe-area-inset-top) + 14px) 18px 12px;
+  position:sticky;top:0;z-index:20;background:rgba(11,10,9,.72);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid var(--p-line)}
+.p-top img{width:26px;height:20px;object-fit:contain}
+.p-top .p-who{flex:1;min-width:0}
+.p-top .p-who b{display:block;font-size:13.5px;font-weight:600;color:var(--p-tx);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-top .p-who span{display:block;font-size:11.5px;color:var(--p-mut)}
+.p-icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--p-line);background:var(--p-glass);color:var(--p-mut);border-radius:12px;
+  cursor:pointer;font-size:17px;transition:all .18s;flex-shrink:0}
+.p-icon:hover{color:var(--p-tx);border-color:var(--p-line2);background:var(--p-glass2)}
+.p-icon:active{transform:scale(.94)}
+/* El contenido reserva el alto del nav + la barra de gestos del iPhone. */
+.p-main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:18px 16px calc(96px + env(safe-area-inset-bottom))}
+.p-view{display:none}
+.p-view.on{display:block;animation:pIn .26s var(--p-ease)}
+@keyframes pIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ── Hero del saldo: la pieza que da la bienvenida ── */
+.p-hero{padding:26px 22px 22px;text-align:center;margin-bottom:14px;overflow:hidden}
+.p-hero::after{content:'';position:absolute;inset:0;border-radius:var(--p-r);pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),transparent 42%)}
+.p-hero-lbl{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--p-mut)}
+.p-hero-num{font-family:'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums;
+  font-size:clamp(40px,13vw,58px);font-weight:700;letter-spacing:-.035em;line-height:1.08;margin:7px 0 4px}
+.p-hero-num.p-ok{color:var(--p-teal)}.p-hero-num.p-tol{color:var(--p-amber)}.p-hero-num.p-mal{color:var(--p-red)}
+.p-hero-sub{font-size:13.5px;color:var(--p-mut);line-height:1.5}
+.p-hero-chip{display:inline-flex;align-items:center;gap:6px;margin-top:13px;padding:6px 13px;
+  border-radius:20px;font-size:12.5px;font-weight:600}
+.p-hero-chip.p-ok{background:var(--p-teal-bg);color:var(--p-teal)}
+.p-hero-chip.p-tol{background:var(--p-amber-bg);color:var(--p-amber)}
+.p-hero-chip.p-mal{background:var(--p-red-bg);color:var(--p-red)}
+
+/* ── Bento: tarjetas de distinto peso, no una lista uniforme ── */
+.p-bento{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.p-bento .wide{grid-column:1 / -1}
+@media(min-width:760px){.p-bento{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.p-tile{padding:15px 16px;display:flex;flex-direction:column;gap:4px;min-height:92px;
+  text-align:left;font-family:inherit;color:inherit;transition:all .2s var(--p-ease)}
+button.p-tile{cursor:pointer}
+button.p-tile:hover{background:var(--p-glass2);border-color:var(--p-line2);transform:translateY(-2px)}
+button.p-tile:active{transform:scale(.98)}
+.p-tile-lbl{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--p-mut);display:flex;align-items:center;gap:6px}
+.p-tile-lbl i{font-size:13px}
+.p-tile-val{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:19px;font-weight:500;color:var(--p-tx);letter-spacing:-.01em}
+.p-tile-sub{font-size:11.5px;color:var(--p-dim);line-height:1.45}
+
+/* ── CTA principal: una sola por pantalla ── */
+.p-cta{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:52px;padding:15px;border:none;border-radius:14px;font-family:inherit;
+  font-size:15px;font-weight:700;cursor:pointer;color:#04140E;
+  background:linear-gradient(180deg,#4BDDA0,#2BB57C);
+  box-shadow:0 10px 30px rgba(59,201,143,.26);transition:transform .18s var(--p-ease),box-shadow .18s}
+.p-cta:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(59,201,143,.36)}
+.p-cta:active{transform:scale(.98)}
+.p-cta.ghost{background:none;color:var(--p-tx);border:1px solid var(--p-line2);box-shadow:none;font-weight:600}
+.p-cta.ghost:hover{background:var(--p-glass);box-shadow:none}
+/* Deshabilitado tiene que VERSE deshabilitado: un botón que brilla igual pero
+   no hace nada es peor que no tenerlo. */
+.p-cta[disabled]{opacity:.38;cursor:not-allowed;box-shadow:none;transform:none!important;filter:grayscale(.5)}
+.p-cta[disabled]:hover{transform:none;box-shadow:none}
+.p-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;
+  padding:10px 15px;border:1px solid var(--p-line);background:var(--p-glass);color:var(--p-tx);
+  border-radius:11px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .18s}
+.p-btn:hover{background:var(--p-glass2);border-color:var(--p-line2)}
+.p-btn:active{transform:scale(.97)}
+.p-btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ── Secciones y filas ── */
+.p-sec{margin:22px 0 11px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.p-sec h2{font-size:16.5px;font-weight:600;color:var(--p-tx)}
+.p-sec span{font-size:12px;color:var(--p-dim)}
+.p-row{display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:9px;
+  width:100%;text-align:left;font-family:inherit;color:inherit;transition:all .2s var(--p-ease)}
+button.p-row{cursor:pointer}
+button.p-row:hover{background:var(--p-glass2);border-color:var(--p-line2)}
+button.p-row:active{transform:scale(.99)}
+.p-row-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-size:17px}
+.p-row-tx{flex:1;min-width:0}
+.p-row-tx b{display:block;font-size:14px;font-weight:600;color:var(--p-tx);line-height:1.35}
+.p-row-tx span{display:block;font-size:12px;color:var(--p-mut);margin-top:2px;line-height:1.45}
+.p-row-num{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:14px;font-weight:500;white-space:nowrap;color:var(--p-tx)}
+/* El estado NUNCA se comunica solo con color: siempre lleva ícono y palabra. */
+.p-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;
+  font-size:10.5px;font-weight:700;white-space:nowrap}
+.p-chip i{font-size:11px}
+.p-chip.p-ok{background:var(--p-teal-bg);color:var(--p-teal)}
+.p-chip.p-mal{background:var(--p-red-bg);color:var(--p-red)}
+.p-chip.p-tol{background:var(--p-amber-bg);color:var(--p-amber)}
+.p-chip.p-info{background:var(--p-blue-bg);color:var(--p-blue)}
+.p-chip.p-mut{background:var(--p-glass2);color:var(--p-mut)}
+.p-dot{width:7px;height:7px;border-radius:50%;background:var(--p-teal);flex-shrink:0;
+  box-shadow:0 0 0 3px rgba(59,201,143,.18)}
+
+/* ── Dato copiable (CLABE, cuenta) ── */
+.p-copy{display:flex;align-items:center;gap:11px;padding:12px 14px;margin-bottom:8px;
+  border:1px solid var(--p-line);background:var(--p-glass);border-radius:var(--p-r2);
+  width:100%;cursor:pointer;font-family:inherit;color:inherit;text-align:left;transition:all .18s;min-height:44px}
+.p-copy:hover{background:var(--p-glass2);border-color:var(--p-line2)}
+.p-copy:active{transform:scale(.99)}
+.p-copy-tx{flex:1;min-width:0}
+.p-copy-tx small{display:block;font-size:10.5px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--p-mut)}
+.p-copy-tx b{display:block;font-family:'DM Mono',monospace;font-size:14px;font-weight:500;
+  color:var(--p-tx);margin-top:2px;word-break:break-all}
+.p-copy i{color:var(--p-dim);font-size:16px;flex-shrink:0}
+
+/* ── Chat ── */
+.p-chat{display:flex;flex-direction:column;gap:11px;padding-bottom:8px}
+.p-msg{max-width:82%;padding:11px 14px;border-radius:16px;font-size:13.5px;line-height:1.5;
+  animation:pIn .3s var(--p-ease)}
+.p-msg.mio{align-self:flex-end;background:linear-gradient(180deg,#2E9A70,#237A59);color:#F2FFF9;
+  border-bottom-right-radius:5px}
+.p-msg.suyo{align-self:flex-start;background:var(--p-glass2);border:1px solid var(--p-line);
+  color:var(--p-tx);border-bottom-left-radius:5px}
+.p-msg time{display:block;font-size:10.5px;opacity:.6;margin-top:5px;font-family:'DM Mono',monospace}
+.p-compose{position:sticky;bottom:0;display:flex;gap:9px;align-items:flex-end;padding:11px 0 0;
+  background:linear-gradient(transparent,var(--p-bg) 26%)}
+#s-portal textarea,#s-portal input,#s-portal select{
+  width:100%;font-family:inherit;font-size:16px;   /* 16px: por debajo, Safari iOS hace auto-zoom */
+  padding:12px 14px;border-radius:12px;border:1px solid var(--p-line);
+  background:rgba(11,10,9,.6);color:var(--p-tx);transition:border-color .15s,box-shadow .15s}
+#s-portal textarea::placeholder,#s-portal input::placeholder{color:var(--p-dim)}
+#s-portal textarea:focus,#s-portal input:focus,#s-portal select:focus{
+  outline:none;border-color:var(--p-teal);box-shadow:0 0 0 3px rgba(59,201,143,.2)}
+#s-portal textarea{resize:none;min-height:46px;max-height:130px}
+#s-portal label.p-lbl{display:block;font-size:12.5px;font-weight:600;color:var(--p-mut);margin:0 0 6px}
+#s-portal .p-fg{margin-bottom:13px}
+
+/* ── Línea de tiempo (historial de pagos) ── */
+.p-time{position:relative;padding-left:26px}
+.p-time::before{content:'';position:absolute;left:8px;top:5px;bottom:5px;width:1px;background:var(--p-line)}
+.p-time-it{position:relative;padding:0 0 17px}
+.p-time-it::before{content:'';position:absolute;left:-22px;top:4px;width:9px;height:9px;border-radius:50%;
+  background:var(--p-bg);border:2px solid var(--p-teal)}
+.p-time-it.p-mut::before{border-color:var(--p-dim)}
+.p-time-it b{display:block;font-size:13.5px;font-weight:600;color:var(--p-tx)}
+.p-time-it span{display:block;font-size:11.5px;color:var(--p-mut);margin-top:2px}
+
+/* ── Vacíos y esqueletos ── */
+.p-empty{text-align:center;padding:46px 22px;color:var(--p-mut)}
+.p-empty i{font-size:34px;opacity:.35;display:block;margin-bottom:12px}
+.p-empty b{display:block;font-size:14.5px;font-weight:600;color:var(--p-tx);margin-bottom:5px}
+.p-empty span{font-size:13px;line-height:1.55;display:block;max-width:300px;margin:0 auto}
+.p-skel{border-radius:var(--p-r2);background:linear-gradient(90deg,var(--p-glass) 25%,var(--p-glass2) 37%,var(--p-glass) 63%);
+  background-size:400% 100%;animation:pShimmer 1.3s ease-in-out infinite;margin-bottom:10px}
+@keyframes pShimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+
+/* ── Nav inferior: 5 destinos, ícono + etiqueta SIEMPRE (un ícono solo no se
+   descubre), y las áreas táctiles pasadas de 44px con la barra de gestos
+   respetada. En pantalla grande se convierte en barra lateral. ── */
+.p-nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;
+  padding:7px 6px calc(7px + env(safe-area-inset-bottom));
+  background:rgba(11,10,9,.82);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  border-top:1px solid var(--p-line)}
+.p-nav button{flex:1;min-width:0;min-height:50px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;padding:5px 2px;border:none;background:none;
+  cursor:pointer;font-family:inherit;font-size:10px;font-weight:600;color:var(--p-dim);
+  position:relative;transition:color .2s;border-radius:10px}
+.p-nav button i{font-size:20px}
+.p-nav button.on{color:var(--p-teal)}
+.p-nav button.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:24px;height:2.5px;border-radius:0 0 3px 3px;background:var(--p-teal)}
+.p-nav button:active{transform:scale(.94)}
+.p-nb{position:absolute;top:3px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;
+  border-radius:9px;background:var(--p-red);color:#2A0605;font-size:9.5px;font-weight:800;
+  display:none;align-items:center;justify-content:center;font-family:'DM Mono',monospace}
+.p-nb.on{display:flex}
+@media(min-width:900px){
+  .p-shell{flex-direction:row}
+  .p-nav{position:static;flex-direction:column;width:210px;padding:14px 12px;gap:4px;
+    border-top:none;border-right:1px solid var(--p-line);background:rgba(255,255,255,.02)}
+  .p-nav button{flex:none;flex-direction:row;justify-content:flex-start;gap:11px;
+    font-size:13.5px;padding:12px 13px}
+  .p-nav button.on{background:var(--p-glass2)}
+  .p-nav button.on::before{top:50%;left:0;transform:translateY(-50%);width:2.5px;height:20px;border-radius:0 3px 3px 0}
+  .p-nb{position:static;margin-left:auto}
+  .p-col{flex:1;display:flex;flex-direction:column;min-width:0}
+  .p-main{padding:22px 26px 40px;max-width:900px;margin:0 auto;width:100%}
+  .p-top{padding:16px 26px 13px}
+}
+
+/* ── Hoja inferior (modales del portal) ── */
+.p-sheet{position:fixed;inset:0;z-index:400;display:none;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.62);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.p-sheet.open{display:flex}
+.p-sheet-in{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;
+  background:var(--p-bg2);border:1px solid var(--p-line);border-bottom:none;
+  border-radius:22px 22px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));
+  animation:pUp .3s var(--p-ease);color:var(--p-tx)}
+@keyframes pUp{from{transform:translateY(100%)}to{transform:none}}
+@media(min-width:760px){.p-sheet{align-items:center}
+  .p-sheet-in{border-radius:20px;border-bottom:1px solid var(--p-line);animation:modalUp .26s var(--p-ease)}}
+.p-sheet-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.p-sheet-h h3{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;letter-spacing:-.02em}
+.p-grab{width:38px;height:4px;border-radius:3px;background:var(--p-line2);margin:0 auto 14px}
+
+/* Horizontal en el celular: manda el alto, no el ancho. Sin esto el hero se
+   come la pantalla completa y hay que hacer scroll para ver si debe algo. */
+@media(max-height:520px) and (orientation:landscape){
+  .p-hero{padding:15px 20px 14px;margin-bottom:10px}
+  .p-hero-num{font-size:clamp(30px,7vh,38px);margin:3px 0 2px}
+  .p-hero-sub{font-size:12.5px}
+  .p-hero-chip{margin-top:8px;padding:4px 11px;font-size:11.5px}
+  .p-main{padding-top:12px}
+  .p-top{padding:10px 18px 9px}
+}
+
+/* Sin animación cuando el sistema lo pide: los blobs se congelan y el saldo
+   aparece de golpe, ya legible. */
+@media(prefers-reduced-motion:reduce){
+  .p-blob{animation:none}
+  .p-view.on,.p-msg{animation:none}
+}
+
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -1114,6 +1457,14 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <h1>InmoPagos</h1>
     <p>Cobranza, servicios y depósitos de tus rentas en un solo lugar</p>
   </div>
+  <!-- Llegó por el enlace de invitación de su arrendador: se le dice a qué
+       viene antes de pedirle una contraseña. -->
+  <div id="inv-banner" style="display:none;align-items:center;gap:11px;padding:13px 15px;border-radius:14px;
+       background:rgba(59,201,143,.12);border:1px solid rgba(59,201,143,.3)">
+    <i class="ti ti-home-heart" style="font-size:20px;color:#3BC98F;flex-shrink:0"></i>
+    <span style="flex:1;font-size:13px;color:#EDE9DF;line-height:1.5">Tu arrendador te invitó a tu portal. Crea tu contraseña y entras directo —
+      invitación <b style="font-family:'DM Mono',monospace" id="inv-cod"></b>.</span>
+  </div>
   <div class="auth-card">
     <div class="auth-tabs" id="auth-tabs" role="tablist" aria-label="Acceder a InmoPagos">
       <button class="atab active" data-panel="login" role="tab" id="tab-login" aria-selected="true" aria-controls="a-login" onclick="atab('login',this)">Iniciar sesión</button>
@@ -1229,6 +1580,175 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 </div>
 </div>
 
+<!-- ════ ELEGIR VISTA ════
+     Las dos puertas de InmoPagos. Cada tarjeta enseña en miniatura a dónde
+     lleva: papel claro con su tabla para el administrador, tarjeta oscura de
+     saldo para el inquilino. -->
+<div id="s-rol" class="screen">
+<div class="p-blobs" aria-hidden="true"><div class="p-blob b1"></div><div class="p-blob b2"></div></div>
+<div class="rol-wrap">
+  <div class="rol-head">
+    <h1>¿Cómo quieres entrar?</h1>
+    <p id="rol-sub">Elige la vista con la que vas a trabajar hoy</p>
+  </div>
+
+  <div class="rol-grid">
+    <button class="p-card rol-card" id="rol-admin" onclick="elegirRol('admin')">
+      <span class="rol-mock admin" aria-hidden="true">
+        <span class="rol-bar" style="width:44%;background:#1D9E75;opacity:.85"></span>
+        <span class="rol-row"><i class="ti ti-receipt"></i><span class="rol-bar" style="flex:1"></span></span>
+        <span class="rol-row"><i class="ti ti-building"></i><span class="rol-bar" style="flex:1;background:#EEECE4"></span></span>
+        <span class="rol-row"><i class="ti ti-bolt"></i><span class="rol-bar" style="flex:1;background:#EEECE4"></span></span>
+        <span class="rol-row"><i class="ti ti-chart-bar"></i><span class="rol-bar" style="width:62%;background:#EEECE4"></span></span>
+      </span>
+      <span class="rol-body">
+        <strong><i class="ti ti-layout-dashboard" style="color:var(--p-teal);font-size:17px"></i>Administrador</strong>
+        <span>Tus negocios, cobranza, servicios, depósitos y finanzas. La app de siempre.</span>
+        <span class="rol-go">Entrar<i class="ti ti-arrow-right" style="font-size:14px"></i></span>
+      </span>
+    </button>
+
+    <button class="p-card rol-card" id="rol-inq" onclick="elegirRol('inquilino')">
+      <span class="rol-mock inq" aria-hidden="true">
+        <span class="rol-chip"><i class="ti ti-circle-check" style="font-size:9px"></i>Al día</span>
+        <span class="rol-saldo">$0.00</span>
+        <span class="rol-bar" style="width:70%;background:rgba(237,233,223,.14)"></span>
+        <span class="rol-bar" style="width:48%;background:rgba(237,233,223,.09)"></span>
+      </span>
+      <span class="rol-body">
+        <strong><i class="ti ti-home-heart" style="color:var(--p-teal);font-size:17px"></i>Inquilino<span class="p-chip p-mut" id="rol-inq-tag" style="display:none"></span></strong>
+        <span id="rol-inq-desc">Tu saldo, tus estados de cuenta, tus recordatorios y hablar con tu administrador.</span>
+        <span class="rol-go" id="rol-inq-go">Entrar<i class="ti ti-arrow-right" style="font-size:14px"></i></span>
+      </span>
+    </button>
+  </div>
+
+  <div class="rol-foot">
+    <label class="rol-check"><input type="checkbox" id="rol-recordar" onchange="guardarRolPref(this.checked)">Entrar siempre como administrador</label>
+    <button class="rol-salir" onclick="doLogout()">Cerrar sesión</button>
+  </div>
+</div>
+</div>
+
+<!-- ════ PORTAL DEL INQUILINO ════ -->
+<div id="s-portal" class="screen p-est-ok">
+<div class="p-blobs" aria-hidden="true"><div class="p-blob b1"></div><div class="p-blob b2"></div></div>
+<div class="p-shell">
+
+  <nav class="p-nav" id="p-nav" aria-label="Secciones del portal">
+    <button class="on" data-pv="inicio" onclick="pTab('inicio')" aria-current="page"><i class="ti ti-home"></i>Inicio</button>
+    <button data-pv="docs" onclick="pTab('docs')"><i class="ti ti-file-invoice"></i>Documentos<span class="p-nb" id="p-nb-docs"></span></button>
+    <button data-pv="chat" onclick="pTab('chat')"><i class="ti ti-message-circle"></i>Mensajes<span class="p-nb" id="p-nb-chat"></span></button>
+    <button data-pv="depa" onclick="pTab('depa')"><i class="ti ti-key"></i>Mi depa</button>
+    <button data-pv="avisos" onclick="pTab('avisos')"><i class="ti ti-speakerphone"></i>Avisos<span class="p-nb" id="p-nb-avisos"></span></button>
+  </nav>
+
+  <div class="p-col">
+    <header class="p-top">
+      <img src="favicon-dark.png" alt="" onerror="this.style.display='none'">
+      <div class="p-who">
+        <b id="p-nombre">—</b>
+        <span id="p-depto">—</span>
+      </div>
+      <button class="p-icon" id="p-wa" title="Escribir por WhatsApp al administrador" aria-label="Escribir por WhatsApp al administrador" onclick="pWhatsApp()"><i class="ti ti-brand-whatsapp"></i></button>
+      <button class="p-icon" title="Salir" aria-label="Salir del portal" onclick="pSalir()"><i class="ti ti-logout"></i></button>
+    </header>
+
+    <main class="p-main" id="p-main">
+      <!-- Aviso de vista previa para el administrador -->
+      <div id="p-preview" class="p-card" style="display:none;padding:12px 15px;margin-bottom:14px;align-items:center;gap:10px">
+        <i class="ti ti-eye" style="color:var(--p-blue);font-size:18px"></i>
+        <span style="flex:1;font-size:12.5px;color:var(--p-mut);line-height:1.45">Vista previa: esto es exactamente lo que ve tu inquilino. Aquí no se puede escribir.</span>
+      </div>
+
+      <section class="p-view on" id="pv-inicio"></section>
+      <section class="p-view" id="pv-docs"></section>
+      <section class="p-view" id="pv-chat"></section>
+      <section class="p-view" id="pv-depa"></section>
+      <section class="p-view" id="pv-avisos"></section>
+    </main>
+  </div>
+</div>
+
+<!-- Hoja: reportar un pago -->
+<div class="p-sheet" id="ps-pago" onclick="if(event.target===this)pSheet('ps-pago',false)">
+  <div class="p-sheet-in">
+    <div class="p-grab"></div>
+    <div class="p-sheet-h">
+      <h3>Avisar de mi pago</h3>
+      <button class="p-icon" aria-label="Cerrar" onclick="pSheet('ps-pago',false)"><i class="ti ti-x"></i></button>
+    </div>
+    <p style="font-size:13px;color:var(--p-mut);line-height:1.55;margin-bottom:16px">Tu administrador lo revisa y lo aplica a tu saldo. No se marca como pagado hasta que él lo confirme.</p>
+    <div class="p-fg"><label class="p-lbl" for="pp-monto">¿Cuánto depositaste?</label>
+      <input type="number" id="pp-monto" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>
+    <div class="p-fg"><label class="p-lbl" for="pp-fecha">¿Qué día?</label>
+      <input type="date" id="pp-fecha"></div>
+    <div class="p-fg"><label class="p-lbl" for="pp-metodo">¿Cómo lo pagaste?</label>
+      <select id="pp-metodo">
+        <option value="transferencia">Transferencia</option>
+        <option value="deposito">Depósito en banco</option>
+        <option value="oxxo">OXXO</option>
+        <option value="efectivo">Efectivo</option>
+        <option value="otro">Otro</option>
+      </select></div>
+    <div class="p-fg"><label class="p-lbl" for="pp-ref">Referencia o folio <span style="font-weight:400;color:var(--p-dim)">(opcional)</span></label>
+      <input type="text" id="pp-ref" placeholder="Ej. 0012345678"></div>
+    <div class="p-fg"><label class="p-lbl">¿Qué estás pagando?</label>
+      <div id="pp-cargos" style="max-height:180px;overflow-y:auto"></div></div>
+    <div class="p-fg"><label class="p-lbl" for="pp-file">Comprobante <span style="font-weight:400;color:var(--p-dim)">(opcional, foto o PDF)</span></label>
+      <input type="file" id="pp-file" accept="image/*,application/pdf" style="font-size:13px;padding:10px"></div>
+    <div class="p-fg"><label class="p-lbl" for="pp-nota">Nota para tu administrador <span style="font-weight:400;color:var(--p-dim)">(opcional)</span></label>
+      <textarea id="pp-nota" rows="2" placeholder="Algo que quieras aclarar"></textarea></div>
+    <button class="p-cta" id="pp-enviar" onclick="pEnviarPago()"><i class="ti ti-send"></i>Enviar aviso de pago</button>
+  </div>
+</div>
+
+<!-- Hoja: reportar algo (mantenimiento) -->
+<div class="p-sheet" id="ps-rep" onclick="if(event.target===this)pSheet('ps-rep',false)">
+  <div class="p-sheet-in">
+    <div class="p-grab"></div>
+    <div class="p-sheet-h">
+      <h3>Reportar algo</h3>
+      <button class="p-icon" aria-label="Cerrar" onclick="pSheet('ps-rep',false)"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="p-fg"><label class="p-lbl" for="pr-cat">¿De qué se trata?</label>
+      <select id="pr-cat">
+        <option value="fuga">Fuga o plomería</option>
+        <option value="electricidad">Luz o electricidad</option>
+        <option value="cerradura">Puerta, chapa o llaves</option>
+        <option value="limpieza">Limpieza o áreas comunes</option>
+        <option value="ruido">Ruido o convivencia</option>
+        <option value="otro">Otra cosa</option>
+      </select></div>
+    <div class="p-fg"><label class="p-lbl" for="pr-asunto">En pocas palabras</label>
+      <input type="text" id="pr-asunto" maxlength="120" placeholder="Ej. Gotea la llave del baño"></div>
+    <div class="p-fg"><label class="p-lbl" for="pr-cuerpo">Cuéntale bien qué pasa</label>
+      <textarea id="pr-cuerpo" rows="4" placeholder="Desde cuándo, dónde exactamente, qué has intentado…"></textarea></div>
+    <div class="p-fg"><label class="p-lbl" for="pr-file">Foto <span style="font-weight:400;color:var(--p-dim)">(opcional, ayuda mucho)</span></label>
+      <input type="file" id="pr-file" accept="image/*" style="font-size:13px;padding:10px"></div>
+    <button class="p-cta" id="pr-enviar" onclick="pEnviarReporte()"><i class="ti ti-send"></i>Enviar reporte</button>
+  </div>
+</div>
+
+<!-- Hoja: canjear código de invitación -->
+<div class="p-sheet" id="ps-codigo">
+  <div class="p-sheet-in">
+    <div class="p-grab"></div>
+    <div class="p-sheet-h">
+      <h3>Conecta con tu departamento</h3>
+    </div>
+    <p style="font-size:13.5px;color:var(--p-mut);line-height:1.55;margin-bottom:16px">Tu administrador te mandó un código de 8 caracteres. Escríbelo aquí una sola vez y tu portal queda listo.</p>
+    <div class="p-fg">
+      <input type="text" id="pc-codigo" maxlength="12" autocapitalize="characters" autocomplete="one-time-code"
+        placeholder="ABCD1234" style="text-align:center;font-family:'DM Mono',monospace;font-size:22px;letter-spacing:.22em;padding:16px">
+      <span id="pc-err" style="display:none;font-size:12.5px;color:var(--p-red);margin-top:8px"></span>
+    </div>
+    <button class="p-cta" id="pc-btn" onclick="pCanjear()"><i class="ti ti-key"></i>Conectar</button>
+    <button class="p-cta ghost" style="margin-top:9px" onclick="pSalirACuenta()">Volver</button>
+  </div>
+</div>
+</div><!-- /#s-portal · las hojas viven adentro para heredar los tokens --p-* -->
+
 <!-- ════ APP ════ -->
 <div id="s-app" class="screen">
 <aside style="width:236px;background:#FFFFFF;border-right:1px solid #E2E0D8;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto">
@@ -1265,6 +1785,8 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div style="padding:16px 24px 6px;font-size:10.5px;font-weight:600;color:#9D9B96;text-transform:uppercase;letter-spacing:.09em">Cuenta</div>
     <button class="dni" data-tab="edocuenta" onclick="setTab('edocuenta',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-file-invoice"></i>Estado de cuenta</button>
     <button class="dni" data-tab="reporte" onclick="setTab('reporte',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-chart-bar"></i>Reporte</button>
+    <button class="dni" data-tab="buzon" onclick="setTab('buzon',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-inbox"></i>Buzón<span id="nb-bz" style="margin-left:auto;background:#E24B4A;color:#fff;border-radius:10px;padding:1px 7px;font-size:10.5px;font-weight:700;font-family:'DM Mono',monospace;display:none"></span></button>
+    <button class="dni" data-tab="inquilinos" onclick="setTab('inquilinos',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-home-heart"></i>Portal inquilinos</button>
     <button class="dni" data-tab="miembros" onclick="setTab('miembros',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-users"></i>Equipo</button>
     <button class="dni" data-tab="config" onclick="setTab('config',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-settings"></i>Configuración</button>
   </nav>
@@ -1442,6 +1964,27 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div id="rec-list"></div>
   </div>
   <!-- MIEMBROS -->
+  <!-- BUZÓN — lo que mandan los inquilinos desde su portal -->
+  <div id="sec-buzon" style="display:none;max-width:880px;margin:0 auto">
+    <div style="margin-bottom:20px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Buzón</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Mensajes, reportes y avisos de pago de tus inquilinos</p></div>
+    <div class="toolbar" style="margin-bottom:16px">
+      <button class="btn" id="bz-t-todo" onclick="bzFiltro('todo')"><i class="ti ti-inbox"></i>Todo</button>
+      <button class="btn" id="bz-t-pagos" onclick="bzFiltro('pagos')"><i class="ti ti-receipt-2"></i>Pagos por confirmar</button>
+      <button class="btn" id="bz-t-msj" onclick="bzFiltro('msj')"><i class="ti ti-message-circle"></i>Mensajes</button>
+      <button class="btn" id="bz-t-avisos" onclick="bzFiltro('avisos')"><i class="ti ti-speakerphone"></i>Avisos</button>
+    </div>
+    <div id="l-buzon"></div>
+  </div>
+
+  <!-- PORTAL DE INQUILINOS — invitaciones -->
+  <div id="sec-inquilinos" style="display:none;max-width:880px;margin:0 auto">
+    <div class="ph" style="margin-bottom:20px">
+      <div><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Portal de inquilinos</h2>
+        <p style="margin:2px 0 0;font-size:13px;color:#6B6963">Invita a cada inquilino a su propia vista: ahí ve su saldo, sus recibos y te escribe</p></div>
+    </div>
+    <div id="l-inqport"></div>
+  </div>
+
   <div id="sec-miembros" style="display:none;max-width:680px;margin:0 auto">
     <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Equipo</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Personas con acceso a <span id="eq-wsn"></span></p></div>
     <div id="l-mem"></div>
@@ -1735,6 +2278,46 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div class="mh"><h3><i class="ti ti-cash" style="color:var(--red)"></i><span id="mdeuda-ttl">Deuda del inquilino</span></h3><button class="mc" onclick="closeM('m-deuda')"><i class="ti ti-x"></i></button></div>
   <div id="mdeuda-body" style="max-height:60vh;overflow:auto"></div>
   <div class="mf"><button class="btn primary" onclick="closeM('m-deuda')">Cerrar</button></div>
+</div></div>
+
+<!-- Hilo del buzón: conversación con un inquilino -->
+<div class="overlay" id="m-hilo"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-message-circle" style="color:var(--teal)"></i><span id="hilo-ttl">Conversación</span></h3><button class="mc" onclick="closeM('m-hilo')"><i class="ti ti-x"></i></button></div>
+  <div id="hilo-estado" style="margin-bottom:12px"></div>
+  <div id="hilo-body" style="max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:9px"></div>
+  <div style="margin-top:14px">
+    <textarea id="hilo-msg" rows="2" placeholder="Escribe tu respuesta…" style="width:100%;font-family:inherit;font-size:14px;padding:11px 13px;border:1px solid var(--bd2);border-radius:9px;resize:none"></textarea>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeM('m-hilo')">Cerrar</button>
+    <button class="btn primary" onclick="bzResponder()"><i class="ti ti-send"></i>Responder</button></div>
+</div></div>
+
+<!-- Confirmar el aviso de pago de un inquilino -->
+<div class="overlay" id="m-repago"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-receipt-2" style="color:var(--teal)"></i><span id="rp-ttl">Aviso de pago</span></h3><button class="mc" onclick="closeM('m-repago')"><i class="ti ti-x"></i></button></div>
+  <div id="rp-body" style="max-height:62vh;overflow:auto"></div>
+  <div class="mf">
+    <button class="btn" onclick="bzRechazar()" data-hs="border-color:#E24B4A;color:#E24B4A"><i class="ti ti-x"></i>No aplicar</button>
+    <button class="btn primary" onclick="bzConfirmar()"><i class="ti ti-check"></i>Confirmar y cobrar</button>
+  </div>
+</div></div>
+
+<!-- Publicar un aviso para todos los inquilinos -->
+<div class="overlay" id="m-aviso"><div class="modal">
+  <div class="mh"><h3><i class="ti ti-speakerphone" style="color:var(--amber)"></i>Nuevo aviso</h3><button class="mc" onclick="closeM('m-aviso')"><i class="ti ti-x"></i></button></div>
+  <div class="fg"><label>Título</label><input type="text" id="av-tit" maxlength="120" placeholder="Ej. Corte de agua el jueves"></div>
+  <div class="fg"><label>Detalle</label><textarea id="av-cue" rows="4" placeholder="Cuándo, por qué y qué deben hacer"></textarea></div>
+  <div class="fg"><label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+    <input type="checkbox" id="av-imp" style="width:17px;height:17px;accent-color:var(--amber)">Marcarlo como importante</label></div>
+  <div class="fg"><label>Dejar de mostrarlo el <span style="font-weight:400;color:var(--tx3)">(opcional)</span></label><input type="date" id="av-hasta"></div>
+  <div class="mf"><button class="btn" onclick="closeM('m-aviso')">Cancelar</button>
+    <button class="btn primary" onclick="bzPublicarAviso()"><i class="ti ti-send"></i>Publicar</button></div>
+</div></div>
+
+<!-- Invitar a un inquilino a su portal -->
+<div class="overlay" id="m-invitar"><div class="modal sm">
+  <div class="mh"><h3><i class="ti ti-home-heart" style="color:var(--teal)"></i>Invitar al portal</h3><button class="mc" onclick="closeM('m-invitar')"><i class="ti ti-x"></i></button></div>
+  <div id="inv-body"></div>
 </div></div>
 
 <!-- Estado de cuenta · elegir qué pagos entran al PDF -->
@@ -2174,7 +2757,10 @@ const PRECIO_PREMIUM_MES='$1,899', PRECIO_PREMIUM_ANIO='$18,990';
 // Un cliente puede tener Finanzas sin ser Premium (se la dio el admin) o ser
 // Premium y no tenerla. El permiso manda; el plan solo es el valor por
 // defecto que la base ya resolvió antes de mandarlo.
-function puedeVer(k){return !PERMISOS || PERMISOS[k]!==false}
+// El Buzón y Portal de inquilinos son dos caras del mismo módulo ('portal'):
+// apagarlo desde el panel esconde las dos, no una.
+const MOD_DE_TAB={buzon:'portal',inquilinos:'portal'};
+function puedeVer(k){const m=MOD_DE_TAB[k]||k;return !PERMISOS || PERMISOS[m]!==false}
 function esPremium(){
   if(PERMISOS && typeof PERMISOS.finanzas==='boolean')return PERMISOS.finanzas;
   return PLAN==='premium'||PLAN==='trial';
@@ -2423,7 +3009,7 @@ async function doLogin(){
   const {data,error}=await sb.auth.signInWithPassword({email:em,password:ps});
   btn.innerHTML='<i class="ti ti-login"></i>Entrar';btn.disabled=false;
   if(error){se(err,'Correo o contraseña incorrectos');return}
-  CU=data.user;cargarWS();
+  CU=data.user;entrarSegunRol();
 }
 // Mismo mensaje pase lo que pase. Distinguir "ese correo no existe" de "listo"
 // convierte este formulario en un enumerador de la cartera de clientes.
@@ -2447,7 +3033,7 @@ async function doNuevaPass(){
   btn.innerHTML='<i class="ti ti-lock-check"></i>Guardar y entrar';btn.disabled=false;
   if(error){se(err,error.message);return}
   ok.textContent='Listo, tu contraseña quedó cambiada.';ok.style.display='block';
-  CU=(data&&data.user)||CU;setTimeout(()=>{authPanel('login');cargarWS()},900);
+  CU=(data&&data.user)||CU;setTimeout(()=>{authPanel('login');entrarSegunRol()},900);
 }
 async function doReg(){
   const nm=document.getElementById('r-name').value.trim(),em=document.getElementById('r-email').value.trim(),ps=document.getElementById('r-pass').value,err=document.getElementById('reg-err'),ok=document.getElementById('reg-ok'),btn=document.getElementById('btn-reg');
@@ -2457,7 +3043,12 @@ async function doReg(){
   const {data,error}=await sb.auth.signUp({email:em,password:ps,options:{data:{full_name:nm}}});
   btn.innerHTML='<i class="ti ti-user-plus"></i>Crear cuenta';btn.disabled=false;
   if(error){se(err,error.message);return}
-  CU=data.user;ok.textContent='¡Cuenta creada!';ok.style.display='block';setTimeout(()=>abrirPlanes('bienvenida','skip'),1200);
+  CU=data.user;ok.textContent='¡Cuenta creada!';ok.style.display='block';
+  // Quien llegó con una invitación de su arrendador es un inquilino, no un
+  // cliente: mandarlo a "Elige tu plan" sería cobrarle por entrar a ver su
+  // propio recibo.
+  if(INV_PEND){setTimeout(()=>entrarSegunRol(),900);return}
+  setTimeout(()=>abrirPlanes('bienvenida','skip'),1200);
 }
 async function doLogout(){await sb.auth.signOut();CU=null;CW=null;show('s-auth')}
 
@@ -3011,7 +3602,7 @@ function entrarWS(id,nombre,code,role,pausado){
   document.getElementById('sb-uname').textContent=un;document.getElementById('sb-uemail').textContent=CU.email;
   document.getElementById('sb-av').textContent=un.slice(0,1).toUpperCase();
   document.getElementById('show-code').textContent=code;
-  show('s-app');renderPlanUI();renderPauseBar();cargarTodo();suscribir();cargarConfig();
+  show('s-app');renderPlanUI();renderPauseBar();cargarTodo();suscribir();cargarConfig();cargarPortalAdmin();
   finLoaded=false;finLoad(); // precarga del modo Finanzas (gastos/impuestos/categorías)
 }
 function goWS(){
@@ -3241,6 +3832,13 @@ function suscribir(){
         await cargarTodo();
       }).subscribe(s=>document.getElementById('sb-dot').classList[s==='SUBSCRIBED'?'add':'remove']('on'));
   });
+  // Lo que mandan los inquilinos entra por su propio canal: recargar todos los
+  // pagos porque llegó un mensaje sería tirar la tabla entera por nada.
+  ['mensajes','reportes_pago','inquilinos','avisos'].forEach(tbl=>{
+    sb.channel('ws-'+tbl+'-'+CW.id)
+      .on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'workspace_id=eq.'+CW.id},
+        ()=>cargarPortalAdmin()).subscribe();
+  });
 }
 
 // ═══════════════════════════════════════
@@ -3258,12 +3856,15 @@ function tieneAbono(p){return Number(p.pagado||0)>0.005&&saldoPago(p)>0.005}
 // aparecía como vencido — ni en el contador, ni en rojo en su tarjeta, ni en el monto
 // vencido. El peor moroso era el más invisible. Ahora el abono es un matiz, no un estado
 // que tape el atraso. Un cargo sin saldo (incluye monto 0 y sobrepagos) queda saldado.
-function getEstado(p){
+// `tol` es opcional y solo lo usa el portal del inquilino, que trae la tolerancia
+// de su propio negocio por RPC y no tiene CW cargado. Sin argumento se comporta
+// exactamente igual que siempre.
+function getEstado(p,tol){
   if(saldoPago(p)<=0.005)return'pagado';
   const t=new Date();t.setHours(0,0,0,0);const v=new Date(p.vencimiento+'T00:00:00');
   const abono=tieneAbono(p);
   if(v>=t)return abono?'parcial':'pendiente';
-  const lim=new Date(v.getTime());lim.setDate(lim.getDate()+getTolerancia());
+  const lim=new Date(v.getTime());lim.setDate(lim.getDate()+(tol==null?getTolerancia():Math.max(0,parseInt(tol)||0)));
   if(t<=lim)return abono?'parcial':'tolerancia';
   return'vencido';
 }
@@ -3383,7 +3984,9 @@ function deudaInm(inmId){
   const items=pend.filter(p=>p.vencimiento<=hoy);
   const futuros=pend.filter(p=>p.vencimiento>hoy);
   const total=items.reduce((s,p)=>s+saldoPago(p),0);
-  const ests=items.map(getEstado);
+  // Con arrow, no `map(getEstado)`: map pasa (elemento, índice) y el índice se
+  // colaría como días de tolerancia — el primer cargo quedaría con tolerancia 0.
+  const ests=items.map(p=>getEstado(p));
   return{total,items,futuros,hayVencido:ests.includes('vencido'),hayTol:ests.includes('tolerancia')};
 }
 // Próximo día de pago de renta del contrato (para el chip cuando no debe nada)
@@ -3594,7 +4197,8 @@ function renderInm(){
         <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${chipBg};color:${chipC};animation:${chipAnim}"><i class="ti ${chipIco}" style="font-size:11px"></i>${chipLbl}</span>
         ${deuda.total>0.005?`<button title="Ver deuda del inquilino" onclick="abrirDeuda('${i.id}')" data-hs="transform:scale(1.04);filter:brightness(.96)" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:1px solid ${deuda.hayVencido?'#F3D2D2':'#F0DFC0'};background:${deuda.hayVencido?'#FCEBEB':'#FDF0DB'};color:${deuda.hayVencido?'#791F1F':'#8A5A00'};cursor:pointer;transition:all .15s"><i class="ti ti-cash" style="font-size:11px"></i>Debe ${fmt0(deuda.total)}</button>`:''}
         <div style="margin-left:auto;display:flex;gap:6px">
-          ${desoc?`<button title="Asignar nuevo inquilino" onclick="abrirNuevoContrato('${i.id}')" data-hs="background:#EDEBFE;color:#4B3F9E;border-color:#CFC8FB" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-user-plus" style="font-size:15px"></i></button>`:`<button title="Enviar recordatorio" onclick="abrirRecordatorio('${i.id}')" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>`}
+          ${desoc?`<button title="Asignar nuevo inquilino" onclick="abrirNuevoContrato('${i.id}')" data-hs="background:#EDEBFE;color:#4B3F9E;border-color:#CFC8FB" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-user-plus" style="font-size:15px"></i></button>`:`<button title="Enviar recordatorio" onclick="abrirRecordatorio('${i.id}')" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>
+          <button title="${portalActivoDe(i.id,vig?.id||null)?'Ver su portal tal como lo ve':'Invitar a su portal'}" onclick="${portalActivoDe(i.id,vig?.id||null)?`previewInquilino('${i.id}')`:`setTab('inquilinos')`}" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${IB}"><i class="ti ${portalActivoDe(i.id,vig?.id||null)?'ti-home-heart':'ti-home-plus'}" style="font-size:15px"></i></button>`}
           <button title="Ver historial de contratos" onclick="abrirHistorial('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-history" style="font-size:15px"></i></button>
           <button title="Nuevo pago" onclick="abrirPago('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-plus" style="font-size:15px"></i></button>
           <button title="Editar" onclick="abrirInm('${i.id}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${IB}"><i class="ti ti-pencil" style="font-size:15px"></i></button>
@@ -3816,6 +4420,9 @@ function abrirWhatsApp(){
   const R=recordatorioDatos(recInmId);if(!R)return;
   if(!telWA(R.tel)){toast('El departamento no tiene un teléfono válido registrado','ti-alert-triangle');return}
   abrirWA(R.tel,recordatorioTexto(R));
+  // El mismo recordatorio le queda guardado en su portal: el WhatsApp se
+  // pierde en la conversación, esto no.
+  publicarRecordatorio(recInmId,R);
 }
 function copiarRecordatorio(){
   const R=recordatorioDatos(recInmId);if(!R)return;
@@ -4840,7 +5447,36 @@ function generarPDF(inmId,download=true,selPagos=null){
     if(!filasPDF.length)filasPDF=[{desc:`Sin cargos registrados en ${MESES[vM]} ${vY}`,cant:'',monto:0}];
   }
 
-  // Crear PDF
+  // El dibujo vive aparte: el portal del inquilino baja su PDF desde el
+  // snapshot guardado al emitirlo, sin volver a calcular nada. Un solo diseño
+  // de documento para los dos lados.
+  const datosPDF={
+    empresa,cobrador,dir,clabe,scott,oxxo,
+    inquilino:inqPDF,depto:inm.num,notas:inm.notas,
+    filas:filasPDF,total:totalEC,fechaVenc,
+    periodo:`${MESES[vM]}_${vY}`
+  };
+  dibujarPDF(datosPDF,download);
+  // Se publica el mismo documento en el portal del inquilino, si lo tiene
+  // activo. No hay un botón extra a propósito: emitir el estado de cuenta ES
+  // mandárselo. Lo que se guarda es este snapshot, no una referencia a los
+  // pagos, para que el PDF no cambie si mañana se cobra uno de esos cargos.
+  publicarEstadoCuenta(inmId,datosPDF,totalEC,fechaVenc);
+}
+
+// ── Dibujo del estado de cuenta ────────────────────────────────────────────
+// Recibe TODO lo que necesita en `datos` y no lee ningún global: por eso el
+// mismo documento se puede generar desde la app del administrador (con los
+// datos vivos) y desde el portal del inquilino (con el snapshot de
+// estados_cuenta.datos), y salir idéntico aunque después se cobre un cargo.
+function dibujarPDF(datos,download=true){
+  const {jsPDF}=window.jspdf;
+  const empresa=datos.empresa||'InmoPagos',cobrador=datos.cobrador||'',dir=datos.dir||'';
+  const clabe=datos.clabe||'',scott=datos.scotiabank||datos.scott||'',oxxo=datos.oxxo||'';
+  const inqPDF=datos.inquilino||'—',filasPDF=datos.filas||[];
+  const totalEC=Number(datos.total)||0,fechaVenc=datos.fechaVenc||'—';
+  const inm={num:datos.depto||'—',notas:datos.notas||''};
+
   const doc=new jsPDF({unit:'mm',format:'a4'});
   const W=210,M=18;
 
@@ -4933,7 +5569,7 @@ function generarPDF(inmId,download=true,selPagos=null){
   doc.setFontSize(9);doc.setTextColor(150,150,150);
   doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')} · ${empresa}`,W/2,290,{align:'center'});
 
-  const filename=`Estado_de_Cuenta_${MESES[vM]}_${vY}_Depto_${inm.num}_${String(inqPDF).split(' ')[0]}.pdf`;
+  const filename=`Estado_de_Cuenta_${datos.periodo||'—'}_Depto_${inm.num}_${String(inqPDF).split(' ')[0]}.pdf`;
   if(download)doc.save(filename);
   else doc.output('dataurlnewwindow');
 }
@@ -5432,7 +6068,7 @@ async function invEmail(){
 // ═══════════════════════════════════════
 //  TABS
 // ═══════════════════════════════════════
-const TABS=['inicio','pagos','inmuebles','alertas','reporte','servicios','edocuenta','miembros','config','depositos','recordatorio'];
+const TABS=['inicio','pagos','inmuebles','alertas','reporte','servicios','edocuenta','miembros','config','depositos','recordatorio','buzon','inquilinos'];
 function setTab(name,btn){
   // Segundo cerrojo, por si alguien llega aquí sin pasar por el menú (un
   // enlace viejo, un botón de otra pantalla). aplicarPermisos() esconde el
@@ -5448,6 +6084,8 @@ function setTab(name,btn){
   if(name==='inmuebles')renderInm();if(name==='alertas')renderAl();if(name==='reporte')renderRep();
   if(name==='servicios')renderSvcList();if(name==='edocuenta')renderEC();if(name==='miembros')renderMem();
   if(name==='depositos')renderDepositos();if(name==='recordatorio')renderRecList();
+  if(name==='buzon'){bzFiltro(bzTab);renderBuzon();}
+  if(name==='inquilinos')renderInqPort();
 }
 function setTabM(name,btn){document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');setTab(name)}
 
@@ -5927,9 +6565,11 @@ function refresh(){
   renderPauseBar();
   renderStats();renderPagos();renderInm();renderAl();renderRep();
   renderSvcList();renderEC();renderDepositos();renderRecList();renderDashboard();
+  renderPortalAdmin();
   if(deudaInmIdAbierto&&mAbierto('m-deuda'))renderDeuda(deudaInmIdAbierto);
   if(histInmId&&mAbierto('m-hist'))renderHist(histInmId);
   if(ecselInmId&&mAbierto('m-ecsel'))renderECSel();
+  if(hiloAbierto&&mAbierto('m-hilo'))renderHilo();
   if(finOn&&document.getElementById('fin-app'))finRenderAll();
 }
 
@@ -7097,6 +7737,1122 @@ document.addEventListener('keydown',e=>{
   closeModeMenus();
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  LADO ADMINISTRADOR DEL PORTAL — invitaciones y buzón
+//  Todo esto degrada solo: si la migración no se ha corrido, PORTAL_OK queda
+//  en false, las dos pestañas explican qué falta y el resto de la app se
+//  comporta exactamente igual que antes.
+// ═══════════════════════════════════════════════════════════════════════════
+let PORTAL_OK=true;                       // ¿existen ya las tablas del portal?
+let INQPORT=[];                           // invitaciones del negocio actual
+let BUZON={mensajes:[],reportes:[],avisos:[]},bzTab='todo';
+let hiloAbierto=null,repagoAbierto=null;
+
+async function cargarPortalAdmin(){
+  if(!CW)return;
+  const [inq,msj,rep,av]=await Promise.all([
+    sb.rpc('admin_portal_lista',{w_id:CW.id}),
+    sb.from('mensajes').select('*').eq('workspace_id',CW.id).order('created_at',{ascending:true}),
+    sb.from('reportes_pago').select('*').eq('workspace_id',CW.id).order('created_at',{ascending:false}),
+    sb.from('avisos').select('*').eq('workspace_id',CW.id).order('created_at',{ascending:false})
+  ]);
+  if(inq.error&&rpcFalta(inq.error)){PORTAL_OK=false;INQPORT=[];BUZON={mensajes:[],reportes:[],avisos:[]};renderPortalAdmin();return}
+  PORTAL_OK=true;
+  INQPORT=inq.data||[];
+  BUZON={mensajes:msj.data||[],reportes:rep.data||[],avisos:av.data||[]};
+  renderPortalAdmin();
+}
+function renderPortalAdmin(){renderInqPort();renderBuzon();renderBuzonBadge()}
+function renderBuzonBadge(){
+  const el=document.getElementById('nb-bz');if(!el)return;
+  const n=BUZON.mensajes.filter(m=>m.autor==='inquilino'&&!m.leido_admin).length
+         +BUZON.reportes.filter(r=>r.estado==='pendiente').length;
+  el.textContent=n>99?'99+':String(n);el.style.display=n>0?'inline-block':'none';
+}
+function faltaMigracion(que){
+  return `<div style="text-align:center;padding:52px 24px">
+    <div style="width:58px;height:58px;border-radius:50%;background:#FAEEDA;display:flex;align-items:center;justify-content:center;margin:0 auto 15px">
+      <i class="ti ti-database-off" style="font-size:26px;color:#BA7517"></i></div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:5px">Falta activar el portal</div>
+    <div style="font-size:13px;color:#6B6963;max-width:420px;margin:0 auto;line-height:1.6">
+      ${que} Corre <code>migracion_portal_inquilino.sql</code> en el SQL Editor de Supabase y recarga. Mientras tanto el resto de la app funciona igual.</div></div>`;
+}
+
+// ── Pestaña "Portal de inquilinos" ──
+function renderInqPort(){
+  const el=document.getElementById('l-inqport');if(!el)return;
+  if(!PORTAL_OK){el.innerHTML=faltaMigracion('Las tablas del portal del inquilino todavía no existen en tu base de datos.');return}
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const ocupados=inmuebles.filter(i=>!estaDesocupado(i.id));
+  if(!ocupados.length){
+    el.innerHTML=`<div style="text-align:center;padding:52px 24px;color:#9D9B96">
+      <i class="ti ti-home-off" style="font-size:32px;opacity:.4;display:block;margin-bottom:12px"></i>
+      <div style="font-size:14.5px;font-weight:600;color:#1A1917;margin-bottom:4px">No hay departamentos ocupados</div>
+      <div style="font-size:13px">Cuando asignes un inquilino podrás invitarlo a su portal.</div></div>`;
+    return;
+  }
+  el.innerHTML=ocupados.map(i=>{
+    const vig=contratoVigente(i.id);
+    const q=INQPORT.find(x=>x.inmueble_id===i.id&&(x.contrato_id||null)===(vig?.id||null));
+    const nom=vig?.inquilino||i.inquilino||'—';
+    const estado=!q?{cl:'#F1EFE8',tx:'#6B6963',ic:'ti-mail-off',t:'Sin invitar'}
+      :q.estado==='activo'?{cl:'#E1F5EE',tx:'#085041',ic:'ti-circle-check',t:'Portal activo'}
+      :{cl:'#FDF0DB',tx:'#8A5A00',ic:'ti-mail-forward',t:'Invitado, sin conectar'};
+    const msjN=BUZON.mensajes.filter(m=>m.inmueble_id===i.id&&m.autor==='inquilino'&&!m.leido_admin).length;
+    return `<div class="dep-panel" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+        <div style="width:40px;height:40px;border-radius:11px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:14px;font-weight:600;flex-shrink:0">${esc(i.num)}</div>
+        <div style="flex:1;min-width:150px">
+          <div style="font-size:14.5px;font-weight:600">${esc(nom)}</div>
+          <div style="font-size:12px;color:#9D9B96">${esc(vig?.email||i.email||'Sin correo registrado')}</div>
+        </div>
+        <span class="badge" style="background:${estado.cl};color:${estado.tx}"><i class="ti ${estado.ic}" style="font-size:11px"></i>${estado.t}</span>
+        ${msjN?`<span class="badge" style="background:#FCEBEB;color:#791F1F"><i class="ti ti-message-circle" style="font-size:11px"></i>${msjN}</span>`:''}
+        <div style="display:flex;gap:7px;margin-left:auto">
+          <button class="btn" onclick="previewInquilino('${i.id}')" title="Ver lo que ve esta persona en su portal"><i class="ti ti-eye"></i>Ver su portal</button>
+          ${q&&q.estado==='activo'
+            ? `<button class="btn" onclick="revocarPortal('${q.id}')" data-hs="border-color:#E24B4A;color:#E24B4A"><i class="ti ti-user-off"></i>Quitar acceso</button>`
+            : `<button class="btn primary" onclick="invitarPortal('${i.id}','${vig?.id||''}')"><i class="ti ti-send"></i>${q?'Reenviar':'Invitar'}</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function invitarPortal(inmId,contratoId){
+  const inm=getInm(inmId);if(!inm)return;
+  const vig=contratoVigente(inmId);
+  const {data,error}=await sb.rpc('admin_portal_invitar',{
+    p_inmueble_id:inmId,p_contrato_id:contratoId||null,
+    p_nombre:vig?.inquilino||inm.inquilino||null,p_email:vig?.email||inm.email||null});
+  if(error){toast('No se pudo generar la invitación','ti-alert-triangle');return}
+  const k=INQPORT.findIndex(x=>x.id===data.id);
+  if(k>=0)INQPORT[k]=data;else INQPORT.push(data);
+  renderPortalAdmin();
+  mostrarInvitacion(data,inm,vig);
+}
+function mostrarInvitacion(q,inm,vig){
+  const enlace=location.origin+location.pathname+'#inv='+q.codigo;
+  const nom=(vig?.inquilino||inm.inquilino||'').split(' ')[0]||'';
+  const emp=CW?.cfg?.empresa||CW?.nombre||'InmoPagos';
+  const msg=`Hola ${nom}, soy de ${emp}. Te abrí tu portal de inquilino: ahí ves cuánto debes, tus recibos y me puedes escribir directo.\n\nEntra aquí y crea tu contraseña:\n${enlace}\n\nTu código por si te lo pide: ${q.codigo}`;
+  document.getElementById('inv-body').innerHTML=`
+    <p style="font-size:13.5px;color:#6B6963;line-height:1.6;margin-bottom:16px">Mándale este enlace a <strong style="color:#1A1917">${(vig?.inquilino||inm.inquilino||'tu inquilino')}</strong>. Con él crea su contraseña y entra directo a su portal — no tiene que teclear nada más.</p>
+    <div style="background:#1A1917;border-radius:12px;padding:16px 18px;text-align:center;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em">Código de invitación</div>
+      <div style="font-family:'DM Mono',monospace;font-size:27px;font-weight:500;color:#fff;letter-spacing:.16em;margin-top:6px">${q.codigo}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <button class="btn" onclick="navigator.clipboard?.writeText('${enlace}').then(()=>toast('Enlace copiado','ti-copy'))"><i class="ti ti-link"></i>Copiar enlace</button>
+      <button class="btn primary" onclick="abrirWA('${telWA(vig?.tel||inm.tel||'')}',${JSON.stringify(msg)})"><i class="ti ti-brand-whatsapp"></i>Mandar por WhatsApp</button>
+    </div>
+    <p style="font-size:11.5px;color:#9D9B96;margin-top:13px;line-height:1.5">El código sirve una sola vez y se quema al usarse. Si se pierde, vuelve a darle a "Reenviar" y se genera uno nuevo.</p>`;
+  openM('m-invitar');
+}
+async function revocarPortal(id){
+  if(!confirm('¿Quitarle el acceso a su portal? Deja de ver su saldo y sus recibos, pero no se borra nada.'))return;
+  const {error}=await sb.rpc('admin_portal_revocar',{p_id:id});
+  if(error){toast('No se pudo quitar el acceso','ti-alert-triangle');return}
+  INQPORT=INQPORT.filter(x=>x.id!==id);
+  toast('Acceso retirado','ti-user-off');renderPortalAdmin();
+}
+// Vista previa: el administrador viendo su propio portal como si fuera el
+// inquilino. Es solo lectura — P.preview apaga todo lo que escribe.
+function previewInquilino(inmId){
+  const inm=inmId?getInm(inmId):inmuebles.find(i=>!estaDesocupado(i.id));
+  if(!inm){toast('No hay departamentos ocupados para previsualizar','ti-alert-triangle');return}
+  const vig=contratoVigente(inm.id);
+  const cfg=CW.cfg||{};
+  P.preview=true;P.cargando=false;
+  P.tol=getTolerancia();
+  P.info={
+    inquilino:{nombre:vig?.inquilino||inm.inquilino||'—',email:vig?.email||inm.email||'',desde:null},
+    depto:{id:inm.id,num:inm.num,piso:inm.piso,personas:inm.personas},
+    contrato:{id:vig?.id||null,inquilino:vig?.inquilino||inm.inquilino,tel:vig?.tel||inm.tel,
+      renta:vig?.renta??inm.renta,dia:vig?.dia??inm.dia,
+      inicio:vig?.fecha_inicio_contrato||inm.fecha_inicio_contrato,
+      termino:vig?.fecha_termino_contrato||inm.fecha_termino_contrato,
+      salida:vig?.fecha_salida||inm.fecha_salida},
+    negocio:{id:CW.id,nombre:CW.nombre,empresa:cfg.empresa||CW.nombre,direccion:cfg.direccion,
+      cobrador:cfg.nombre_cobrador,clabe:cfg.clabe,scotiabank:cfg.cuenta_scotiabank,
+      oxxo:cfg.tarjeta_oxxo,tolerancia:getTolerancia(),whatsapp:vig?.tel||inm.tel||''}
+  };
+  // Los mismos cargos que ya tiene cargados la app, filtrados con el criterio
+  // de siempre: así la vista previa no puede desviarse de lo real.
+  const {lista}=pagosInquilinoActual(inm.id);
+  P.cargos=lista.slice();
+  P.docs={estados:[],recordatorios:[],reportes:[]};
+  P.mensajes=BUZON.mensajes.filter(m=>m.inmueble_id===inm.id);
+  P.avisos=(BUZON.avisos||[]).map(a=>({...a,visto:true}));
+  if(PORTAL_OK){
+    const vigId=vig?.id||null;
+    sb.from('estados_cuenta').select('*').eq('inmueble_id',inm.id).order('created_at',{ascending:false})
+      .then(({data})=>{P.docs.estados=(data||[]).filter(e=>(e.contrato_id||null)===vigId);pRender()});
+    sb.from('recordatorios').select('*').eq('inmueble_id',inm.id).order('created_at',{ascending:false})
+      .then(({data})=>{P.docs.recordatorios=(data||[]).filter(r=>(r.contrato_id||null)===vigId);pRender()});
+  }
+  show('s-portal');pTab('inicio');pRender();
+}
+
+// ── Buzón ──
+function bzFiltro(t){
+  bzTab=t;
+  ['todo','pagos','msj','avisos'].forEach(k=>{
+    const b=document.getElementById('bz-t-'+k);if(!b)return;
+    b.classList.toggle('primary',k===t);
+  });
+  renderBuzon();
+}
+function renderBuzon(){
+  const el=document.getElementById('l-buzon');if(!el)return;
+  if(!PORTAL_OK){el.innerHTML=faltaMigracion('El buzón necesita las tablas del portal.');return}
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const nombreDe=inmId=>{const i=getInm(inmId);const v=i?contratoVigente(i.id):null;
+    return i?`${v?.inquilino||i.inquilino||'—'} · Depto. ${i.num}`:'—'};
+
+  let html='';
+
+  // Pagos por confirmar — lo más accionable, siempre primero
+  const pagos=BUZON.reportes.filter(r=>bzTab==='pagos'||bzTab==='todo'?true:false);
+  if(bzTab==='todo'||bzTab==='pagos'){
+    const pend=pagos.filter(r=>r.estado==='pendiente');
+    const resto=pagos.filter(r=>r.estado!=='pendiente').slice(0,bzTab==='pagos'?30:3);
+    html+=`<div class="ph" style="margin:0 0 12px"><div><h3 style="margin:0;font-size:15.5px;font-weight:700">Pagos por confirmar</h3></div>
+      ${pend.length?`<span class="badge" style="background:#FCEBEB;color:#791F1F">${pend.length}</span>`:''}</div>`;
+    html+=pend.length?pend.map(r=>`
+      <button class="dep-panel" style="margin-bottom:9px;width:100%;text-align:left;cursor:pointer;font-family:inherit" onclick="bzAbrirPago('${r.id}')">
+        <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+          <div style="width:38px;height:38px;border-radius:11px;background:#E6F1FB;color:#0C447C;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-receipt-2" style="font-size:17px"></i></div>
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:14px;font-weight:600">${esc(nombreDe(r.inmueble_id))}</div>
+            <div style="font-size:12px;color:#6B6963">Dice que pagó ${fmt(r.monto)} por ${esc(r.metodo||'—')} el ${fd(r.fecha)}${r.referencia?' · ref. '+esc(r.referencia):''}</div>
+          </div>
+          ${r.comprobante_url?'<span class="badge" style="background:#E1F5EE;color:#085041"><i class="ti ti-paperclip" style="font-size:11px"></i>Comprobante</span>':''}
+          <span class="badge" style="background:#FAEEDA;color:#633806"><i class="ti ti-clock" style="font-size:11px"></i>Revisar</span>
+        </div></button>`).join('')
+      :`<div style="font-size:13px;color:#9D9B96;padding:0 0 14px">Nada por revisar. Cuando un inquilino avise que pagó, cae aquí.</div>`;
+    if(resto.length)html+=`<div style="margin:6px 0 18px">${resto.map(r=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 2px;font-size:12.5px;color:#6B6963">
+        <i class="ti ${r.estado==='confirmado'?'ti-circle-check':'ti-circle-x'}" style="color:${r.estado==='confirmado'?'#1D9E75':'#E24B4A'}"></i>
+        ${esc(nombreDe(r.inmueble_id))} · ${fmt(r.monto)} · ${r.estado==='confirmado'?'confirmado':'no aplicado'}</div>`).join('')}</div>`;
+  }
+
+  // Mensajes y reportes de mantenimiento, agrupados por hilo
+  if(bzTab==='todo'||bzTab==='msj'){
+    const raices=BUZON.mensajes.filter(m=>!m.hilo_id);
+    // Un hilo por departamento para los comentarios sueltos; los reportes de
+    // mantenimiento son su propio hilo porque tienen estado propio.
+    const hilos=[];
+    raices.forEach(m=>{
+      if(m.tipo==='mantenimiento'){hilos.push({id:m.id,inm:m.inmueble_id,raiz:m,tipo:'mantenimiento'});return}
+      let h=hilos.find(x=>x.tipo==='comentario'&&x.inm===m.inmueble_id);
+      if(!h){h={id:null,inm:m.inmueble_id,raiz:m,tipo:'comentario'};hilos.push(h)}
+      if(m.created_at>h.raiz.created_at)h.raiz=m;
+    });
+    hilos.sort((a,b)=>a.raiz.created_at<b.raiz.created_at?1:-1);
+    html+=`<div class="ph" style="margin:22px 0 12px"><div><h3 style="margin:0;font-size:15.5px;font-weight:700">Mensajes y reportes</h3></div></div>`;
+    const EST={abierto:{bg:'#FAEEDA',tx:'#633806',t:'Abierto'},en_proceso:{bg:'#E6F1FB',tx:'#0C447C',t:'En proceso'},resuelto:{bg:'#E1F5EE',tx:'#085041',t:'Resuelto'}};
+    html+=hilos.length?hilos.map(h=>{
+      const noLeidos=BUZON.mensajes.filter(m=>m.inmueble_id===h.inm&&m.autor==='inquilino'&&!m.leido_admin
+        &&(h.tipo==='mantenimiento'?(m.id===h.id||m.hilo_id===h.id):(m.tipo!=='mantenimiento'))).length;
+      const e=h.tipo==='mantenimiento'?(EST[h.raiz.estado]||EST.abierto):null;
+      return `<button class="dep-panel" style="margin-bottom:9px;width:100%;text-align:left;cursor:pointer;font-family:inherit" onclick="bzAbrirHilo('${h.inm}','${h.id||''}')">
+        <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+          <div style="width:38px;height:38px;border-radius:11px;background:${h.tipo==='mantenimiento'?'#FAEEDA':'#F1EFE8'};color:${h.tipo==='mantenimiento'?'#8A5A00':'#6B6963'};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${h.tipo==='mantenimiento'?'ti-tool':'ti-message-circle'}" style="font-size:17px"></i></div>
+          <div style="flex:1;min-width:170px">
+            <div style="font-size:14px;font-weight:600">${esc(nombreDe(h.inm))}</div>
+            <div style="font-size:12px;color:#6B6963;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:420px">${esc(h.raiz.asunto||h.raiz.cuerpo)}</div>
+          </div>
+          ${e?`<span class="badge" style="background:${e.bg};color:${e.tx}">${e.t}</span>`:''}
+          ${noLeidos?`<span class="badge" style="background:#FCEBEB;color:#791F1F">${noLeidos} nuevo${noLeidos===1?'':'s'}</span>`:''}
+          <span style="font-size:11.5px;color:#9D9B96;font-family:'DM Mono',monospace">${fdS(String(h.raiz.created_at).slice(0,10))}</span>
+        </div></button>`;
+    }).join(''):`<div style="font-size:13px;color:#9D9B96;padding:0 0 14px">Sin mensajes todavía. Invita a tus inquilinos al portal para que te escriban por aquí.</div>`;
+  }
+
+  // Avisos
+  if(bzTab==='todo'||bzTab==='avisos'){
+    html+=`<div class="ph" style="margin:22px 0 12px"><div><h3 style="margin:0;font-size:15.5px;font-weight:700">Avisos del edificio</h3></div>
+      <button class="btn primary" onclick="openM('m-aviso')"><i class="ti ti-plus"></i>Publicar aviso</button></div>`;
+    html+=BUZON.avisos.length?BUZON.avisos.map(a=>`
+      <div class="dep-panel" style="margin-bottom:9px">
+        <div style="display:flex;align-items:flex-start;gap:13px">
+          <i class="ti ${a.importante?'ti-alert-triangle':'ti-speakerphone'}" style="font-size:19px;color:${a.importante?'#BA7517':'#9D9B96'};margin-top:2px"></i>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600">${esc(a.titulo)}</div>
+            ${a.cuerpo?`<div style="font-size:12.5px;color:#6B6963;margin-top:3px;line-height:1.55;white-space:pre-wrap">${esc(a.cuerpo)}</div>`:''}
+            <div style="font-size:11px;color:#9D9B96;margin-top:6px;font-family:'DM Mono',monospace">${fd(String(a.created_at).slice(0,10))}${a.hasta?' → '+fd(a.hasta):''}</div>
+          </div>
+          <button class="btn" onclick="bzBorrarAviso('${a.id}')" title="Retirar"><i class="ti ti-trash"></i></button>
+        </div></div>`).join('')
+      :`<div style="font-size:13px;color:#9D9B96">Nada publicado. Un aviso les llega a todos tus inquilinos con portal activo.</div>`;
+  }
+
+  el.innerHTML=html;
+}
+function bzAbrirHilo(inmId,hiloId){
+  hiloAbierto={inm:inmId,hilo:hiloId||null};
+  renderHilo();openM('m-hilo');
+  // Al abrirlo se dan por leídos: es exactamente lo que acaba de pasar.
+  const ids=bzMensajesDe(inmId,hiloId).filter(m=>m.autor==='inquilino'&&!m.leido_admin).map(m=>m.id);
+  if(ids.length){
+    ids.forEach(id=>{const m=BUZON.mensajes.find(x=>x.id===id);if(m)m.leido_admin=true});
+    sb.from('mensajes').update({leido_admin:true}).in('id',ids).then(()=>{});
+    renderBuzonBadge();renderInqPort();
+  }
+}
+function bzMensajesDe(inmId,hiloId){
+  return BUZON.mensajes.filter(m=>m.inmueble_id===inmId&&(
+    hiloId?(m.id===hiloId||m.hilo_id===hiloId):(m.tipo!=='mantenimiento'&&!m.hilo_id)
+  )).sort((a,b)=>a.created_at<b.created_at?-1:1);
+}
+function renderHilo(){
+  if(!hiloAbierto)return;
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const i=getInm(hiloAbierto.inm),v=i?contratoVigente(i.id):null;
+  document.getElementById('hilo-ttl').textContent=`${v?.inquilino||i?.inquilino||'—'} · Depto. ${i?.num||'—'}`;
+  const ms=bzMensajesDe(hiloAbierto.inm,hiloAbierto.hilo);
+  const raiz=hiloAbierto.hilo?BUZON.mensajes.find(m=>m.id===hiloAbierto.hilo):null;
+  document.getElementById('hilo-estado').innerHTML=raiz&&raiz.tipo==='mantenimiento'
+    ? `<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#F1EFE8;border-radius:10px;padding:10px 13px">
+        <span style="font-size:12.5px;font-weight:600;flex:1">Estado del reporte</span>
+        ${['abierto','en_proceso','resuelto'].map(e=>`<button class="btn" style="${raiz.estado===e?'background:#1A1917;color:#fff;border-color:#1A1917':''}" onclick="bzEstadoHilo('${raiz.id}','${e}')">${{abierto:'Abierto',en_proceso:'En proceso',resuelto:'Resuelto'}[e]}</button>`).join('')}
+      </div>`:'';
+  document.getElementById('hilo-body').innerHTML=ms.map(m=>{
+    const mio=m.autor==='admin';
+    return `<div style="max-width:82%;align-self:${mio?'flex-end':'flex-start'};padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;
+      background:${mio?'#1D9E75':'#F1EFE8'};color:${mio?'#fff':'#1A1917'};border-bottom-${mio?'right':'left'}-radius:5px">
+      ${m.asunto?`<b style="display:block;margin-bottom:3px">${esc(m.asunto)}</b>`:''}
+      ${esc(m.cuerpo).replace(/\n/g,'<br>')}
+      ${m.adjunto_url?`<button class="btn" style="margin-top:8px;padding:5px 10px;font-size:11.5px" onclick="bzVerAdjunto('${esc(m.adjunto_url)}')"><i class="ti ti-photo"></i>Ver foto</button>`:''}
+      <div style="font-size:10.5px;opacity:.65;margin-top:5px;font-family:'DM Mono',monospace">${new Date(m.created_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;}).join('');
+  const b=document.getElementById('hilo-body');b.scrollTop=b.scrollHeight;
+}
+async function bzResponder(){
+  if(!hiloAbierto)return;
+  const ta=document.getElementById('hilo-msg'),txt=(ta.value||'').trim();
+  if(!txt){toast('Escribe tu respuesta','ti-alert-triangle');return}
+  const i=getInm(hiloAbierto.inm),v=i?contratoVigente(i.id):null;
+  ta.value='';
+  const {data,error}=await sb.from('mensajes').insert({
+    workspace_id:CW.id,inmueble_id:hiloAbierto.inm,contrato_id:v?.id||null,
+    hilo_id:hiloAbierto.hilo||null,tipo:'comentario',cuerpo:txt,autor:'admin',autor_id:CU.id,
+    autor_nombre:CU.user_metadata?.full_name||CU.email,
+    leido_admin:true,leido_inquilino:false}).select().single();
+  if(error){toast('No se pudo enviar','ti-alert-triangle');ta.value=txt;return}
+  BUZON.mensajes.push(data);
+  renderHilo();renderPortalAdmin();
+}
+async function bzEstadoHilo(id,estado){
+  const {error}=await sb.from('mensajes').update({estado}).eq('id',id);
+  if(error){toast('No se pudo cambiar el estado','ti-alert-triangle');return}
+  const m=BUZON.mensajes.find(x=>x.id===id);if(m)m.estado=estado;
+  toast({abierto:'Marcado como abierto',en_proceso:'Marcado en proceso',resuelto:'Marcado como resuelto'}[estado],'ti-check');
+  renderHilo();renderBuzon();
+}
+async function bzVerAdjunto(path){
+  const {data,error}=await sb.storage.from('comprobantes').createSignedUrl(path,300);
+  if(error||!data?.signedUrl){toast('No se pudo abrir el archivo','ti-alert-triangle');return}
+  window.open(data.signedUrl,'_blank','noopener');
+}
+
+// ── Confirmar el aviso de pago de un inquilino ──
+function bzAbrirPago(id){
+  const r=BUZON.reportes.find(x=>x.id===id);if(!r)return;
+  repagoAbierto=r;
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const i=getInm(r.inmueble_id),v=i?contratoVigente(i.id):null;
+  document.getElementById('rp-ttl').textContent=`${v?.inquilino||i?.inquilino||'—'} · Depto. ${i?.num||'—'}`;
+  const cargos=(r.pagos_ids||[]).map(pid=>pagos.find(p=>p.id===pid)).filter(Boolean);
+  const suma=cargos.reduce((s,p)=>s+saldoPago(p),0);
+  document.getElementById('rp-body').innerHTML=`
+    <div style="background:#1A1917;border-radius:12px;padding:16px 20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em">Dice que depositó</div>
+        <div style="font-size:11.5px;color:rgba(255,255,255,.45);margin-top:2px">${esc(r.metodo||'—')} · ${fd(r.fecha)}${r.referencia?' · ref. '+esc(r.referencia):''}</div></div>
+      <div style="font-size:24px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt(r.monto)}</div>
+    </div>
+    ${r.nota?`<div style="font-size:13px;color:#6B6963;line-height:1.55;margin-bottom:14px;background:#F1EFE8;border-radius:10px;padding:11px 14px">"${esc(r.nota)}"</div>`:''}
+    ${r.comprobante_url?`<button class="btn" style="width:100%;justify-content:center;margin-bottom:14px" onclick="bzVerAdjunto('${esc(r.comprobante_url)}')"><i class="ti ti-photo"></i>Ver su comprobante</button>`:'<div style="font-size:12.5px;color:#9D9B96;margin-bottom:14px">No adjuntó comprobante.</div>'}
+    <div style="font-size:12.5px;font-weight:600;margin-bottom:8px">Al confirmar se cobran estos cargos${cargos.length?` (${fmt(suma)})`:''}:</div>
+    ${cargos.length?cargos.map(p=>{
+      const dd=descPago(p,i||{num:'—'});
+      return `<label style="display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid #EEECE4;cursor:pointer">
+        <input type="checkbox" class="rp-c" value="${p.id}" ${saldoPago(p)>0.005?'checked':''} ${saldoPago(p)<=0.005?'disabled':''} style="width:17px;height:17px;accent-color:#1D9E75">
+        <span style="flex:1;min-width:0;font-size:13.5px">${esc(dd.desc)}<br><span style="font-size:11.5px;color:#9D9B96">${esc(dd.per)}${saldoPago(p)<=0.005?' · ya estaba cobrado':''}</span></span>
+        <span style="font-family:'DM Mono',monospace;font-size:13.5px;font-weight:600">${fmt(saldoPago(p))}</span></label>`;
+    }).join(''):`<div style="font-size:12.5px;color:#9D9B96">No señaló ningún cargo. Confírmalo y regístralo tú a mano donde corresponda.</div>`}`;
+  openM('m-repago');
+}
+async function bzConfirmar(){
+  const r=repagoAbierto;if(!r)return;
+  const ids=[...document.querySelectorAll('.rp-c:checked')].map(c=>c.value);
+  // Cobrar reusa marcarPagado(): misma ruta, mismas validaciones y mismo
+  // confeti que cuando Diego cobra a mano desde Pagos.
+  for(const id of ids)await marcarPagado(id);
+  const {error}=await sb.from('reportes_pago').update({estado:'confirmado',revisado_por:CU.id,revisado_at:new Date().toISOString()}).eq('id',r.id);
+  if(error){toast('Se cobró, pero no se pudo marcar el aviso','ti-alert-triangle')}
+  else{r.estado='confirmado';r.revisado_at=new Date().toISOString()}
+  closeM('m-repago');repagoAbierto=null;
+  toast(ids.length?`Confirmado · ${ids.length} cargo${ids.length===1?'':'s'} cobrado${ids.length===1?'':'s'}`:'Aviso confirmado','ti-check');
+  renderPortalAdmin();
+}
+async function bzRechazar(){
+  const r=repagoAbierto;if(!r)return;
+  const motivo=prompt('¿Por qué no se aplica? Tu inquilino va a ver este mensaje.','No encontramos el depósito');
+  if(motivo===null)return;
+  const {error}=await sb.from('reportes_pago').update({estado:'rechazado',motivo_rechazo:motivo,
+    revisado_por:CU.id,revisado_at:new Date().toISOString()}).eq('id',r.id);
+  if(error){toast('No se pudo guardar','ti-alert-triangle');return}
+  r.estado='rechazado';r.motivo_rechazo=motivo;
+  closeM('m-repago');repagoAbierto=null;
+  toast('Marcado como no aplicado','ti-check');renderPortalAdmin();
+}
+
+// ── Avisos ──
+async function bzPublicarAviso(){
+  const tit=document.getElementById('av-tit').value.trim();
+  if(!tit){toast('Ponle un título','ti-alert-triangle');return}
+  const {data,error}=await sb.from('avisos').insert({
+    workspace_id:CW.id,titulo:tit,cuerpo:document.getElementById('av-cue').value.trim()||null,
+    importante:document.getElementById('av-imp').checked,
+    hasta:document.getElementById('av-hasta').value||null,creado_por:CU.id}).select().single();
+  if(error){toast('No se pudo publicar','ti-alert-triangle');return}
+  BUZON.avisos.unshift(data);
+  ['av-tit','av-cue','av-hasta'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('av-imp').checked=false;
+  closeM('m-aviso');toast('Aviso publicado','ti-speakerphone');renderBuzon();
+}
+async function bzBorrarAviso(id){
+  if(!confirm('¿Retirar este aviso? Deja de verse en los portales.'))return;
+  const {error}=await sb.from('avisos').delete().eq('id',id);
+  if(error){toast('No se pudo retirar','ti-alert-triangle');return}
+  BUZON.avisos=BUZON.avisos.filter(a=>a.id!==id);
+  toast('Aviso retirado','ti-check');renderBuzon();
+}
+
+// ── Publicación automática al portal ──
+// Diego no aprieta ningún botón extra: genera el estado de cuenta o el
+// recordatorio como siempre, y si ese depto tiene portal activo, le llega.
+function portalActivoDe(inmId,contratoId){
+  return INQPORT.find(q=>q.inmueble_id===inmId&&(q.contrato_id||null)===(contratoId||null)&&q.estado==='activo')||null;
+}
+async function publicarEstadoCuenta(inmId,datos,total,fechaVenc){
+  if(!PORTAL_OK||!CW)return;
+  const vig=contratoVigente(inmId);
+  const q=portalActivoDe(inmId,vig?.id||null);
+  if(!q)return;                                    // sin portal, sin ruido
+  const folio='EC-'+new Date().toISOString().slice(2,10).replace(/-/g,'')+'-'+String(Math.floor(Math.random()*900+100));
+  const {error}=await sb.from('estados_cuenta').insert({
+    workspace_id:CW.id,inmueble_id:inmId,contrato_id:vig?.id||null,
+    folio,total,fecha_venc:fechaVenc,datos});
+  if(!error)toast(`También le llegó a ${(q.nombre||vig?.inquilino||'tu inquilino').split(' ')[0]} en su portal`,'ti-home-heart');
+}
+async function publicarRecordatorio(inmId,R){
+  if(!PORTAL_OK||!CW)return;
+  const vig=contratoVigente(inmId);
+  const q=portalActivoDe(inmId,vig?.id||null);
+  if(!q)return;
+  const {error}=await sb.from('recordatorios').insert({
+    workspace_id:CW.id,inmueble_id:inmId,contrato_id:vig?.id||null,
+    texto:recordatorioTexto(R),total:R.deuda.total,
+    items:R.deuda.items.map(p=>({id:p.id,concepto:p.concepto,saldo:saldoPago(p),vencimiento:p.vencimiento}))});
+  if(!error)toast(`También le quedó en su portal`,'ti-home-heart');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PORTAL DEL INQUILINO
+//  La segunda app. Vive en el mismo archivo para poder reusar las funciones
+//  ya validadas (getEstado, saldoPago, descPago, dibujarPDF) sin duplicar una
+//  sola fórmula —duplicarlas sería garantizar que algún día el saldo que ve el
+//  inquilino y el que ve el administrador dejen de coincidir—, pero con estado
+//  propio: `P.*`. El portal NUNCA toca pagos / inmuebles / contratos / CW.
+//
+//  Lee todo por RPCs `portal_*` SECURITY DEFINER, así que no hizo falta
+//  cambiar ni una política RLS de las tablas que ya existían.
+// ═══════════════════════════════════════════════════════════════════════════
+const P={info:null,cargos:[],docs:{estados:[],recordatorios:[],reportes:[]},
+         mensajes:[],avisos:[],tol:3,preview:false,vista:'inicio',cargando:false};
+const pEsc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ── Cargar todo y pintar ──
+async function pCargar(){
+  P.cargando=true;pRender();
+  try{
+    const [info,cargos,docs,msgs,avisos]=await Promise.all([
+      sb.rpc('portal_mi_info'),
+      sb.rpc('portal_mis_cargos'),
+      sb.rpc('portal_mis_documentos'),
+      sb.rpc('portal_mis_mensajes'),
+      sb.rpc('portal_mis_avisos')
+    ]);
+    if(info.error)throw info.error;
+    P.info=info.data||null;
+    P.tol=Number(P.info?.negocio?.tolerancia);if(!isFinite(P.tol))P.tol=3;
+    P.cargos=cargos.data||[];
+    P.docs=docs.data||{estados:[],recordatorios:[],reportes:[]};
+    P.mensajes=msgs.data||[];
+    P.avisos=avisos.data||[];
+  }catch(e){
+    console.warn('portal:',e.message||e);
+    toast('No pudimos cargar tu información. Intenta de nuevo.','ti-alert-triangle');
+  }
+  P.cargando=false;pRender();
+}
+// Espejo de refresh(): repinta TODO el portal y lo que esté abierto.
+function pRender(){
+  pPintaTop();pPintaInicio();pPintaDocs();pPintaChat();pPintaDepa();pPintaAvisos();pPintaBadges();
+}
+
+// ── Cálculo del saldo. Mismas reglas que deudaInm(): solo cuenta lo EXIGIBLE
+//    (su día ya llegó); lo que vence después solo informa "paga en N días". ──
+function pDeuda(){
+  const hoy=hoyISO();
+  const pend=P.cargos.filter(p=>p.concepto!=='devolucion_deposito'&&saldoPago(p)>0.005)
+    .sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
+  const items=pend.filter(p=>p.vencimiento<=hoy);
+  const futuros=pend.filter(p=>p.vencimiento>hoy);
+  const total=items.reduce((s,p)=>s+saldoPago(p),0);
+  const ests=items.map(p=>getEstado(p,P.tol));
+  return{total,items,futuros,hayVencido:ests.includes('vencido'),hayTol:ests.includes('tolerancia')};
+}
+function pEstadoGlobal(d){return d.hayVencido?'p-mal':(d.total>0.005?'p-tol':'p-ok')}
+// Descripción legible reusando descPago(), que solo necesita el número de depto.
+function pDesc(p){return descPago(p,{num:P.info?.depto?.num||'—'})}
+const P_BADGE={
+  pagado:    {cl:'p-ok',  ic:'ti-circle-check',   t:'Pagado'},
+  parcial:   {cl:'p-info',ic:'ti-progress',       t:'Abonado'},
+  pendiente: {cl:'p-tol', ic:'ti-clock',          t:'Por pagar'},
+  tolerancia:{cl:'p-tol', ic:'ti-alert-circle',   t:'En tolerancia'},
+  vencido:   {cl:'p-mal', ic:'ti-alert-triangle', t:'Vencido'}
+};
+function pChip(est){const b=P_BADGE[est]||P_BADGE.pendiente;
+  return `<span class="p-chip ${b.cl}"><i class="ti ${b.ic}"></i>${b.t}</span>`}
+function pSkel(n,h){let s='';for(let i=0;i<n;i++)s+=`<div class="p-skel" style="height:${h}px"></div>`;return s}
+function pVacio(ic,tit,txt,btn){
+  return `<div class="p-empty"><i class="ti ${ic}"></i><b>${tit}</b><span>${txt}</span>${btn||''}</div>`;
+}
+
+// ── Barra superior ──
+function pPintaTop(){
+  const n=P.info?.inquilino?.nombre||P.info?.contrato?.inquilino||'Tu portal';
+  const d=P.info?.depto?.num?`Depto. ${P.info.depto.num} · ${P.info?.negocio?.empresa||''}`:'—';
+  document.getElementById('p-nombre').textContent=n;
+  document.getElementById('p-depto').textContent=d;
+  const wa=document.getElementById('p-wa');
+  if(wa)wa.style.display=telWA(P.info?.contrato?.telAdmin||P.info?.negocio?.whatsapp||'')?'':'none';
+  const pv=document.getElementById('p-preview');
+  if(pv)pv.style.display=P.preview?'flex':'none';
+}
+
+// ── INICIO: el hero del saldo + el bento ──
+function pPintaInicio(){
+  const el=document.getElementById('pv-inicio');if(!el)return;
+  if(P.cargando||!P.info){el.innerHTML=pSkel(1,180)+pSkel(4,92);return}
+  const d=pDeuda(),est=pEstadoGlobal(d);
+  document.getElementById('s-portal').className='screen active p-est-'+est.replace('p-','');
+
+  const c=P.info.contrato||{},neg=P.info.negocio||{};
+  const prox=d.futuros[0]||null;
+  // Cuánto falta para su próximo día de pago (solo cuando no debe nada).
+  const diasProx=(()=>{
+    const dia=Math.max(1,parseInt(c.dia)||1),t=new Date();t.setHours(0,0,0,0);
+    let p=new Date(t.getFullYear(),t.getMonth(),Math.min(dia,new Date(t.getFullYear(),t.getMonth()+1,0).getDate()));
+    if(p<t)p=new Date(t.getFullYear(),t.getMonth()+1,Math.min(dia,new Date(t.getFullYear(),t.getMonth()+2,0).getDate()));
+    return dB(t,p);
+  })();
+  const venc=d.items.length?d.items[0].vencimiento:null;
+  // Hoy A MEDIANOCHE, igual que en toda la app: comparar contra la hora actual
+  // hace que un cargo de ayer se anuncie como "venció hace 2 días" pasadas las
+  // 12 del día, y al inquilino le sale un día de más de atraso.
+  const t0=new Date();t0.setHours(0,0,0,0);
+  const dv=venc?dB(t0,new Date(venc+'T00:00:00')):null;
+
+  let chip,sub;
+  if(d.total<=0.005){
+    chip=`<span class="p-hero-chip p-ok"><i class="ti ti-circle-check"></i>Estás al día</span>`;
+    sub=prox?`Tu próximo cargo es de ${fmt(saldoPago(prox))} y vence el ${fd(prox.vencimiento)}.`
+            :`Tu próxima renta se cobra en ${diasProx===0?'hoy':diasProx===1?'1 día':diasProx+' días'}.`;
+  }else if(d.hayVencido){
+    chip=`<span class="p-hero-chip p-mal"><i class="ti ti-alert-triangle"></i>Tienes un pago vencido</span>`;
+    sub=`${d.items.length} cargo${d.items.length===1?'':'s'} por pagar${dv!=null&&dv<0?` · el más antiguo venció hace ${Math.abs(dv)} día${Math.abs(dv)===1?'':'s'}`:''}.`;
+  }else{
+    chip=`<span class="p-hero-chip p-tol"><i class="ti ti-clock"></i>${dv===0?'Vence hoy':dv<0?`Venció hace ${Math.abs(dv)} día${Math.abs(dv)===1?'':'s'}`:'Por pagar'}</span>`;
+    sub=`${d.items.length} cargo${d.items.length===1?'':'s'} esperando tu pago.`;
+  }
+
+  // Depósito en garantía realmente entregado (lo que pagó, no lo que se le cobró)
+  const dep=P.cargos.filter(p=>p.concepto==='deposito').reduce((s,p)=>s+Number(p.pagado||0),0);
+  const dev=P.cargos.filter(p=>p.concepto==='devolucion_deposito').reduce((s,p)=>s+Number(p.pagado||0),0);
+  const ultEC=(P.docs.estados||[])[0]||null;
+  const pendConf=(P.docs.reportes||[]).filter(r=>r.estado==='pendiente').length;
+
+  el.innerHTML=`
+    <div class="p-card p-hero">
+      <div class="p-hero-lbl">${d.total>0.005?'Tu saldo pendiente':'Saldo pendiente'}</div>
+      <div class="p-hero-num ${est}" id="p-saldo">${fmt(d.total)}</div>
+      <div class="p-hero-sub">${sub}</div>
+      ${chip}
+    </div>
+
+    ${pendConf?`<div class="p-card" style="display:flex;align-items:center;gap:11px;padding:13px 15px;margin-bottom:14px">
+      <i class="ti ti-hourglass-high" style="color:var(--p-blue);font-size:19px"></i>
+      <span style="flex:1;font-size:12.5px;color:var(--p-mut);line-height:1.45">Mandaste ${pendConf} aviso${pendConf===1?'':'s'} de pago. Tu administrador lo está revisando.</span></div>`:''}
+
+    <button class="p-cta" onclick="pAbrirPago()" ${P.preview?'disabled':''}><i class="ti ti-receipt-2"></i>Ya pagué, avisarle</button>
+
+    <div class="p-bento" style="margin-top:14px">
+      <div class="p-card p-tile">
+        <span class="p-tile-lbl"><i class="ti ti-calendar-dollar"></i>Renta</span>
+        <span class="p-tile-val">${fmt0(c.renta||0)}</span>
+        <span class="p-tile-sub">Cada día ${c.dia||1} del mes</span>
+      </div>
+      <div class="p-card p-tile">
+        <span class="p-tile-lbl"><i class="ti ti-shield-lock"></i>Tu depósito</span>
+        <span class="p-tile-val">${fmt0(Math.max(0,dep-dev))}</span>
+        <span class="p-tile-sub">${dep>0.005?(dev>0.005?'Ya te devolvieron parte':'En custodia'):'Sin depósito registrado'}</span>
+      </div>
+      <button class="p-card p-tile wide" onclick="pTab('docs')">
+        <span class="p-tile-lbl"><i class="ti ti-file-invoice"></i>Último estado de cuenta</span>
+        <span class="p-tile-val" style="font-size:15px;font-family:'DM Sans',sans-serif">${ultEC?`${fmt(ultEC.total)} · ${fdS(String(ultEC.created_at).slice(0,10))}`:'Todavía ninguno'}</span>
+        <span class="p-tile-sub">${ultEC?'Toca para verlo y descargarlo':'Aquí te van a llegar solos'}</span>
+      </button>
+    </div>
+
+    ${d.items.length?`
+      <div class="p-sec"><h2>Lo que debes</h2><span>${d.items.length} cargo${d.items.length===1?'':'s'}</span></div>
+      ${d.items.map(p=>pFilaCargo(p)).join('')}`:''}
+
+    ${d.futuros.length?`
+      <div class="p-sec"><h2>Lo que viene</h2><span>Aún no vence</span></div>
+      ${d.futuros.slice(0,4).map(p=>pFilaCargo(p)).join('')}`:''}
+
+    <div class="p-sec"><h2>Cómo pagar</h2></div>
+    ${pFormasPago(neg)}
+    ${telWA(neg.whatsapp)?`<button class="p-cta ghost" style="margin-top:6px" onclick="pWhatsApp()"><i class="ti ti-brand-whatsapp"></i>Escribirle a ${pEsc((neg.cobrador||'mi administrador').split(' ')[0])}</button>`:''}
+  `;
+  // El número cuenta hacia arriba al abrir: es lo primero que se ve y por eso
+  // es lo único que se anima aquí. countUp ya respeta reduced-motion vía CSS
+  // global, pero además solo corre si el sistema no lo desactivó.
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    countUp(document.getElementById('p-saldo'),d.total,fmt);
+  mo(el);
+}
+function pFilaCargo(p){
+  const est=getEstado(p,P.tol),dd=pDesc(p),saldo=saldoPago(p);
+  const b=P_BADGE[est]||P_BADGE.pendiente;
+  const col={'p-ok':'var(--p-teal)','p-mal':'var(--p-red)','p-tol':'var(--p-amber)','p-info':'var(--p-blue)'}[b.cl];
+  const bg={'p-ok':'var(--p-teal-bg)','p-mal':'var(--p-red-bg)','p-tol':'var(--p-amber-bg)','p-info':'var(--p-blue-bg)'}[b.cl];
+  return `<div class="p-card p-row">
+    <span class="p-row-ic" style="background:${bg};color:${col}"><i class="ti ${b.ic}"></i></span>
+    <span class="p-row-tx"><b>${pEsc(dd.desc)}</b>
+      <span>${pEsc(dd.per)} · vence ${fd(p.vencimiento)}${tieneAbono(p)?` · abonaste ${fmt(p.pagado)}`:''}</span></span>
+    <span style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+      <span class="p-row-num">${fmt(saldo)}</span>${pChip(est)}</span>
+  </div>`;
+}
+function pFormasPago(neg){
+  const f=[];
+  if(neg.cobrador)f.push({l:'Beneficiario',v:neg.cobrador,i:'ti-user'});
+  if(neg.clabe)f.push({l:'CLABE (transferencia)',v:neg.clabe,i:'ti-building-bank'});
+  if(neg.scotiabank)f.push({l:'Cuenta Scotiabank',v:neg.scotiabank,i:'ti-credit-card'});
+  if(neg.oxxo)f.push({l:'Tarjeta para OXXO',v:neg.oxxo,i:'ti-building-store'});
+  if(!f.length)return pVacio('ti-cash-off','Sin datos de pago','Tu administrador todavía no cargó a dónde depositar. Pregúntale por WhatsApp.');
+  return f.map(x=>`<button class="p-copy" onclick="pCopiar(this,'${pEsc(x.v)}')">
+    <i class="ti ${x.i}"></i>
+    <span class="p-copy-tx"><small>${x.l}</small><b>${pEsc(x.v)}</b></span>
+    <i class="ti ti-copy"></i></button>`).join('');
+}
+function pCopiar(btn,txt){
+  navigator.clipboard?.writeText(txt).then(()=>{
+    const ic=btn.querySelector('i:last-child');
+    ic.className='ti ti-check';ic.style.color='var(--p-teal)';
+    toast('Copiado','ti-copy');
+    setTimeout(()=>{ic.className='ti ti-copy';ic.style.color=''},1600);
+  }).catch(()=>toast('No se pudo copiar','ti-alert-triangle'));
+}
+function pWhatsApp(){
+  const neg=P.info?.negocio||{};
+  const quien=P.info?.inquilino?.nombre||P.info?.contrato?.inquilino||'';
+  abrirWA(neg.whatsapp||'',`Hola, soy ${quien} del depto. ${P.info?.depto?.num||''}. `);
+}
+
+// ── DOCUMENTOS ──
+function pPintaDocs(){
+  const el=document.getElementById('pv-docs');if(!el)return;
+  if(P.cargando){el.innerHTML=pSkel(5,74);return}
+  const ecs=P.docs.estados||[],recs=P.docs.recordatorios||[],reps=P.docs.reportes||[];
+  el.innerHTML=`
+    <div class="p-sec"><h2>Estados de cuenta</h2><span>${ecs.length||''}</span></div>
+    ${ecs.length?ecs.map(e=>`
+      <button class="p-card p-row" onclick="pAbrirEC('${e.id}')">
+        <span class="p-row-ic" style="background:var(--p-blue-bg);color:var(--p-blue)"><i class="ti ti-file-invoice"></i></span>
+        <span class="p-row-tx"><b>Estado de cuenta ${e.folio?'· '+pEsc(e.folio):''}</b>
+          <span>Emitido el ${fd(String(e.created_at).slice(0,10))}${e.fecha_venc?' · vence '+pEsc(e.fecha_venc):''}</span></span>
+        <span style="display:flex;align-items:center;gap:9px">
+          <span class="p-row-num">${fmt(e.total)}</span>
+          ${e.visto_at?'':'<span class="p-dot" title="Nuevo"></span>'}
+          <i class="ti ti-download" style="color:var(--p-mut);font-size:17px"></i></span>
+      </button>`).join(''):
+      pVacio('ti-file-off','Todavía no tienes ninguno','Cuando tu administrador emita un estado de cuenta, te va a aparecer aquí solo, listo para descargar.')}
+
+    <div class="p-sec"><h2>Recordatorios</h2><span>${recs.length||''}</span></div>
+    ${recs.length?recs.map(r=>`
+      <button class="p-card p-row" onclick="pAbrirRec('${r.id}')">
+        <span class="p-row-ic" style="background:var(--p-amber-bg);color:var(--p-amber)"><i class="ti ti-bell"></i></span>
+        <span class="p-row-tx"><b>Recordatorio de pago</b><span>${fd(String(r.created_at).slice(0,10))}</span></span>
+        <span style="display:flex;align-items:center;gap:9px">
+          <span class="p-row-num">${fmt(r.total)}</span>
+          ${r.visto_at?'':'<span class="p-dot" title="Nuevo"></span>'}</span>
+      </button>`).join(''):
+      pVacio('ti-bell-off','Sin recordatorios','Aquí quedan guardados los recordatorios que te mande tu administrador.')}
+
+    ${reps.length?`<div class="p-sec"><h2>Mis avisos de pago</h2><span>${reps.length}</span></div>
+      ${reps.map(r=>{
+        const S={pendiente:{cl:'p-info',ic:'ti-hourglass-high',t:'En revisión'},
+                 confirmado:{cl:'p-ok',ic:'ti-circle-check',t:'Confirmado'},
+                 rechazado:{cl:'p-mal',ic:'ti-circle-x',t:'No aplicado'}}[r.estado]||{cl:'p-mut',ic:'ti-help',t:r.estado};
+        return `<div class="p-card p-row">
+          <span class="p-row-ic" style="background:var(--p-glass2);color:var(--p-mut)"><i class="ti ti-receipt-2"></i></span>
+          <span class="p-row-tx"><b>${fmt(r.monto)} · ${pEsc(r.metodo||'pago')}</b>
+            <span>${fd(r.fecha)}${r.referencia?' · ref. '+pEsc(r.referencia):''}${r.motivo_rechazo?'<br>'+pEsc(r.motivo_rechazo):''}</span></span>
+          <span class="p-chip ${S.cl}"><i class="ti ${S.ic}"></i>${S.t}</span>
+        </div>`}).join('')}`:''}
+  `;
+  mo(el);
+}
+async function pAbrirEC(id){
+  const e=(P.docs.estados||[]).find(x=>x.id===id);if(!e)return;
+  // El PDF se redibuja desde el snapshot que se guardó al emitirlo: sale
+  // idéntico al del administrador aunque después se haya cobrado un cargo.
+  try{dibujarPDF(e.datos,true)}catch(err){toast('No se pudo abrir el documento','ti-alert-triangle');return}
+  if(!e.visto_at&&!P.preview){e.visto_at=new Date().toISOString();
+    await sb.rpc('portal_marcar_visto',{p_tipo:'estado',p_id:id});pRender();}
+}
+async function pAbrirRec(id){
+  const r=(P.docs.recordatorios||[]).find(x=>x.id===id);if(!r)return;
+  pSheetHTML('Recordatorio de pago',
+    `<div style="white-space:pre-wrap;font-size:13.5px;line-height:1.65;color:var(--p-tx)">${pEsc(r.texto)}</div>`);
+  if(!r.visto_at&&!P.preview){r.visto_at=new Date().toISOString();
+    await sb.rpc('portal_marcar_visto',{p_tipo:'recordatorio',p_id:id});pRender();}
+}
+
+// ── MENSAJES ──
+function pPintaChat(){
+  const el=document.getElementById('pv-chat');if(!el)return;
+  if(P.cargando){el.innerHTML=pSkel(6,56);return}
+  const ms=P.mensajes||[];
+  const mant=ms.filter(m=>m.tipo==='mantenimiento'&&!m.hilo_id);
+  const EST={abierto:{cl:'p-tol',ic:'ti-dots-circle-horizontal',t:'Abierto'},
+             en_proceso:{cl:'p-info',ic:'ti-progress',t:'En proceso'},
+             resuelto:{cl:'p-ok',ic:'ti-circle-check',t:'Resuelto'}};
+  el.innerHTML=`
+    <button class="p-cta ghost" onclick="pSheet('ps-rep',true)" ${P.preview?'disabled':''}>
+      <i class="ti ti-tool"></i>Reportar algo del departamento</button>
+
+    ${mant.length?`<div class="p-sec"><h2>Mis reportes</h2></div>
+      ${mant.map(m=>{const s=EST[m.estado]||EST.abierto;
+        const resp=ms.filter(x=>x.hilo_id===m.id).length;
+        return `<div class="p-card p-row">
+          <span class="p-row-ic" style="background:var(--p-glass2);color:var(--p-mut)"><i class="ti ti-tool"></i></span>
+          <span class="p-row-tx"><b>${pEsc(m.asunto||m.categoria||'Reporte')}</b>
+            <span>${fdS(String(m.created_at).slice(0,10))}${resp?` · ${resp} respuesta${resp===1?'':'s'}`:''}</span></span>
+          <span class="p-chip ${s.cl}"><i class="ti ${s.ic}"></i>${s.t}</span></div>`}).join('')}`:''}
+
+    <div class="p-sec"><h2>Conversación</h2><span>con tu administrador</span></div>
+    <div class="p-chat" id="p-chat">
+      ${ms.length?ms.map(m=>`
+        <div class="p-msg ${m.autor==='inquilino'?'mio':'suyo'}">
+          ${m.asunto?`<b style="display:block;margin-bottom:3px">${pEsc(m.asunto)}</b>`:''}
+          ${pEsc(m.cuerpo).replace(/\n/g,'<br>')}
+          ${m.adjunto_url?`<button class="p-btn" style="margin-top:8px;min-height:36px;padding:6px 11px;font-size:12px" onclick="pVerAdjunto('${pEsc(m.adjunto_url)}')"><i class="ti ti-photo"></i>Ver foto</button>`:''}
+          <time>${new Date(m.created_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</time>
+        </div>`).join(''):
+        pVacio('ti-message-2','Nada por aquí todavía','Escríbele a tu administrador lo que necesites: una duda del recibo, un permiso, lo que sea. Queda registrado para los dos.')}
+    </div>
+
+    <div class="p-compose">
+      <textarea id="p-msg" rows="1" placeholder="Escribe un mensaje…" ${P.preview?'disabled':''}
+        oninput="this.style.height='auto';this.style.height=Math.min(130,this.scrollHeight)+'px'"></textarea>
+      <button class="p-icon" style="width:46px;height:46px;background:var(--p-teal);color:#04140E;border-color:transparent"
+        aria-label="Enviar mensaje" onclick="pEnviarMsg()" ${P.preview?'disabled':''}><i class="ti ti-send"></i></button>
+    </div>`;
+  const ch=document.getElementById('p-chat');if(ch)ch.scrollTop=ch.scrollHeight;
+}
+async function pEnviarMsg(){
+  if(P.preview)return;
+  const ta=document.getElementById('p-msg');const txt=(ta?.value||'').trim();
+  if(!txt){toast('Escribe algo primero','ti-alert-triangle');return}
+  ta.value='';ta.style.height='auto';
+  const {data,error}=await sb.rpc('portal_enviar_mensaje',
+    {p_hilo_id:null,p_tipo:'comentario',p_categoria:null,p_asunto:null,p_cuerpo:txt,p_adjunto_url:null});
+  if(error){toast('No se pudo enviar','ti-alert-triangle');ta.value=txt;return}
+  if(data)P.mensajes.push(data);          // se espeja en memoria y se repinta
+  pRender();
+}
+async function pEnviarReporte(){
+  if(P.preview)return;
+  const cat=document.getElementById('pr-cat').value;
+  const asunto=document.getElementById('pr-asunto').value.trim();
+  const cuerpo=document.getElementById('pr-cuerpo').value.trim();
+  if(!cuerpo){toast('Cuéntanos qué pasa','ti-alert-triangle');return}
+  const btn=document.getElementById('pr-enviar');btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Enviando…';
+  let url=null;
+  try{url=await pSubir(document.getElementById('pr-file'))}catch(e){
+    toast('No se pudo subir la foto, mandamos el reporte sin ella','ti-alert-triangle');}
+  const {data,error}=await sb.rpc('portal_enviar_mensaje',
+    {p_hilo_id:null,p_tipo:'mantenimiento',p_categoria:cat,p_asunto:asunto||null,p_cuerpo:cuerpo,p_adjunto_url:url});
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i>Enviar reporte';
+  if(error){toast('No se pudo enviar el reporte','ti-alert-triangle');return}
+  if(data)P.mensajes.push(data);
+  document.getElementById('pr-asunto').value='';document.getElementById('pr-cuerpo').value='';
+  document.getElementById('pr-file').value='';
+  pSheet('ps-rep',false);toast('Reporte enviado','ti-check');pRender();
+}
+
+// ── MI DEPA ──
+function pPintaDepa(){
+  const el=document.getElementById('pv-depa');if(!el)return;
+  if(P.cargando||!P.info){el.innerHTML=pSkel(4,92);return}
+  const c=P.info.contrato||{},dep=P.info.depto||{};
+  const depTot=P.cargos.filter(p=>p.concepto==='deposito').reduce((s,p)=>s+Number(p.pagado||0),0);
+  const devTot=P.cargos.filter(p=>p.concepto==='devolucion_deposito').reduce((s,p)=>s+Number(p.pagado||0),0);
+  const pagados=P.cargos.filter(p=>p.concepto!=='devolucion_deposito'&&saldoPago(p)<=0.005&&Number(p.pagado||0)>0)
+    .sort((a,b)=>(b.fecha_pago||b.vencimiento)<(a.fecha_pago||a.vencimiento)?-1:1);
+  const totalPagado=pagados.reduce((s,p)=>s+Number(p.pagado||0),0);
+  const hoy0=new Date();hoy0.setHours(0,0,0,0);   // días exactos, sin la hora del día
+  const dias=c.inicio?dB(new Date(c.inicio+'T00:00:00'),hoy0):null;
+
+  el.innerHTML=`
+    <div class="p-card p-hero" style="padding:22px">
+      <div class="p-hero-lbl">Departamento</div>
+      <div class="p-display" style="font-size:42px;font-weight:700;margin:5px 0">${pEsc(dep.num||'—')}</div>
+      <div class="p-hero-sub">${pEsc(P.info.negocio?.empresa||'')}${P.info.negocio?.direccion?'<br>'+pEsc(P.info.negocio.direccion):''}</div>
+    </div>
+
+    <div class="p-bento">
+      <div class="p-card p-tile"><span class="p-tile-lbl"><i class="ti ti-cash"></i>Renta</span>
+        <span class="p-tile-val">${fmt0(c.renta||0)}</span><span class="p-tile-sub">Al mes</span></div>
+      <div class="p-card p-tile"><span class="p-tile-lbl"><i class="ti ti-calendar"></i>Día de pago</span>
+        <span class="p-tile-val">${c.dia||1}</span><span class="p-tile-sub">De cada mes</span></div>
+      <div class="p-card p-tile"><span class="p-tile-lbl"><i class="ti ti-users"></i>Personas</span>
+        <span class="p-tile-val">${dep.personas||1}</span><span class="p-tile-sub">Cuenta para el reparto de servicios</span></div>
+      <div class="p-card p-tile"><span class="p-tile-lbl"><i class="ti ti-clock-hour-4"></i>Tolerancia</span>
+        <span class="p-tile-val">${P.tol}</span><span class="p-tile-sub">Día${P.tol===1?'':'s'} después de tu fecha</span></div>
+      <div class="p-card p-tile wide"><span class="p-tile-lbl"><i class="ti ti-shield-lock"></i>Depósito en garantía</span>
+        <span class="p-tile-val">${fmt(Math.max(0,depTot-devTot))}</span>
+        <span class="p-tile-sub">${depTot<=0.005?'No tienes depósito registrado.'
+          :devTot>0.005?`Entregaste ${fmt(depTot)} y ya te devolvieron ${fmt(devTot)}.`
+          :'Tu administrador lo tiene en custodia y se liquida al terminar tu contrato.'}</span></div>
+    </div>
+
+    <div class="p-sec"><h2>Tu contrato</h2></div>
+    <div class="p-card" style="padding:4px 16px">
+      ${[['Inquilino',pEsc(c.inquilino||'—')],
+         ['Inicio',c.inicio?fd(c.inicio):'—'],
+         ['Término',c.termino?fd(c.termino):'Sin fecha de término'],
+         ['Salida',c.salida?fd(c.salida):'—'],
+         ['Llevas aquí',dias!=null&&dias>=0?`${dias} día${dias===1?'':'s'}`:'—']]
+        .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--p-line)">
+          <span style="font-size:13px;color:var(--p-mut)">${k}</span>
+          <span style="font-size:13.5px;font-weight:600;text-align:right">${v}</span></div>`).join('')}
+    </div>
+
+    <div class="p-sec"><h2>Lo que has pagado</h2><span>${fmt(totalPagado)}</span></div>
+    ${pagados.length?`<div class="p-card" style="padding:18px 16px 4px"><div class="p-time">
+      ${pagados.map(p=>{const dd=pDesc(p);
+        return `<div class="p-time-it"><b>${pEsc(dd.desc)}</b>
+          <span>${pEsc(dd.per)} · ${fmt(p.pagado)}${p.fecha_pago?' · pagado el '+fd(p.fecha_pago):''}</span></div>`}).join('')}
+    </div></div>`:
+      pVacio('ti-history','Sin pagos registrados','En cuanto tu administrador registre tu primer pago, va a aparecer aquí tu historial completo.')}
+  `;
+  mo(el);
+}
+
+// ── AVISOS ──
+function pPintaAvisos(){
+  const el=document.getElementById('pv-avisos');if(!el)return;
+  if(P.cargando){el.innerHTML=pSkel(3,84);return}
+  const av=P.avisos||[];
+  el.innerHTML=av.length?`
+    <div class="p-sec"><h2>Avisos</h2><span>${av.length}</span></div>
+    ${av.map(a=>`<div class="p-card" style="padding:16px;margin-bottom:10px;${a.importante?'border-color:rgba(245,181,68,.4)':''}">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+        <i class="ti ${a.importante?'ti-alert-triangle':'ti-speakerphone'}" style="font-size:17px;color:${a.importante?'var(--p-amber)':'var(--p-mut)'}"></i>
+        <b style="flex:1;font-size:14.5px;font-weight:600">${pEsc(a.titulo)}</b>
+        ${a.visto?'':'<span class="p-dot"></span>'}</div>
+      ${a.cuerpo?`<div style="font-size:13px;color:var(--p-mut);line-height:1.6;white-space:pre-wrap">${pEsc(a.cuerpo)}</div>`:''}
+      <div style="font-size:11px;color:var(--p-dim);margin-top:9px;font-family:'DM Mono',monospace">${fd(String(a.created_at).slice(0,10))}</div>
+    </div>`).join('')}`
+    :pVacio('ti-speakerphone','Sin avisos','Cuando tu administrador publique algo del edificio —un corte de agua, un mantenimiento— te aparece aquí.');
+  mo(el);
+  // Al abrir la pestaña se dan por vistos: es una bandeja informativa.
+  if(!P.preview)av.filter(a=>!a.visto).forEach(async a=>{
+    a.visto=true;await sb.rpc('portal_marcar_visto',{p_tipo:'aviso',p_id:a.id});});
+}
+
+// ── Badges de no leídos ──
+function pPintaBadges(){
+  const nuevos=(P.docs.estados||[]).filter(e=>!e.visto_at).length
+              +(P.docs.recordatorios||[]).filter(r=>!r.visto_at).length;
+  const msj=(P.mensajes||[]).filter(m=>m.autor==='admin'&&!m.leido_inquilino).length;
+  const avs=(P.avisos||[]).filter(a=>!a.visto).length;
+  [['p-nb-docs',nuevos],['p-nb-chat',msj],['p-nb-avisos',avs]].forEach(([id,n])=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.textContent=n>9?'9+':String(n);el.classList.toggle('on',n>0);
+  });
+}
+
+// ── Navegación del portal ──
+function pTab(v){
+  P.vista=v;
+  document.querySelectorAll('#p-nav button').forEach(b=>{
+    const on=b.dataset.pv===v;b.classList.toggle('on',on);
+    if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('#s-portal .p-view').forEach(s=>s.classList.toggle('on',s.id==='pv-'+v));
+  const m=document.getElementById('p-main');if(m)m.scrollTop=0;
+  if(v==='chat'&&!P.preview){
+    const hay=(P.mensajes||[]).some(x=>x.autor==='admin'&&!x.leido_inquilino);
+    if(hay){P.mensajes.forEach(x=>{if(x.autor==='admin')x.leido_inquilino=true});
+      sb.rpc('portal_marcar_visto',{p_tipo:'mensajes',p_id:null});pPintaBadges();}
+  }
+  if(v==='avisos')pPintaAvisos();
+}
+function pSheet(id,abrir){document.getElementById(id).classList.toggle('open',!!abrir)}
+// Hoja genérica de solo lectura (recordatorios, adjuntos)
+function pSheetHTML(titulo,html){
+  let s=document.getElementById('ps-generico');
+  if(!s){
+    s=document.createElement('div');s.className='p-sheet';s.id='ps-generico';
+    s.onclick=e=>{if(e.target===s)s.classList.remove('open')};
+    s.innerHTML=`<div class="p-sheet-in"><div class="p-grab"></div>
+      <div class="p-sheet-h"><h3 id="psg-ttl"></h3>
+      <button class="p-icon" aria-label="Cerrar" onclick="document.getElementById('ps-generico').classList.remove('open')"><i class="ti ti-x"></i></button></div>
+      <div id="psg-body"></div></div>`;
+    document.getElementById('s-portal').appendChild(s);
+  }
+  document.getElementById('psg-ttl').textContent=titulo;
+  document.getElementById('psg-body').innerHTML=html;
+  s.classList.add('open');
+}
+async function pVerAdjunto(path){
+  const {data,error}=await sb.storage.from('comprobantes').createSignedUrl(path,300);
+  if(error||!data?.signedUrl){toast('No se pudo abrir el archivo','ti-alert-triangle');return}
+  pSheetHTML('Archivo',`<img src="${data.signedUrl}" alt="Adjunto" style="width:100%;border-radius:12px">`);
+}
+
+// ── Reportar un pago ──
+function pAbrirPago(){
+  if(P.preview)return;
+  const d=pDeuda();
+  document.getElementById('pp-fecha').value=hoyISO();
+  document.getElementById('pp-monto').value=d.total>0.005?d.total.toFixed(2):'';
+  const cont=document.getElementById('pp-cargos');
+  cont.innerHTML=d.items.length?d.items.map(p=>{
+    const dd=pDesc(p);
+    return `<label style="display:flex;align-items:center;gap:10px;padding:9px 2px;cursor:pointer;min-height:44px">
+      <input type="checkbox" class="pp-c" value="${p.id}" checked style="width:17px;height:17px;accent-color:var(--p-teal)">
+      <span style="flex:1;min-width:0;font-size:13px">${pEsc(dd.desc)}<br>
+        <span style="font-size:11.5px;color:var(--p-mut)">${pEsc(dd.per)}</span></span>
+      <span class="p-row-num" style="font-size:13px">${fmt(saldoPago(p))}</span></label>`;
+  }).join(''):`<span style="font-size:12.5px;color:var(--p-mut)">No tienes cargos pendientes; se registra como pago adelantado.</span>`;
+  pSheet('ps-pago',true);
+}
+// Sube el archivo al bucket privado bajo <workspace>/<contrato|inmueble>/…
+async function pSubir(input){
+  const f=input?.files?.[0];if(!f)return null;
+  if(f.size>8*1024*1024){toast('El archivo pesa más de 8 MB','ti-alert-triangle');return null}
+  const ws=P.info?.negocio?.id,car=P.info?.contrato?.id||P.info?.depto?.id;
+  const ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const path=`${ws}/${car}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const {error}=await sb.storage.from('comprobantes').upload(path,f,{upsert:false});
+  if(error)throw error;
+  return path;
+}
+async function pEnviarPago(){
+  if(P.preview)return;
+  const monto=parseFloat(document.getElementById('pp-monto').value);
+  if(!(monto>0)){toast('Escribe cuánto depositaste','ti-alert-triangle');return}
+  const btn=document.getElementById('pp-enviar');btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Enviando…';
+  let url=null;
+  try{url=await pSubir(document.getElementById('pp-file'))}catch(e){
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i>Enviar aviso de pago';
+    toast('No se pudo subir el comprobante','ti-alert-triangle');return;}
+  const ids=[...document.querySelectorAll('.pp-c:checked')].map(c=>c.value);
+  const {data,error}=await sb.rpc('portal_reportar_pago',{
+    p_monto:monto,p_fecha:document.getElementById('pp-fecha').value||hoyISO(),
+    p_metodo:document.getElementById('pp-metodo').value,
+    p_referencia:document.getElementById('pp-ref').value.trim(),
+    p_nota:document.getElementById('pp-nota').value.trim(),
+    p_comprobante_url:url,p_pagos_ids:ids.length?ids:null});
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i>Enviar aviso de pago';
+  if(error){toast('No se pudo enviar: '+(error.message||''),'ti-alert-triangle');return}
+  if(data)(P.docs.reportes=P.docs.reportes||[]).unshift(data);
+  ['pp-ref','pp-nota','pp-file'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+  pSheet('ps-pago',false);
+  toast('Listo, tu administrador ya lo tiene','ti-check');
+  pRender();
+}
+
+// ── Canje del código de invitación ──
+async function pCanjear(){
+  const inp=document.getElementById('pc-codigo'),err=document.getElementById('pc-err');
+  const btn=document.getElementById('pc-btn');
+  err.style.display='none';
+  const cod=(inp.value||'').replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  if(!cod){err.textContent='Escribe el código que te mandaron';err.style.display='block';return}
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Conectando…';
+  const {data,error}=await sb.rpc('portal_canjear_codigo',{codigo:cod});
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-key"></i>Conectar';
+  if(error||!data?.ok){
+    err.textContent={
+      CODIGO_INVALIDO:'Ese código no existe. Revísalo con tu administrador.',
+      YA_USADO:'Ese código ya lo usó otra cuenta.',
+      REVOCADO:'Ese acceso fue dado de baja. Pídele uno nuevo a tu administrador.',
+      DUENO_INACTIVO:'El portal de este negocio está desactivado. Contacta a tu administrador.',
+      SIN_SESION:'Vuelve a iniciar sesión.',
+      VACIO:'Escribe el código que te mandaron'
+    }[data?.error]||'No se pudo conectar. Intenta de nuevo.';
+    err.style.display='block';return;
+  }
+  inp.value='';pSheet('ps-codigo',false);
+  toast(`¡Listo! Te conectamos con ${data.negocio||'tu departamento'}`,'ti-check');
+  await abrirPortal(false);
+}
+function pSalirACuenta(){pSheet('ps-codigo',false);show('s-rol');}
+function pSalir(){
+  // Desde la vista previa se vuelve a la app, no a elegir puerta: el
+  // administrador estaba trabajando y no tiene por qué perder su negocio abierto.
+  if(P.preview){P.preview=false;show('s-app');setTab('inquilinos');return}
+  show('s-rol');renderRolUI();
+}
+
+// ── Abrir el portal ──
+// `preview` = el administrador viendo lo que ve su inquilino, en solo lectura.
+async function abrirPortal(preview){
+  P.preview=!!preview;
+  show('s-portal');pTab('inicio');
+  await pCargar();
+  pSuscribir();
+}
+// Realtime acotado a SU departamento: si el administrador cobra un cargo o le
+// contesta, el portal se actualiza sin que tenga que recargar.
+let pCanal=null;
+function pSuscribir(){
+  const inmId=P.info?.depto?.id;if(!inmId||pCanal)return;
+  pCanal=sb.channel('portal-'+inmId);
+  ['pagos','mensajes','estados_cuenta','recordatorios','reportes_pago'].forEach(tbl=>{
+    pCanal.on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'inmueble_id=eq.'+inmId},()=>pCargar());
+  });
+  pCanal.subscribe();
+}
+
+// ═══════════════════════════════════════
+//  ELEGIR VISTA (pantalla de roles)
+// ═══════════════════════════════════════
+// Qué es este usuario. Se resuelve ANTES de verificarSuscripcion() porque el
+// trigger alta_cliente_nuevo le crea una prueba de 7 días a todo el que se
+// registra: sin este desvío, cada inquilino quedaría bloqueado al octavo día
+// por una suscripción que nunca contrató.
+let ROL={tienePortal:false,esAdmin:false,suspendido:false,migracion:true};
+// Código de invitación que venía en el enlace (#inv=ABCD1234). El
+// administrador manda ese enlace por WhatsApp y el inquilino solo crea su
+// contraseña: no tiene que teclear el código ni entender qué es un workspace.
+let INV_PEND=null;
+function leerInvitacion(){
+  const m=/[#&?]inv=([a-zA-Z0-9]{4,16})/.exec(location.hash+location.search);
+  if(!m)return;
+  INV_PEND=m[1].toUpperCase();
+  history.replaceState(null,'',location.pathname);
+  const b=document.getElementById('inv-banner');
+  if(b){b.style.display='flex';document.getElementById('inv-cod').textContent=INV_PEND}
+}
+// Canjea la invitación pendiente en cuanto hay sesión. Se limpia pase lo que
+// pase para no reintentarla en bucle si el código ya no sirve.
+async function canjearPendiente(){
+  if(!INV_PEND)return false;
+  const cod=INV_PEND;INV_PEND=null;
+  const {data,error}=await sb.rpc('portal_canjear_codigo',{codigo:cod});
+  if(error||!data?.ok){
+    toast(data?.error==='YA_USADO'?'Esa invitación ya la usó otra cuenta'
+         :data?.error==='CODIGO_INVALIDO'?'La invitación ya no es válida'
+         :'No pudimos usar tu invitación','ti-alert-triangle');
+    return false;
+  }
+  toast(`¡Listo! Te conectamos con ${data.negocio||'tu departamento'}`,'ti-check');
+  return true;
+}
+async function detectarRol(){
+  const {data,error}=await sb.rpc('portal_soy_inquilino');
+  if(error){
+    // Sin la migración corrida la app se comporta exactamente como antes.
+    ROL={tienePortal:false,esAdmin:true,suspendido:false,migracion:!rpcFalta(error)};
+    if(!rpcFalta(error))console.warn('portal_soy_inquilino:',error.message);
+    return ROL;
+  }
+  ROL={tienePortal:!!data?.tiene_portal,esAdmin:!!data?.es_admin,
+       suspendido:!!data?.suspendido,migracion:true};
+  return ROL;
+}
+function renderRolUI(){
+  const tag=document.getElementById('rol-inq-tag');
+  const desc=document.getElementById('rol-inq-desc');
+  const go=document.getElementById('rol-inq-go');
+  const sub=document.getElementById('rol-sub');
+  const card=document.getElementById('rol-inq');
+  card.disabled=false;
+  document.getElementById('rol-admin').style.display=ROL.esAdmin?'':'none';
+  sub.textContent=ROL.esAdmin&&ROL.tienePortal?'Tienes las dos: entra por donde necesites'
+    :ROL.esAdmin?'Elige la vista con la que vas a trabajar hoy'
+    :'Bienvenido a tu portal';
+
+  if(ROL.tienePortal){
+    tag.style.display='none';
+    desc.textContent='Tu saldo, tus estados de cuenta, tus recordatorios y hablar con tu administrador.';
+    go.innerHTML='Entrar<i class="ti ti-arrow-right" style="font-size:14px"></i>';
+  }else if(!ROL.migracion){
+    tag.style.display='';tag.innerHTML='<i class="ti ti-database-off"></i>Falta la migración';
+    desc.textContent='El portal del inquilino todavía no está activado en la base de datos. Corre migracion_portal_inquilino.sql en Supabase.';
+    go.innerHTML='';card.disabled=true;
+  }else if(ROL.suspendido){
+    tag.style.display='';tag.innerHTML='<i class="ti ti-lock"></i>Suspendido';
+    desc.textContent='Tu acceso está pausado. Escríbele a tu administrador para reactivarlo.';
+    go.innerHTML='';card.disabled=true;
+  }else if(ROL.esAdmin){
+    tag.style.display='';tag.innerHTML='<i class="ti ti-eye"></i>Vista previa';
+    desc.textContent='Mira exactamente lo que ve tu inquilino en su celular, sin salir de tu cuenta.';
+    go.innerHTML='Ver como inquilino<i class="ti ti-arrow-right" style="font-size:14px"></i>';
+  }else{
+    tag.style.display='none';
+    desc.textContent='¿Tu administrador te mandó un código? Conéctalo aquí y ve tu saldo, tus recibos y sus avisos.';
+    go.innerHTML='Conectar con mi código<i class="ti ti-arrow-right" style="font-size:14px"></i>';
+  }
+  const chk=document.getElementById('rol-recordar');
+  if(chk)chk.checked=localStorage.getItem('ib_rol')==='admin';
+}
+function guardarRolPref(on){
+  try{on?localStorage.setItem('ib_rol','admin'):localStorage.removeItem('ib_rol')}catch(e){}
+}
+async function elegirRol(cual){
+  if(cual==='admin'){cargarWS();return}
+  if(ROL.tienePortal){abrirPortal(false);return}
+  if(!ROL.migracion||ROL.suspendido)return;
+  if(ROL.esAdmin){abrirVistaPrevia();return}
+  show('s-portal');pSheet('ps-codigo',true);
+  setTimeout(()=>document.getElementById('pc-codigo')?.focus(),320);
+}
+// El administrador eligiendo qué departamento quiere espiar.
+async function abrirVistaPrevia(){
+  if(!CW){
+    // Todavía no entró a ningún negocio: primero el selector, luego el ojo.
+    toast('Entra a un negocio y usa "Ver como inquilino" desde Inquilinos','ti-info-circle');
+    cargarWS();return;
+  }
+  previewInquilino(null);
+}
+
 // ═══════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════
@@ -7105,6 +8861,11 @@ document.addEventListener('keydown',e=>{
   const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBma2tqcG9lZHZjZWNnZG54bXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NjIxMTksImV4cCI6MjA5NDUzODExOX0.JyGoO06OgK46eOeeR3CSzrmUcghwB0szpfMlRdC45dE';
 
   sb=supabase.createClient(url,key);
+
+  // Antes de decidir pantalla: ¿viene con una invitación en el enlace?
+  // Se lee primero para que el banner ya esté puesto si toca mostrar el login,
+  // y para que doReg() sepa que este usuario es inquilino, no cliente nuevo.
+  try{leerInvitacion()}catch(e){}
 
   // Fondo animado de la pantalla de inicio. Se monta antes de decidir la
   // pantalla para que el primer cuadro ya esté pintado cuando aparezca.
@@ -7136,11 +8897,24 @@ document.addEventListener('keydown',e=>{
     CU=session&&session.user;
   } else if(session){
     CU=session.user;
-    cargarWS();
+    entrarSegunRol();
   } else {
     show('s-auth');
   }
 })();
+
+// Reparto de puertas. Es el único punto donde se decide qué ve cada quien, y
+// el orden importa: primero se pregunta si es inquilino, porque un inquilino
+// NUNCA debe pasar por verificarSuscripcion().
+async function entrarSegunRol(){
+  if(INV_PEND)await canjearPendiente();
+  await detectarRol();
+  // Inquilino puro (sin negocios propios): derecho a su portal, sin escalas.
+  if(ROL.tienePortal&&!ROL.esAdmin){abrirPortal(false);return}
+  // Administrador que pidió no volver a elegir.
+  if(ROL.esAdmin&&!ROL.tienePortal&&localStorage.getItem('ib_rol')==='admin'){cargarWS();return}
+  renderRolUI();show('s-rol');
+}
 </script>
 </body>
 </html>
