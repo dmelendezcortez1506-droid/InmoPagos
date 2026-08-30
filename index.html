@@ -128,18 +128,19 @@ code{background:var(--bd);padding:2px 6px;border-radius:4px;font-family:'DM Mono
   padding:9px 18px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .15s,color .15s}
 .pl-per.active{background:var(--surface);color:var(--tx);box-shadow:var(--sh)}
 .pl-ahorro{font-size:10.5px;font-weight:700;letter-spacing:.03em;background:var(--green-bg);color:var(--green-tx);padding:3px 7px;border-radius:5px}
-.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.pl-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.5rem;display:flex;flex-direction:column;position:relative}
+.pl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pl-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rl);padding:1.35rem;display:flex;flex-direction:column;position:relative}
 .pl-card.destacada{border-color:#A78BFA;box-shadow:0 8px 30px rgba(139,124,247,.16)}
 .pl-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#7C3AED;color:#fff;
   font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:4px 11px;border-radius:999px;white-space:nowrap}
-.pl-nom{font-size:16px;font-weight:600;display:flex;align-items:center;gap:7px}
+.pl-nom{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
 .pl-desc{font-size:12.5px;color:var(--tx3);margin-top:3px;min-height:32px}
-.pl-precio{font-size:32px;font-weight:600;letter-spacing:-.03em;margin:14px 0 2px;font-feature-settings:"tnum"}
-.pl-precio small{font-size:13px;font-weight:400;color:var(--tx2);letter-spacing:0}
+.pl-lim{font-size:11.5px;font-weight:600;color:var(--tx2);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)}
+.pl-precio{font-size:clamp(24px,2.4vw,30px);font-weight:600;letter-spacing:-.03em;margin:14px 0 2px;font-feature-settings:"tnum"}
+.pl-precio small{font-size:12px;font-weight:400;color:var(--tx2);letter-spacing:0}
 .pl-equiv{font-size:12px;color:var(--tx3);min-height:18px}
 .pl-lista{list-style:none;margin:16px 0;display:flex;flex-direction:column;gap:9px;flex:1}
-.pl-lista li{font-size:13px;display:flex;gap:8px;align-items:flex-start;line-height:1.45}
+.pl-lista li{font-size:12.5px;display:flex;gap:8px;align-items:flex-start;line-height:1.45}
 .pl-lista i{color:var(--teal);font-size:15px;flex-shrink:0;margin-top:1px}
 .pl-card.destacada .pl-lista i{color:#8B5CF6}
 .pl-cta{width:100%;justify-content:center;padding:12px}
@@ -151,9 +152,9 @@ code{background:var(--bd);padding:2px 6px;border-radius:4px;font-family:'DM Mono
 #stripe-checkout{min-height:560px}
 .pl-alt{text-align:center;margin-top:1.75rem;padding-top:1.5rem;border-top:1px solid var(--bd)}
 .pl-alt p{font-size:13px;color:var(--tx2);margin-bottom:11px}
+@media(max-width:980px){ .pl-grid{grid-template-columns:1fr} }
 @media(max-width:720px){
   #s-planes{padding:1.5rem 1rem}
-  .pl-grid{grid-template-columns:1fr}
   .pl-head h2{font-size:21px}
 }
 
@@ -2051,8 +2052,8 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <li><i class="ti ti-receipt-tax"></i>Impuestos capturados por inmueble</li>
         <li><i class="ti ti-building"></i>Finanzas consolidadas de todos tus negocios en una sola vista</li>
       </ul>
-      <div class="pay-price"><b id="pay-precio">$1,899</b><span>MXN / mes</span></div>
-      <p class="pay-anual" id="pay-anual">o <strong>$18,990</strong> al año — te ahorras 2 meses</p>
+      <div class="pay-price"><b id="pay-precio">$1,299</b><span>MXN / mes</span></div>
+      <p class="pay-anual" id="pay-anual">o <strong>$12,990</strong> al año — te ahorras 2 meses</p>
       <button class="pay-btn" onclick="abrirPlanes('finanzas','s-app')"><i class="ti ti-credit-card" style="font-size:16px"></i>Quiero Premium</button>
       <button class="pay-btn alt" id="pay-link" style="display:none;margin-top:9px" onclick="LINK_PAGO&&window.open(LINK_PAGO,'_blank')"><i class="ti ti-credit-card" style="font-size:16px"></i>Pagar en línea</button>
       <button class="pay-btn ghost" onclick="finCerrarPaywall()">Volver</button>
@@ -2200,12 +2201,12 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   <div class="up-hero">
     <span class="up-gem"><i class="ti ti-chart-pie-4" style="color:#fff;font-size:19px"></i></span>
     <div style="min-width:0">
-      <strong style="font-size:13.5px;display:block;color:#3B1E85">Plan Premium</strong>
-      <span style="font-size:12px;color:#6B6963" id="up-lim">3 negocios · departamentos ilimitados</span>
+      <strong style="font-size:13.5px;display:block;color:#3B1E85" id="up-nom">Plan Premium</strong>
+      <span style="font-size:12px;color:#6B6963" id="up-lim">6 negocios · departamentos ilimitados</span>
     </div>
   </div>
   <p style="font-size:13.5px;color:var(--tx2);line-height:1.55;margin:0 0 4px" id="up-txt"></p>
-  <p style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin:10px 0 0">Premium también incluye la versión Finanzas completa: <strong id="up-precio">$1,899</strong> MXN al mes, o <strong id="up-anual">$18,990</strong> al año (te ahorras 2 meses).</p>
+  <p style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin:10px 0 0" id="up-pie"></p>
   <div class="mf"><button class="btn" onclick="closeM('m-upgrade')">Ahora no</button><button class="btn primary" id="up-cta"><i class="ti ti-credit-card"></i>Quiero ampliar mi plan</button></div>
 </div></div>
 
@@ -2833,9 +2834,11 @@ window.mountStrands = function(container, options){
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let sb=null,CU=null,CW=null;
 // ── Plan del cliente (se llena en verificarSuscripcion) ──
-// Mientras la migración de planes no esté aplicada, PLAN queda en 'premium' y
-// todo se comporta exactamente como antes: nadie pierde nada por desplegar
-// este archivo antes de correr el SQL.
+// Los planes son tres: 'basico' < 'normal' < 'premium' (y 'trial', que abre
+// todo). Mientras la migración de planes no esté aplicada, PLAN queda en
+// 'premium' y todo se comporta exactamente como antes: nadie pierde nada por
+// desplegar este archivo antes de correr el SQL. Falla ABIERTO a propósito —
+// dejar de más un segundo es mejor error que cerrarle la app a quien sí paga.
 let PLAN='premium',TRIAL_FIN=null,PROX_COBRO=null,LINK_PAGO='',LIM_NEG=null,LIM_DEP=null,NEG_PROPIOS=0;
 // 'normal' = paga y se le vence el acceso · 'especial' = cortesía: la fecha
 // nunca lo bloquea, solo el administrador desde el panel.
@@ -2845,7 +2848,9 @@ let TIPO_CLIENTE='normal';
 // un módulo a alguien que sí lo paga es peor error que dejarlo de más un
 // segundo, y el candado que importa (Finanzas) lo aplica el RLS igual.
 let PERMISOS=null;
-const PRECIO_PREMIUM_MES='$1,899', PRECIO_PREMIUM_ANIO='$18,990';
+// Solo para el muro de Finanzas, que siempre vende Premium (es lo único
+// exclusivo de ese plan). Se derivan de PRECIOS para no tener los números
+// escritos dos veces; el resto de la app usa planSiguiente().
 // Un cliente puede tener Finanzas sin ser Premium (se la dio el admin) o ser
 // Premium y no tenerla. El permiso manda; el plan solo es el valor por
 // defecto que la base ya resolvió antes de mandarlo.
@@ -3261,21 +3266,39 @@ const PK_STRIPE='pk_live_51U2HXxDUgFms61jEuWKoaNR9lJOmhq7KUm7fGqYqh6WcQVrv7AP97X
 const FN_URL='https://pfkkjpoedvcecgdnxmuy.supabase.co/functions/v1/crear-checkout';
 // Fuente única de precios en el navegador. Espeja precio_lista() de Postgres;
 // lo que de verdad se cobra son los objetos Price de Stripe.
-const PRECIOS={normal:{mensual:999,anual:9990},premium:{mensual:1899,anual:18990}};
+const money=n=>'$'+n.toLocaleString('es-MX');
+const PRECIOS={basico:{mensual:299,anual:2990},normal:{mensual:999,anual:9990},premium:{mensual:1299,anual:12990}};
+// Orden de los planes, de menor a mayor. Es el mismo de rango_plan() en
+// Postgres, y de él salen las tarjetas, el plan siguiente y los candados.
+const PLANES_ORDEN=['basico','normal','premium'];
+// Tope de departamentos por negocio de cada plan (null = sin tope). Espeja
+// limites_plan() en Postgres; solo se usa para redactar el copy del modal.
+const PRECIOS_TOPE={basico:6,normal:10,premium:null};
 const PLANES_INFO={
-  normal:{nom:'Normal',icono:'ti-building',desc:'Todo lo de cobranza para un negocio.',destacada:false,
-    puntos:['1 negocio, hasta 15 departamentos','Cobranza, alertas de mora y recordatorios','Reparto de agua, luz y gas','Depósitos en garantía y estados de cuenta en PDF','Equipo con roles']},
+  basico:{nom:'Básico',icono:'ti-home',desc:'Lo esencial para cobrar tus rentas a tiempo.',destacada:false,
+    lim:'1 negocio · hasta 6 departamentos',
+    puntos:['1 negocio, hasta 6 departamentos','Cobranza y alertas de mora','Recordatorios por WhatsApp','Depósitos en garantía','Estados de cuenta en PDF']},
+  normal:{nom:'Normal',icono:'ti-building',desc:'Toda la administración, para varios negocios.',destacada:false,
+    lim:'3 negocios · hasta 10 departamentos c/u',
+    puntos:['3 negocios, hasta 10 departamentos cada uno','Todo lo del plan Básico','Reparto de agua, luz y gas','Portal del inquilino y reportes','Equipo con roles']},
   premium:{nom:'Premium',icono:'ti-crown',desc:'Suma la Versión Finanzas y quita los límites.',destacada:true,
-    puntos:['3 negocios, departamentos ilimitados','Todo lo del plan Normal','Versión Finanzas: cascada de rentabilidad','Gastos recurrentes e impuestos por inmueble','Finanzas consolidadas de todos tus negocios']}
+    lim:'6 negocios · departamentos ilimitados',
+    puntos:['6 negocios, departamentos ilimitados','Todo lo del plan Normal','Versión Finanzas: cascada de rentabilidad','Gastos recurrentes e impuestos por inmueble','Finanzas consolidadas de todos tus negocios']}
 };
+const PRECIO_PREMIUM_MES=money(PRECIOS.premium.mensual), PRECIO_PREMIUM_ANIO=money(PRECIOS.premium.anual);
+// El escalón de arriba del plan que traes. Es lo que hay que ofrecerle a quien
+// topó con un límite: a un Básico con 6 deptos le sirve Normal, no Premium —
+// venderle Premium es caro de más y no es lo que necesita.
+function planSiguiente(desde){
+  const i=PLANES_ORDEN.indexOf(desde||PLAN);
+  return PLANES_ORDEN[i<0?PLANES_ORDEN.length-1:Math.min(i+1,PLANES_ORDEN.length-1)];
+}
 let PLAN_MOTIVO=null,PLAN_RETORNO='s-workspace',PERIODO_SEL='mensual',CHECKOUT=null,_stripeP=null;
 // Si ya existe una suscripción viva en Stripe, contratar otro plan por
 // Checkout crearía una SEGUNDA suscripción y se le cobraría dos veces al
 // mismo cliente. Mientras no exista el portal de facturación, esos cambios
 // pasan por WhatsApp.
 let SUB_STRIPE=null;
-
-const money=n=>'$'+n.toLocaleString('es-MX');
 
 // js.stripe.com TIENE que venir del dominio de Stripe (requisito de PCI y
 // antifraude, no se puede auto-hospedar), pero son ~40KB y una llamada de
@@ -3381,7 +3404,7 @@ function esReactivacion(){return PLAN_MOTIVO==='vencido'}
 function renderPlanes(){
   const g=document.getElementById('pl-grid');
   const react=esReactivacion();
-  g.innerHTML=['normal','premium'].map(k=>{
+  g.innerHTML=PLANES_ORDEN.map(k=>{
     const info=PLANES_INFO[k],precio=PRECIOS[k][PERIODO_SEL];
     const actual=(PLAN===k);
     const equiv=PERIODO_SEL==='anual'?money(Math.round(precio/12))+' al mes, pagado de golpe':'&nbsp;';
@@ -3392,6 +3415,7 @@ function renderPlanes(){
       +'<div class="pl-desc">'+info.desc+'</div>'
       +'<div class="pl-precio">'+money(precio)+' <small>MXN / '+(PERIODO_SEL==='anual'?'año':'mes')+'</small></div>'
       +'<div class="pl-equiv">'+equiv+'</div>'
+      +'<div class="pl-lim">'+info.lim+'</div>'
       +'<ul class="pl-lista">'+info.puntos.map(p=>'<li><i class="ti ti-check"></i>'+p+'</li>').join('')+'</ul>'
       +(react
          // Bloqueado: las dos tarjetas se pagan, siempre. La suya dice
@@ -3617,12 +3641,18 @@ function contactarWhatsApp(){
 }
 // Abre WhatsApp con el administrador de InmoPagos y un mensaje ya escrito.
 function waAdmin(msg){abrirWA(window._adminWA||'',msg);}
+// `motivo` puede ser el porqué (finanzas/negocios/deptos) o la clave de un
+// plan, que es como lo llama la tarjeta de la pantalla de planes.
 function pedirPremium(motivo){
+  const sig=PLANES_INFO[planSiguiente()].nom;
   const de={
     finanzas:'Quiero activar el plan Premium para usar la versión Finanzas.',
-    negocios:'Necesito administrar más negocios de los que incluye mi plan.',
-    deptos:'Necesito dar de alta más departamentos de los que incluye mi plan.'
-  }[motivo]||'Quiero pasar al plan Premium.';
+    negocios:`Necesito administrar más negocios de los que incluye mi plan; me interesa el plan ${sig}.`,
+    deptos:`Necesito dar de alta más departamentos de los que incluye mi plan; me interesa el plan ${sig}.`,
+    basico:'Quiero contratar el plan Básico.',
+    normal:'Quiero contratar el plan Normal.',
+    premium:'Quiero contratar el plan Premium.'
+  }[motivo]||`Quiero pasar al plan ${sig}.`;
   waAdmin(`Hola, soy ${CU?.email||''} y uso InmoPagos. ${de} ¿Me pasan los datos para pagarlo?`);
 }
 // Pinta los candados y el aviso de prueba según el plan del cliente.
@@ -3737,14 +3767,41 @@ function avisoWSBloqueado(){toast('El propietario debe renovar su suscripción p
 // El chequeo de aquí es solo para dar un mensaje decente: quien manda es el
 // trigger de la base de datos, que no se puede saltar desde la consola.
 function modalUpgrade(tipo){
+  // Se ofrece el escalón SIGUIENTE, no siempre Premium: a un Básico que topó
+  // en 6 deptos le resuelve el problema Normal, y venderle Premium sería
+  // cobrarle $1,000 de más por algo que no pidió.
+  const k=planSiguiente(),info=PLANES_INFO[k],cta=document.getElementById('up-cta');
+  // Ya está en el plan más alto: no hay escalón que vender. Decirle "con
+  // Premium administras 6 negocios" a alguien que YA es Premium con 6 negocios
+  // es una pantalla que miente. Lo que sí existe es el negocio extra a $499.
+  if(k===PLAN){
+    document.getElementById('up-nom').textContent='Negocio adicional';
+    document.getElementById('up-lim').textContent='Sobre tu plan '+PLANES_INFO[PLAN].nom;
+    document.getElementById('up-txt').textContent=tipo==='negocios'
+      ?`Ya traes ${LIM_NEG} negocios, que es el techo de Premium. Podemos ampliarte la cuenta con negocios adicionales.`
+      :'Tu plan ya no tiene un escalón arriba. Escríbenos y lo resolvemos a la medida.';
+    document.getElementById('up-pie').innerHTML=
+      'Cada negocio adicional son <strong>'+money(499)+'</strong> MXN al mes. Se activa a mano, no por la app.';
+    cta.innerHTML='<i class="ti ti-brand-whatsapp"></i>Escribirnos';
+    cta.onclick=()=>{closeM('m-upgrade');pedirPremium('negocios');};
+    openM('m-upgrade');return;
+  }
+  const nuevoTope=k==='premium'
+    ?'los que necesites, sin tope'
+    :'hasta '+PRECIOS_TOPE[k]+' por negocio';
   const t={
-    negocios:`Tu plan incluye ${LIM_NEG===1?'un negocio':LIM_NEG+' negocios'}. Para administrar otro, amplía tu plan y todos tus negocios quedan en la misma cuenta.`,
-    deptos:`Tu plan incluye ${LIM_DEP} departamentos por negocio y ya los ocupaste todos. Con Premium das de alta los que necesites, sin tope.`
+    negocios:`Tu plan incluye ${LIM_NEG===1?'un negocio':LIM_NEG+' negocios'}. Con ${info.nom} administras ${info.lim.split(' · ')[0]}, y todos quedan en la misma cuenta.`,
+    deptos:`Tu plan incluye ${LIM_DEP} departamentos por negocio y ya los ocupaste todos. Con ${info.nom} das de alta ${nuevoTope}.`
   }[tipo]||'Tu plan actual no alcanza para esto.';
+  document.getElementById('up-nom').textContent='Plan '+info.nom;
+  document.getElementById('up-lim').textContent=info.lim;
   document.getElementById('up-txt').textContent=t;
-  document.getElementById('up-precio').textContent=PRECIO_PREMIUM_MES;
-  document.getElementById('up-anual').textContent=PRECIO_PREMIUM_ANIO;
-  document.getElementById('up-cta').onclick=()=>{closeM('m-upgrade');abrirPlanes(tipo,'s-app');};
+  document.getElementById('up-pie').innerHTML=
+    (k==='premium'?'Premium también incluye la versión Finanzas completa: ':'')
+    +'<strong>'+money(PRECIOS[k].mensual)+'</strong> MXN al mes, o <strong>'
+    +money(PRECIOS[k].anual)+'</strong> al año (te ahorras 2 meses).';
+  cta.innerHTML='<i class="ti ti-credit-card"></i>Quiero ampliar mi plan';
+  cta.onclick=()=>{closeM('m-upgrade');abrirPlanes(tipo,'s-app');};
   openM('m-upgrade');
 }
 // ¿El error viene de un trigger de límite? Devuelve 'negocios' | 'deptos' | null
