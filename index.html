@@ -1553,6 +1553,13 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
   <div id="pl-skip-top"></div>
 
+  <!-- Solo para quien ya paga con tarjeta: abre el Portal de clientes de Stripe -->
+  <div id="pl-portal" style="display:none;text-align:center;margin:0 0 18px">
+    <button class="btn" id="pl-portal-btn" onclick="abrirPortal()"><i class="ti ti-settings"></i>Administrar mi suscripción</button>
+    <p style="font-size:12.5px;color:var(--tx2);margin-top:7px">Cancela el cobro automático, cambia tu tarjeta o descarga tus recibos.</p>
+    <div class="err" id="pl-portal-err" style="display:none;margin-top:10px"></div>
+  </div>
+
   <div class="pl-toggle" role="group" aria-label="Periodo de cobro">
     <button type="button" class="pl-per active" data-per="mensual" onclick="setPeriodo('mensual')">Mensual</button>
     <button type="button" class="pl-per" data-per="anual" onclick="setPeriodo('anual')">Anual <span class="pl-ahorro">2 meses gratis</span></button>
@@ -1786,6 +1793,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <button class="dni" data-tab="inquilinos" onclick="setTab('inquilinos',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-home-heart"></i>Portal inquilinos</button>
     <button class="dni" data-tab="miembros" onclick="setTab('miembros',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-users"></i>Equipo</button>
     <button class="dni" data-tab="config" onclick="setTab('config',this)" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-settings"></i>Configuración</button>
+    <button class="dni" onclick="abrirPlanes('cuenta','s-app')" data-hs="color:#1A1917" style="color:#6B6963;background:transparent"><i class="ti ti-credit-card"></i>Mi suscripción</button>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid #EEECE4;display:flex;align-items:center;gap:10px">
     <div id="sb-av" style="width:32px;height:32px;border-radius:50%;background:#E1F5EE;color:#085041;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0"></div>
@@ -3296,9 +3304,36 @@ function planSiguiente(desde){
 let PLAN_MOTIVO=null,PLAN_RETORNO='s-workspace',PERIODO_SEL='mensual',CHECKOUT=null,_stripeP=null;
 // Si ya existe una suscripción viva en Stripe, contratar otro plan por
 // Checkout crearía una SEGUNDA suscripción y se le cobraría dos veces al
-// mismo cliente. Mientras no exista el portal de facturación, esos cambios
-// pasan por WhatsApp.
+// mismo cliente. Los cambios de plan siguen por WhatsApp; cancelar, cambiar
+// tarjeta y ver recibos van por el Portal de clientes (abrirPortal).
 let SUB_STRIPE=null;
+const FN_PORTAL='https://pfkkjpoedvcecgdnxmuy.supabase.co/functions/v1/portal-cliente';
+
+// Manda al Portal de clientes de Stripe. Es una página de Stripe (no
+// embebible): sale de la app y Stripe la regresa al terminar.
+async function abrirPortal(){
+  const btn=document.getElementById('pl-portal-btn'),err=document.getElementById('pl-portal-err');
+  err.style.display='none';btn.disabled=true;
+  const orig=btn.innerHTML;btn.innerHTML='<span class="spinner"></span>Abriendo…';
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Tu sesión expiró. Vuelve a entrar.');
+    const r=await fetch(FN_PORTAL,{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token}});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.url){
+      console.error('portal · respuesta:',r.status,j.error);
+      throw new Error(j.error==='SIN_CLIENTE_STRIPE'
+        ?'No encontramos una suscripción con tarjeta en tu cuenta. Si pagaste por transferencia, escríbenos por WhatsApp.'
+        :r.status===401?'Tu sesión expiró. Vuelve a entrar.'
+        :'No pudimos abrir tu suscripción. Intenta en un minuto o escríbenos por WhatsApp.');
+    }
+    location.href=j.url;
+  }catch(e){
+    err.textContent=e.message;err.style.display='block';
+    btn.disabled=false;btn.innerHTML=orig;
+  }
+}
 
 // js.stripe.com TIENE que venir del dominio de Stripe (requisito de PCI y
 // antifraude, no se puede auto-hospedar), pero son ~40KB y una llamada de
@@ -3404,6 +3439,7 @@ function esReactivacion(){return PLAN_MOTIVO==='vencido'}
 function renderPlanes(){
   const g=document.getElementById('pl-grid');
   const react=esReactivacion();
+  document.getElementById('pl-portal').style.display=(SUB_STRIPE&&!react)?'block':'none';
   g.innerHTML=PLANES_ORDEN.map(k=>{
     const info=PLANES_INFO[k],precio=PRECIOS[k][PERIODO_SEL];
     const actual=(PLAN===k);
@@ -9789,6 +9825,8 @@ async function entrarSegunRol(){
   // aquí sí hay algo genuino que elegir.
   renderRolUI();show('s-rol');
 }
+// Enlace desde la web (web.inmopagos.app): inmopagos.app/#registro abre directo "Crear cuenta".
+if(location.hash==='#registro'){try{authPanel('reg')}catch(e){}}
 </script>
 </body>
 </html>
