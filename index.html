@@ -1555,7 +1555,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 
   <!-- Solo para quien ya paga con tarjeta: abre el Portal de clientes de Stripe -->
   <div id="pl-portal" style="display:none;text-align:center;margin:0 0 18px">
-    <button class="btn" id="pl-portal-btn" onclick="abrirPortal()"><i class="ti ti-settings"></i>Administrar mi suscripción</button>
+    <button class="btn" id="pl-portal-btn" onclick="abrirPortalStripe()"><i class="ti ti-settings"></i>Administrar mi suscripción</button>
     <p style="font-size:12.5px;color:var(--tx2);margin-top:7px">Cancela el cobro automático, cambia tu tarjeta o descarga tus recibos.</p>
     <div class="err" id="pl-portal-err" style="display:none;margin-top:10px"></div>
   </div>
@@ -2001,9 +2001,9 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
     <div style="margin-bottom:24px"><h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em">Configuración del negocio</h2><p style="margin:2px 0 0;font-size:13px;color:#6B6963">Estos datos aparecen en los estados de cuenta y recordatorios</p></div>
     <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:26px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Nombre del negocio</label><input type="text" id="cfg-empresa" placeholder="MC Conecta Living" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Nombre del negocio</label><input type="text" id="cfg-empresa" placeholder="Vacío = se usa el nombre de este negocio" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">¿Qué rentas en este negocio?</label><select id="cfg-tipo" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"><option value="departamento">Departamentos</option><option value="cuarto">Cuartos</option><option value="casa">Casas</option><option value="local">Locales comerciales</option><option value="oficina">Oficinas</option><option value="bodega">Bodegas</option><option value="completa">La propiedad completa (una sola renta)</option></select><span style="font-size:11.5px;color:#9D9B96">Cambia el nombre que usa toda la app. Si rentas la casa entera, elige la última opción y en vez de "Agregar departamento" verás "Agregar datos de renta".</span></div>
-        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Nombre del cobrador / propietario</label><input type="text" id="cfg-cobrador" placeholder="Brenda Verenice Cortez Suárez" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Nombre del cobrador / propietario</label><input type="text" id="cfg-cobrador" placeholder="Brenda Verenice Cortez Suárez" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"><span id="cfg-cobro-nota" style="display:none;font-size:11.5px;color:#9D9B96"><i class="ti ti-lock" style="font-size:11px"></i> Los datos de cobro (beneficiario, CLABE, banco, cuenta y tarjeta) solo los cambia el propietario del negocio.</span></div>
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Dirección del inmueble</label><input type="text" id="cfg-dir" placeholder="Girasol 7012, Col. Santa María, Guadalupe, N.L." style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">CLABE interbancaria</label><input type="text" id="cfg-clabe" placeholder="044420038023331555" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
         <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Banco</label><input type="text" id="cfg-banco" placeholder="Scotiabank, BBVA, Banorte..." style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
@@ -2023,7 +2023,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1;padding-top:14px;border-top:1px solid #EEECE4"><label style="font-size:12px;font-weight:600;color:#6B6963;display:flex;align-items:center;gap:8px"><input type="checkbox" id="cfg-renov" style="width:16px;height:16px;accent-color:#1D9E75">Avisarme cuando haya que renovar un contrato</label><span style="font-size:11.5px;color:#9D9B96">Aparece en Alertas cuando falta poco para el término del contrato y también cuando ya se venció y el inquilino sigue ahí. El cobro nunca se detiene por eso: solo se corta cuando registras su salida.</span></div>
         <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Avisar con cuántos días de anticipación</label><input type="number" id="cfg-renov-dias" min="1" max="180" placeholder="30" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
       </div>
-      <div style="margin-top:22px;padding-top:18px;border-top:1px solid #EEECE4">
+      <div id="cfg-copiar-wrap" style="margin-top:22px;padding-top:18px;border-top:1px solid #EEECE4">
         <div style="font-size:12px;font-weight:600;color:#6B6963;margin-bottom:6px">Copiar datos de cobro de otro negocio</div>
         <p style="font-size:11.5px;color:#9D9B96;margin:0 0 10px">Si varias propiedades tuyas cobran a la misma cuenta, tráete los datos de una y ya: beneficiario, banco, cuenta, CLABE y tarjeta para depósito.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -2427,12 +2427,9 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 </div></div>
 <!-- Modal Devolver Depósito -->
 <div class="overlay" id="m-dev-dep"><div class="modal sm">
-  <div class="mh"><h3><i class="ti ti-safe" style="color:var(--teal)"></i>Marcar depósito como devuelto</h3><button class="mc" onclick="closeM('m-dev-dep')"><i class="ti ti-x"></i></button></div>
+  <div class="mh"><h3><i class="ti ti-safe" style="color:var(--teal)"></i>Liquidar depósito</h3><button class="mc" onclick="closeM('m-dev-dep')"><i class="ti ti-x"></i></button></div>
   <div id="m-dev-dep-body" style="font-size:13px;color:var(--tx2);margin-bottom:1rem;line-height:1.7"></div>
-  <div class="mf">
-    <button class="btn" onclick="closeM('m-dev-dep')">Cancelar</button>
-    <button class="btn teal" onclick="confirmarDevolucion()"><i class="ti ti-check"></i>Confirmar devolución</button>
-  </div>
+  <div class="mf" id="m-dev-dep-mf"></div>
 </div></div>
 <!-- Ver servicio detalle -->
 <div class="overlay" id="m-svc-det"><div class="modal lg">
@@ -2903,7 +2900,16 @@ document.addEventListener('mousedown',e=>{const el=e.target.closest&&e.target.cl
 function _releaseActive(e){const el=e.target.closest&&e.target.closest('[data-as]');if(!el)return;if(el._abase!==undefined)el.setAttribute('style',el._abase);}
 document.addEventListener('mouseup',_releaseActive);
 function se(el,msg){el.textContent=msg;el.style.display='block'}
-function toast(msg,icon='ti-check'){const el=document.createElement('div');el.className='toast';el.innerHTML=`<i class="ti ${icon}"></i>${msg}`;document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),3000)}
+// Escapa texto para meterlo en HTML, incluida la comilla simple. Todo lo que escribe una
+// persona —nombre del inquilino, número de depto, concepto, notas, categorías— pasa por aquí
+// antes de entrar a un innerHTML: sin esto, un nombre como <img src=x onerror=…> corría
+// código con la sesión de quien abriera la pantalla (un colaborador contra el dueño, por
+// ejemplo). Ojo: escapar NO protege texto metido dentro de un onclick="…('texto')"; ahí
+// solo se pasan ids y el dato se busca en memoria.
+function escHTML(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+// El mensaje va como texto, no como HTML: muchos toasts llevan el número del depto o el
+// nombre del inquilino.
+function toast(msg,icon='ti-check'){const el=document.createElement('div');el.className='toast';el.innerHTML=`<i class="ti ${icon}"></i>`;el.appendChild(document.createTextNode(String(msg??'')));document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),3000)}
 function fmt(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n||0)}
 function fmt0(n){return '$'+Math.round(Number(n)||0).toLocaleString('es-MX')}
 function fd(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}
@@ -3012,16 +3018,30 @@ function contratoSintetico(inm){
     fecha_inicio_contrato:inm.fecha_inicio_contrato,fecha_termino_contrato:inm.fecha_termino_contrato,
     fecha_salida:inm.fecha_salida,notas:inm.notas,created_at:inm.created_at};
 }
-// Contrato vigente: sin fecha_salida o fecha_salida >= hoy. Null si el espacio está desocupado.
+// Contrato vigente: el que YA empezó (inicio <= hoy o sin fecha) y no ha salido (sin
+// fecha_salida o fecha_salida >= hoy). Null si el espacio está desocupado.
+// Antes bastaba "no ha salido": si dabas de alta al próximo inquilino con fecha de inicio a
+// futuro, la app lo tomaba como el actual desde ese momento —su nombre en la tarjeta, y el
+// "Debe", el estado de cuenta y el recordatorio dejaban de mostrar lo que debía el que todavía
+// vive ahí— y salía la alerta falsa "Renta sin registrar" para alguien que aún no llegaba.
+function yaEmpezo(c,t){return !c.fecha_inicio_contrato||c.fecha_inicio_contrato<=t}
 function contratoVigente(inmId){
   const t=hoyISO(),cs=contratosDe(inmId);
   if(cs.length){
-    const vig=cs.filter(c=>!c.fecha_salida||c.fecha_salida>=t);
+    const vig=cs.filter(c=>(!c.fecha_salida||c.fecha_salida>=t)&&yaEmpezo(c,t));
     return vig.length?vig[vig.length-1]:null; // el más reciente de los vigentes
   }
   const inm=getInm(inmId);if(!inm)return null;
   if(inm.fecha_salida&&inm.fecha_salida<t)return null;
+  if(!yaEmpezo(inm,t))return null;
   return contratoSintetico(inm);
+}
+// El próximo inquilino: contrato con fecha de inicio a futuro. Solo informa ("llega el…") y
+// sirve para que editar su renta siga sincronizando los cargos que ya generó el motor.
+function contratoProximo(inmId){
+  const t=hoyISO(),cs=contratosDe(inmId);
+  const fut=(cs.length?cs:[contratoSintetico(getInm(inmId))]).filter(c=>c&&c.fecha_inicio_contrato&&c.fecha_inicio_contrato>t&&!(c.fecha_salida&&c.fecha_salida<t));
+  return fut.length?fut[0]:null;
 }
 function estaDesocupado(inmId){return !contratoVigente(inmId)}
 // ── Renovación de contrato ───────────────────────────────────────────────────
@@ -3144,7 +3164,7 @@ function abrirCobroFecha(id){
   const p=pagos.find(x=>x.id===id);if(!p)return;
   cobroPagoId=id;
   const inm=getInm(p.inmueble_id),v=new Date(p.vencimiento+'T00:00:00');
-  document.getElementById('cob-txt').innerHTML=`Este cargo es de <strong>${MESES[v.getMonth()]} ${v.getFullYear()}</strong> (${UAB()} ${inm?.num||'?'} · ${p.concepto} · ${fmt(saldoPago(p))}). Dinos en qué fecha te lo pagaron para que quede contado en el mes que le toca y no en el actual.`;
+  document.getElementById('cob-txt').innerHTML=`Este cargo es de <strong>${MESES[v.getMonth()]} ${v.getFullYear()}</strong> (${UAB()} ${escHTML(inm?.num||'?')} · ${escHTML(p.concepto)} · ${fmt(saldoPago(p))}). Dinos en qué fecha te lo pagaron para que quede contado en el mes que le toca y no en el actual.`;
   document.getElementById('cob-fecha').value=p.vencimiento;
   openM('m-cobro');
 }
@@ -3305,13 +3325,16 @@ let PLAN_MOTIVO=null,PLAN_RETORNO='s-workspace',PERIODO_SEL='mensual',CHECKOUT=n
 // Si ya existe una suscripción viva en Stripe, contratar otro plan por
 // Checkout crearía una SEGUNDA suscripción y se le cobraría dos veces al
 // mismo cliente. Los cambios de plan siguen por WhatsApp; cancelar, cambiar
-// tarjeta y ver recibos van por el Portal de clientes (abrirPortal).
+// tarjeta y ver recibos van por el Portal de clientes (abrirPortalStripe).
 let SUB_STRIPE=null;
 const FN_PORTAL='https://pfkkjpoedvcecgdnxmuy.supabase.co/functions/v1/portal-cliente';
 
 // Manda al Portal de clientes de Stripe. Es una página de Stripe (no
 // embebible): sale de la app y Stripe la regresa al terminar.
-async function abrirPortal(){
+// Se llamaba abrirPortal(), igual que la función que abre el portal del INQUILINO más abajo.
+// Con dos funciones del mismo nombre gana la última, así que "Administrar mi suscripción"
+// abría un portal de inquilino vacío en vez de Stripe.
+async function abrirPortalStripe(){
   const btn=document.getElementById('pl-portal-btn'),err=document.getElementById('pl-portal-err');
   err.style.display='none';btn.disabled=true;
   const orig=btn.innerHTML;btn.innerHTML='<span class="spinner"></span>Abriendo…';
@@ -4091,6 +4114,22 @@ function fechaRenta(anio,mes,dia){
   const d=diaPagoDelMes(anio,mes,dia);
   return `${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
+// Vencimiento de la renta de UN contrato en un mes. Igual que fechaRenta, salvo el primer mes:
+// si el día de pago cae ANTES de que empiece el contrato (entra el 20, paga el 5), el cargo
+// nacía con fecha del 5 —antes de que el inquilino llegara— y salía "Retrasado" con alerta
+// roja el mismo día que entraba. Ese primer cargo vence el día que inicia el contrato.
+// Lo usan el motor y la sincronización al editar, para que no se contradigan.
+function vencRentaContrato(c,anio,mes,diaFallback){
+  const v=fechaRenta(anio,mes,(c&&c.dia)||diaFallback);
+  const ini=c&&c.fecha_inicio_contrato;
+  return (ini&&v<ini)?ini:v;
+}
+// Día de pago a usar cuando no se capturó: el día en que empieza el contrato (antes era el 1,
+// y un contrato que arrancaba a medio mes nacía con su primera renta vencida).
+function diaPagoPorDefecto(fini){
+  const d=fini?new Date(fini+'T00:00:00').getDate():NaN;
+  return isNaN(d)?1:d;
+}
 async function ensureAutoPagos(anioVista,mesVista){
   // Negocio pausado = motor apagado: no nacen rentas ni adeudos nuevos. Al
   // reactivarlo esta misma función los materializa (hasta MESES_RETRO atrás).
@@ -4126,7 +4165,7 @@ async function ensureAutoPagos(anioVista,mesVista){
           const anio=Math.floor(key/12),mes=key%12;
           if(!contratoActivoEnMes(c,anio,mes))return;
           if(tienePagoRenta(inm.id,c.id,anio,mes))return;
-          nuevos.push({workspace_id:CW.id,inmueble_id:inm.id,contrato_id:c.id||null,concepto:'renta',monto:renta,pagado:0,vencimiento:fechaRenta(anio,mes,c.dia||inm.dia),origen:'auto_renta',notas:null});
+          nuevos.push({workspace_id:CW.id,inmueble_id:inm.id,contrato_id:c.id||null,concepto:'renta',monto:renta,pagado:0,vencimiento:vencRentaContrato(c,anio,mes,inm.dia),origen:'auto_renta',notas:null});
         });
       });
     });
@@ -4163,7 +4202,7 @@ async function alinearDepositos(){
 // Sincroniza los pagos de renta NO cobrados (mes actual en adelante) con el contrato vigente
 // tras editar renta o día de pago. Los cobrados jamás se tocan.
 async function syncRentaPagos(inmId){
-  const vig=contratoVigente(inmId);if(!vig)return;
+  const vig=contratoVigente(inmId)||contratoProximo(inmId);if(!vig)return;
   const hoy=new Date();const mesIni=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
   const objetivo=pagos.filter(p=>p.inmueble_id===inmId&&p.concepto==='renta'&&Number(p.pagado)===0&&p.vencimiento>=mesIni&&(vig.id?(p.contrato_id===vig.id||!p.contrato_id):!p.contrato_id));
   for(const p of objetivo){
@@ -4171,7 +4210,7 @@ async function syncRentaPagos(inmId){
     if(Number(vig.renta)<=0){await sb.from('pagos').delete().eq('id',p.id);pagos=pagos.filter(x=>x.id!==p.id);continue;}
     const cambios={};
     if(Number(p.monto)!==Number(vig.renta))cambios.monto=Number(vig.renta);
-    const nv=fechaRenta(v.getFullYear(),v.getMonth(),vig.dia);
+    const nv=vencRentaContrato(vig,v.getFullYear(),v.getMonth(),vig.dia);
     if(nv!==p.vencimiento)cambios.vencimiento=nv;
     if(!Object.keys(cambios).length)continue;
     const {data}=await sb.from('pagos').update(cambios).eq('id',p.id).select().single();
@@ -4296,7 +4335,7 @@ function renderPagos(){
     else if(est==='tolerancia'){vencF+=' · gracia '+(getTolerancia()-Math.abs(dv))+'d';vencC='#BA7517';}
     else if(est==='pendiente'&&dv<=3){vencC='#BA7517';}
     const pagC=Number(p.pagado)>=Number(p.monto)&&Number(p.monto)>0?'#1D9E75':Number(p.pagado)>0?'#BA7517':'#9D9B96';
-    const con=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'';
+    const con=p.concepto==='penalizacion_deposito'?'Penalización depósito':p.concepto==='devolucion_deposito'?'Devolución depósito':p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'';
     // Un vencido/en tolerancia con abono conserva la etiqueta de atraso (la fecha manda)
     // pero avisa que ya abonó algo, para no perder ese matiz.
     const bLbl=b.lbl+((est==='vencido'||est==='tolerancia')&&tieneAbono(p)?' · abonó':'');
@@ -4309,9 +4348,9 @@ function renderPagos(){
       ? `${recordable?`<button onclick="abrirRecordatorio('${p.inmueble_id}')" title="Enviar recordatorio" data-hs="background:#E1F5EE;color:#085041;border-color:#BFE8D8" data-as="transform:scale(.94)" style="${ico}"><i class="ti ti-brand-whatsapp" style="font-size:15px"></i></button>`:''}<button onclick="marcarPagado('${p.id}')" title="Marcar como cobrado" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;font-size:11.5px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:7px;cursor:pointer;transition:all .15s"><i class="ti ti-check" style="font-size:12px"></i>Cobrar</button>`
       : `<button onclick="revertirPago('${p.id}')" title="Deshacer el cobro · vuelve a pendiente" data-hs="background:#FAEEDA;color:#633806;border-color:#F0DFC0" data-as="transform:scale(.94)" style="${ico}"><i class="ti ti-arrow-back-up" style="font-size:15px"></i></button><button onclick="abrirEditPago('${p.id}')" title="Editar" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.94)" style="${ico}"><i class="ti ti-pencil" style="font-size:15px"></i></button>`;
     return `<div data-hs="background:#FAFAF7" style="${GT};border-bottom:1px solid #EEECE4;padding:${padTd};transition:background .12s;animation:slideIn .32s cubic-bezier(.16,1,.3,1) ${Math.min(idx*.03,.4)}s both">
-      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500">${i?.num||'?'}</span>
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i?.inquilino||'—'}</span>
-      <span style="color:#6B6963">${con}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500">${escHTML(i?.num||'?')}</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(i?.inquilino||'—')}</span>
+      <span style="color:#6B6963">${escHTML(con)}</span>
       <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12.5px;font-weight:500">${fmt(p.monto)}</span>
       <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12.5px;color:${pagC}">${Number(p.pagado)>0?fmt(p.pagado):'—'}</span>
       <span style="color:${vencC};font-size:12.5px">${vencF}</span>
@@ -4513,8 +4552,8 @@ function previewMasiva(){
   const choca=filas.filter(f=>inmuebles.some(i=>String(i.num).toLowerCase()===f.num.toLowerCase())).map(f=>f.num);
   const sinInq=filas.filter(f=>!f.inquilino).length;
   const avisos=[];
-  if(dup.length)avisos.push(`<span style="color:#B4231F">Números repetidos en tu lista: ${[...new Set(dup)].join(', ')}</span>`);
-  if(choca.length)avisos.push(`<span style="color:#B4231F">Ya existen en este negocio: ${[...new Set(choca)].join(', ')}</span>`);
+  if(dup.length)avisos.push(`<span style="color:#B4231F">Números repetidos en tu lista: ${escHTML([...new Set(dup)].join(', '))}</span>`);
+  if(choca.length)avisos.push(`<span style="color:#B4231F">Ya existen en este negocio: ${escHTML([...new Set(choca)].join(', '))}</span>`);
   if(sinInq)avisos.push(`${sinInq} sin inquilino: se dan de alta como desocupad${UNI().art==='la'?'as':'os'}`);
   el.innerHTML=`<strong>${filas.length}</strong> ${filas.length===1?Us():Up()} por dar de alta${avisos.length?' · '+avisos.join(' · '):''}`;
 }
@@ -4528,10 +4567,10 @@ async function guardarMasiva(){
   // Mismo tope del plan que el alta de una en una; quien manda sigue siendo la base.
   if(LIM_DEP!==null&&inmuebles.length+filas.length>LIM_DEP){closeM('m-masiva');modalUpgrade('deptos');return}
   const renta=parseFloat(document.getElementById('ma-ren').value)||0;
-  const dia=Math.min(28,Math.max(1,parseInt(document.getElementById('ma-dia').value)||1));
+  const fini=document.getElementById('ma-fini').value||null;
+  const dia=Math.min(28,Math.max(1,parseInt(document.getElementById('ma-dia').value)||diaPagoPorDefecto(fini)));
   const dep=parseFloat(document.getElementById('ma-dep').value)||0;
   const per=Math.max(1,parseInt(document.getElementById('ma-per').value)||1);
-  const fini=document.getElementById('ma-fini').value||null;
   const fter=document.getElementById('ma-fter').value||null;
   if(fini&&fter&&fter<fini){toast('El término del contrato no puede ser antes del inicio','ti-alert-triangle');return}
   if(!confirm(`Se van a dar de alta ${filas.length} ${filas.length===1?Us():Up()}${renta>0?` con renta de ${fmt(renta)} el día ${dia}`:''}${fini?`, con contrato desde ${fd(fini)}`:''}.\n\n${fini?'Se generarán sus rentas desde esa fecha hasta hoy. ':''}¿Continuar?`))return;
@@ -4584,8 +4623,8 @@ function abrirRenovar(inmId){
   renovBase=(c.fecha_termino_contrato&&c.fecha_termino_contrato>hoy)?c.fecha_termino_contrato:hoy;
   document.getElementById('ren-ttl').textContent=`Renovar · ${UAB()} ${inm.num}`;
   document.getElementById('ren-txt').innerHTML=c.fecha_termino_contrato
-    ? `El contrato de <strong>${c.inquilino||'—'}</strong> ${c.fecha_termino_contrato<hoy?'venció el':'termina el'} <strong>${fd(c.fecha_termino_contrato)}</strong>. Elige hasta cuándo queda ahora; de paso puedes ajustar la renta si subió.`
-    : `El contrato de <strong>${c.inquilino||'—'}</strong> no tiene fecha de término. Ponle una para que la app te avise cuando toque renovar.`;
+    ? `El contrato de <strong>${escHTML(c.inquilino||'—')}</strong> ${c.fecha_termino_contrato<hoy?'venció el':'termina el'} <strong>${fd(c.fecha_termino_contrato)}</strong>. Elige hasta cuándo queda ahora; de paso puedes ajustar la renta si subió.`
+    : `El contrato de <strong>${escHTML(c.inquilino||'—')}</strong> no tiene fecha de término. Ponle una para que la app te avise cuando toque renovar.`;
   document.getElementById('ren-fter').value=sumaMesesISO(renovBase,12);
   document.getElementById('ren-renta').value=c.renta||'';
   document.getElementById('ren-dia').value=c.dia||'';
@@ -4642,7 +4681,7 @@ function renderDeuda(inmId){
     const cuando=dv===0?'hoy':dv>0?`en ${dv} día${dv===1?'':'s'}`:`hace ${Math.abs(dv)} día${Math.abs(dv)===1?'':'s'}`;
     return`<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #EEECE4">
       <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:600">${con} <span style="font-weight:400;color:#9D9B96">· ${MESES[v.getMonth()]} ${v.getFullYear()}</span></div>
+        <div style="font-size:13.5px;font-weight:600">${escHTML(con)} <span style="font-weight:400;color:#9D9B96">· ${MESES[v.getMonth()]} ${v.getFullYear()}</span></div>
         <div style="font-size:11.5px;color:#9D9B96">Día de pago ${fdS(p.vencimiento)} (${cuando})${Number(p.pagado)>0?` · abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`:''}</div>
       </div>
       <span style="display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:${b.bg};color:${b.c};white-space:nowrap">${b.lbl}</span>
@@ -4680,6 +4719,8 @@ function descPago(p,inm){
   const NS={agua:'Agua',luz:'Luz',gas:'Gas'};
   if(p.concepto==='renta')return{desc:`Renta ${US()} #${inm.num}`,per,cant:'1 Mensualidad'};
   if(p.concepto==='deposito')return{desc:'Depósito en garantía',per,cant:''};
+  if(p.concepto==='penalizacion_deposito')return{desc:'Penalización (depósito retenido)',per,cant:''};
+  if(p.concepto==='devolucion_deposito')return{desc:'Devolución de depósito',per,cant:''};
   if(NS[p.concepto]||p.servicio_id){const t=NS[p.concepto]||(p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'Servicio');return{desc:`Servicio de ${t}`,per,cant:''};}
   const c=p.concepto?p.concepto.charAt(0).toUpperCase()+p.concepto.slice(1):'Cargo';
   return{desc:c,per,cant:''};
@@ -4729,7 +4770,7 @@ function renderECSel(){
     return`<label style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid #EEECE4;cursor:pointer">
       <input type="checkbox" ${marc?'checked':''} onchange="toggleECSel('${p.id}')" style="width:17px;height:17px;accent-color:#1D9E75;cursor:pointer;flex-shrink:0">
       <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:600">${d.desc} <span style="font-weight:400;color:#9D9B96">· ${d.per}</span></div>
+        <div style="font-size:13.5px;font-weight:600">${escHTML(d.desc)} <span style="font-weight:400;color:#9D9B96">· ${d.per}</span></div>
         <div style="font-size:11.5px;color:#9D9B96">${sub}${anticipado?' · <span style="color:#0C447C;font-weight:600">se puede enviar por adelantado</span>':futuro?' · próximo':''}</div>
       </div>
       <span style="display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:${b.bg};color:${b.c};white-space:nowrap">${b.lbl}</span>
@@ -4790,7 +4831,8 @@ function renderInm(){
     const deuda=desoc?{total:0,items:[],futuros:[],hayVencido:false}:deudaInm(i.id);
     const renov=(!desoc&&avisarRenovacion())?estadoRenovacion(i.id):null;
     let chipBg,chipC,chipIco,chipLbl,chipAnim='none';
-    if(desoc){chipBg='#EDEBFE';chipC='#4B3F9E';chipIco='ti-door-exit';chipLbl='Desocupado';}
+    if(desoc){const prox=contratoProximo(i.id);chipBg='#EDEBFE';chipC='#4B3F9E';chipIco='ti-door-exit';
+      chipLbl=prox?`Desocupado · llega ${String(prox.inquilino||'').split(' ')[0]||'alguien'} el ${fdS(prox.fecha_inicio_contrato)}`:'Desocupado';}
     else if(deuda.items.length){
       const t0=new Date();t0.setHours(0,0,0,0);
       const worst=deuda.items[0]; // el más antiguo (ya vienen ordenados por vencimiento)
@@ -4810,13 +4852,13 @@ function renderInm(){
     const delay=(0.08+idx*0.06).toFixed(2)+'s';
     return`<div data-hs="transform:translateY(-3px);box-shadow:0 10px 30px rgba(26,25,23,.09),0 2px 8px rgba(26,25,23,.05);border-color:#CBC9C0" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s,border-color .18s">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-        <div title="${String(i.num)}" style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:${String(i.num).length>6?'9px':String(i.num).length>3?'10.5px':'12px'};line-height:1.15;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0;color:#1A1917;overflow:hidden;text-align:center;padding:0 3px;word-break:break-word">${String(i.num).length>10?String(i.num).slice(0,9)+'…':i.num}</div>
-        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${desoc?';color:#9D9B96;font-style:italic':''}">${inqNombre}</div><div style="font-size:12px;color:#9D9B96">${UAB()} ${i.num}${i.piso?` · Piso ${i.piso}`:''}${desoc?` · ${nHist} contrato${nHist===1?'':'s'} en historial`:` · ${(vig?.personas||i.personas||1)} personas · paga el día ${vig?.dia||i.dia||'—'}`}</div></div>
+        <div title="${escHTML(i.num)}" style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:${String(i.num).length>6?'9px':String(i.num).length>3?'10.5px':'12px'};line-height:1.15;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0;color:#1A1917;overflow:hidden;text-align:center;padding:0 3px;word-break:break-word">${escHTML(String(i.num).length>10?String(i.num).slice(0,9)+'…':i.num)}</div>
+        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${desoc?';color:#9D9B96;font-style:italic':''}">${escHTML(inqNombre)}</div><div style="font-size:12px;color:#9D9B96">${UAB()} ${escHTML(i.num)}${i.piso?` · Piso ${escHTML(i.piso)}`:''}${desoc?` · ${nHist} contrato${nHist===1?'':'s'} en historial`:` · ${(vig?.personas||i.personas||1)} personas · paga el día ${vig?.dia||i.dia||'—'}`}</div></div>
         <div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:500;font-family:'DM Mono',monospace${desoc?';color:#9D9B96':''}">${desoc?'—':fmt0(vig?.renta||i.renta)}</div><div style="font-size:11px;color:#9D9B96">${desoc?'sin renta':'/ mes'}</div></div>
       </div>
       ${tm>0?`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#9D9B96;margin-bottom:5px"><span>Cobranza ${MESES[vM].slice(0,3).toLowerCase()}</span><span style="font-family:'DM Mono',monospace;color:${pctC}">${pct}%</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden;margin-bottom:14px"><div style="height:100%;border-radius:4px;background:${barC};width:${pct}%;transform-origin:left;animation:growBar .8s cubic-bezier(.16,1,.3,1) ${delay} both"></div></div>`:'<div style="height:2px;margin-bottom:12px"></div>'}
       <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #EEECE4;flex-wrap:wrap">
-        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${chipBg};color:${chipC};animation:${chipAnim}"><i class="ti ${chipIco}" style="font-size:11px"></i>${chipLbl}</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${chipBg};color:${chipC};animation:${chipAnim}"><i class="ti ${chipIco}" style="font-size:11px"></i>${escHTML(chipLbl)}</span>
         ${(!desoc&&renov)?`<button title="Renovar contrato" onclick="abrirRenovar('${i.id}')" data-hs="transform:scale(1.04);filter:brightness(.97)" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:inherit;border:1px solid #CFC8FB;background:#EDEBFE;color:#4B3F9E;cursor:pointer;transition:all .15s"><i class="ti ti-file-certificate" style="font-size:11px"></i>${renov.estado==='vencido'?'Contrato vencido · renovar':`Vence en ${renov.dias} d · renovar`}</button>`:''}
         ${deuda.total>0.005?`<button title="Ver deuda del inquilino" onclick="abrirDeuda('${i.id}')" data-hs="transform:scale(1.04);filter:brightness(.96)" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;border:1px solid ${deuda.hayVencido?'#F3D2D2':'#F0DFC0'};background:${deuda.hayVencido?'#FCEBEB':'#FDF0DB'};color:${deuda.hayVencido?'#791F1F':'#8A5A00'};cursor:pointer;transition:all .15s"><i class="ti ti-cash" style="font-size:11px"></i>Debe ${fmt0(deuda.total)}</button>`:''}
         <div style="margin-left:auto;display:flex;gap:6px">
@@ -4845,13 +4887,30 @@ function renderInm(){
 function construirAlertas(){
   const t=new Date();t.setHours(0,0,0,0);
   const al=[],tol=getTolerancia();
+  // ¿De quién es cada cargo? Las alertas recorren TODOS los cargos del depto, también los de
+  // inquilinos que ya se fueron. Antes salían igual que los del inquilino actual, sin decir de
+  // quién eran, y su botón "Recordar" armaba el recordatorio del inquilino de HOY (o de nadie,
+  // si el depto estaba desocupado), que le decía "no registramos adeudos". Ahora la alerta
+  // nombra a quien ya salió y su botón abre el historial de contratos, donde está su deuda.
+  const ctxInm=new Map();
+  const duenoCargo=p=>{
+    if(!ctxInm.has(p.inmueble_id))ctxInm.set(p.inmueble_id,{vig:contratoVigente(p.inmueble_id),cs:contratosDe(p.inmueble_id)});
+    const {vig,cs}=ctxInm.get(p.inmueble_id);
+    if(vig&&pagoEsDeContrato(p,vig,cs))return{actual:true};
+    const c=(p.contrato_id&&getContrato(p.contrato_id))||cs.find(x=>pagoEsDeContrato(p,x,cs))||null;
+    return{actual:false,nombre:(c&&c.inquilino)||'inquilino anterior'};
+  };
   // Solo cobranza: una devolución de depósito no es un adeudo del inquilino
   pagos.filter(esCobranza).forEach(p=>{
     const v=new Date(p.vencimiento+'T00:00:00'),i=getInm(p.inmueble_id),est=getEstado(p),nm=i?.num||'?',d=dB(t,v);
-    if(est==='vencido'){const dd=Math.abs(d);al.push({type:'venc',icon:'ti-alert-triangle',inmId:i?.id||'',titulo:`${UAB()} ${nm} — ${p.concepto}`,sub:`Retrasado ${dd} día${dd!==1?'s':''} · su día de pago fue el ${fd(p.vencimiento)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'pendiente',pri:0})}
-    else if(est==='tolerancia'){const dd=Math.abs(d);al.push({type:'prox',icon:'ti-hourglass',inmId:i?.id||'',titulo:`${UAB()} ${nm} — ${p.concepto}`,sub:`Pendiente de pago · su día fue hace ${dd} día${dd!==1?'s':''} (${tol} de gracia)`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});}
-    else if(est==='pendiente'&&d===0)al.push({type:'prox',icon:'ti-bell-ringing',inmId:i?.id||'',titulo:`${UAB()} ${nm} — Hoy es día de pago`,sub:`${p.concepto} · vence hoy${tol>0?` · después corren ${tol} días de tolerancia`:''}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});
-    else if(est==='parcial')al.push({type:'parc',icon:'ti-percentage',inmId:i?.id||'',titulo:`${UAB()} ${nm} — pago parcial`,sub:`Abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'restante',pri:2});
+    if(est==='pagado'||(est==='pendiente'&&d!==0))return;
+    const du=duenoCargo(p);
+    const ex=du.actual?'':` · ${du.nombre} (ya salió)`;
+    const accion=du.actual?undefined:'historial';
+    if(est==='vencido'){const dd=Math.abs(d);al.push({type:'venc',icon:'ti-alert-triangle',inmId:i?.id||'',accion,titulo:`${UAB()} ${nm} — ${p.concepto}${ex}`,sub:`Retrasado ${dd} día${dd!==1?'s':''} · su día de pago fue el ${fd(p.vencimiento)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'pendiente',pri:0})}
+    else if(est==='tolerancia'){const dd=Math.abs(d);al.push({type:'prox',icon:'ti-hourglass',inmId:i?.id||'',accion,titulo:`${UAB()} ${nm} — ${p.concepto}${ex}`,sub:`Pendiente de pago · su día fue hace ${dd} día${dd!==1?'s':''} (${tol} de gracia)`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});}
+    else if(est==='pendiente'&&d===0)al.push({type:'prox',icon:'ti-bell-ringing',inmId:i?.id||'',accion,titulo:`${UAB()} ${nm} — Hoy es día de pago${ex}`,sub:`${p.concepto} · vence hoy${tol>0?` · después corren ${tol} días de tolerancia`:''}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'por cobrar',pri:1});
+    else if(est==='parcial')al.push({type:'parc',icon:'ti-percentage',inmId:i?.id||'',accion,titulo:`${UAB()} ${nm} — pago parcial${ex}`,sub:`Abonó ${fmt(p.pagado)} de ${fmt(p.monto)}`,monto:Number(p.monto)-Number(p.pagado),montoSub:'restante',pri:2});
   });
   const mesAct=new Date();
   inmuebles.forEach(inm=>{
@@ -4925,9 +4984,11 @@ function renderAl(){
   }
   el.innerHTML=al.map(a=>{const pal=paleta[a.type]||paleta.prox;return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:14px;transition:box-shadow .18s,transform .18s cubic-bezier(.16,1,.3,1)">
     <div style="width:38px;height:38px;border-radius:10px;background:${pal.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:${pal.anim}"><i class="ti ${a.icon}" style="font-size:18px;color:${pal.c}"></i></div>
-    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${a.titulo}</div><div style="font-size:12.5px;color:#6B6963">${a.sub}</div></div>
+    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${escHTML(a.titulo)}</div><div style="font-size:12.5px;color:#6B6963">${escHTML(a.sub)}</div></div>
     <div style="text-align:right;flex-shrink:0;margin-right:4px"><div style="font-size:14.5px;font-weight:500;font-family:'DM Mono',monospace;color:${pal.mc}">${fmt(a.monto)}</div><div style="font-size:11px;color:#9D9B96">${a.montoSub}</div></div>
-    ${a.accion==='renovar'
+    ${a.accion==='historial'
+      ? `<button onclick="abrirHistorial('${a.inmId}')" data-hs="background:#F1EFE8;color:#1A1917" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:8px;cursor:pointer;flex-shrink:0;transition:all .15s"><i class="ti ti-history" style="font-size:14px"></i>Ver historial</button>`
+      : a.accion==='renovar'
       ? `<button onclick="abrirRenovar('${a.inmId}')" data-hs="background:#7C3AED;color:#fff;border-color:#7C3AED" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #CFC8FB;background:#EDEBFE;color:#4B3F9E;border-radius:8px;cursor:pointer;flex-shrink:0;transition:all .15s"><i class="ti ti-file-certificate" style="font-size:14px"></i>Renovar</button>`
       : `<button onclick="abrirRecordatorio('${a.inmId}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" data-as="transform:scale(.96)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;flex-shrink:0;transition:all .15s"><i class="ti ti-brand-whatsapp" style="font-size:14px"></i>Recordar</button>`}
   </div>`;}).join('');
@@ -4952,7 +5013,7 @@ function repEnPeriodo(iso){
 function renderRep(){
   const lbl=repPer==='mes'?`${MESES[vM]} ${vY}`:repPer==='anio'?String(vY):'Todo el histórico';
   // Facturación y cobranza del periodo, medidas sobre el vencimiento del cargo.
-  const pagosOp=pagos.filter(p=>p.concepto!=='deposito'&&esCobranza(p)&&repEnPeriodo(p.vencimiento));
+  const pagosOp=pagos.filter(p=>p.concepto!=='deposito'&&p.concepto!=='penalizacion_deposito'&&esCobranza(p)&&repEnPeriodo(p.vencimiento));
   const tg=pagosOp.reduce((s,p)=>s+Number(p.monto),0),cg=pagosOp.reduce((s,p)=>s+Number(p.pagado),0),pct=tg>0?Math.round(cg/tg*100):0;
   // Cobranza REAL del periodo: dinero que entró por su fecha de pago, sin importar de qué
   // mes era el cargo. Es el número que se puede comparar contra el banco.
@@ -4961,11 +5022,12 @@ function renderRep(){
   // incumplimiento de contrato. Cuando la retención cubre servicios pendientes no es
   // profit — ese dinero ya estaba facturado arriba y contarlo otra vez lo duplicaba.
   // Y antes se sumaba `totalDep` completo aunque solo se retuviera una parte.
-  let profitDep=0,retServ=0;
-  inmuebles.forEach(inm=>depositosInm(inm).forEach(({r,devuelto})=>{
-    if(devuelto||!r.retenido)return;
-    if(r.motivo==='incumplimiento')profitDep+=r.retenido;else retServ+=r.retenido;
-  }));
+  // Depósitos retenidos que son GANANCIA: solo la penalización que se registró al liquidar
+  // (cargo 'penalizacion_deposito'). Antes se estimaba con el cálculo del momento y bastaba
+  // salir un día antes del término para que todo el depósito contara como ganancia, aunque
+  // nunca se hubiera decidido retenerlo. Lo que cubre adeudos no es ganancia extra: ese
+  // dinero ya está contado en el cargo que pagó.
+  const profitDep=pagos.filter(p=>p.concepto==='penalizacion_deposito'&&repEnPeriodo(p.vencimiento)).reduce((s2,p)=>s2+Number(p.pagado||0),0);
   const rows=inmuebles.map(i=>{
     const vig=contratoVigente(i.id);
     const mp=pagosOp.filter(p=>p.inmueble_id===i.id),e=mp.reduce((s,p)=>s+Number(p.monto),0),co=mp.reduce((s,p)=>s+Number(p.pagado),0),vc=mp.filter(p=>getEstado(p)==='vencido').length;
@@ -4983,10 +5045,10 @@ function renderRep(){
       <div class="sc"><div class="sl" style="color:var(--teal-tx)">Cobrado</div><div class="sv" style="color:var(--teal)">${fmt(cg)}</div><div class="ss">${pct}% eficiencia</div></div>
       <div class="sc"><div class="sl" style="color:var(--red-tx)">Pendiente</div><div class="sv" style="color:var(--red)">${fmt(tg-cg)}</div><div class="ss">por cobrar</div></div>
       <div class="sc"><div class="sl" style="color:var(--teal-tx)"><i class="ti ti-wallet" style="color:var(--teal);font-size:12px"></i>Entró en caja</div><div class="sv" style="color:var(--teal)">${fmt(caja)}</div><div class="ss">por fecha de pago real</div></div>
-      <div class="sc" style="border:1.5px solid var(--red)"><div class="sl" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:12px"></i>Depósitos retenidos</div><div class="sv" style="color:var(--red)">${fmt(profitDep)}</div><div class="ss">penalización por incumplimiento${retServ>0.005?` · ${fmt0(retServ)} cubren servicios`:''}</div></div>
+      <div class="sc" style="border:1.5px solid var(--red)"><div class="sl" style="color:var(--red-tx)"><i class="ti ti-lock" style="color:var(--red);font-size:12px"></i>Depósitos retenidos</div><div class="sv" style="color:var(--red)">${fmt(profitDep)}</div><div class="ss">penalización por salida anticipada · ${lbl}</div></div>
     </div>
     <div class="card"><div class="tw"><table><thead><tr><th>${UAB()}</th><th>Inquilino</th><th>Renta</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th><th>Retrasados</th></tr></thead>
-    <tbody>${rows.map(({i,vig,e,co,p,vc})=>`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i.num}</strong></td><td>${vig?(vig.inquilino||'—'):'<span style="color:var(--tx3);font-style:italic">Desocupado</span>'}</td><td>${vig?fmt(vig.renta):'—'}</td><td>${fmt(e)}</td><td style="color:var(--teal);font-weight:500">${fmt(co)}</td><td style="color:${p>0?'var(--red)':'var(--tx3)'}${p>0?';font-weight:500':''}">${fmt(p)}</td><td>${vc>0?`<span class="badge vencido">${vc} venc.</span>`:`<span style="color:var(--tx3)">—</span>`}</td></tr>`).join('')}</tbody></table></div></div>`;
+    <tbody>${rows.map(({i,vig,e,co,p,vc})=>`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${escHTML(i.num)}</strong></td><td>${vig?escHTML(vig.inquilino||'—'):'<span style="color:var(--tx3);font-style:italic">Desocupado</span>'}</td><td>${vig?fmt(vig.renta):'—'}</td><td>${fmt(e)}</td><td style="color:var(--teal);font-weight:500">${fmt(co)}</td><td style="color:${p>0?'var(--red)':'var(--tx3)'}${p>0?';font-weight:500':''}">${fmt(p)}</td><td>${vc>0?`<span class="badge vencido">${vc} venc.</span>`:`<span style="color:var(--tx3)">—</span>`}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 
 // ═══════════════════════════════════════
@@ -5038,8 +5100,8 @@ function renderRecList(){
     const arg=multi?`'${inm.id}',${JSON.stringify(ids).replace(/"/g,'&quot;')}`:`'${inm.id}'`;
     return`<div class="dep-panel activo" style="cursor:pointer" onclick="abrirRecordatorio(${arg})">
     <div class="dep-header">
-      <div class="dep-av">${multi?ids.length+'×':String(inm.num).slice(0,3)}</div>
-      <div class="dep-info"><strong>${vig?.inquilino||inm.inquilino||'—'} — ${multi?`${ids.length} ${Up()} (${nums})`:`${UAB()} ${inm.num}`}</strong><span>${tel||'Sin teléfono registrado'}${total>0.005?` · debe ${fmt0(total)}`:' · al día'}</span></div>
+      <div class="dep-av">${multi?ids.length+'×':escHTML(String(inm.num).slice(0,3))}</div>
+      <div class="dep-info"><strong>${escHTML(vig?.inquilino||inm.inquilino||'—')} — ${multi?`${ids.length} ${Up()} (${escHTML(nums)})`:`${UAB()} ${escHTML(inm.num)}`}</strong><span>${escHTML(tel||'Sin teléfono registrado')}${total>0.005?` · debe ${fmt0(total)}`:' · al día'}</span></div>
       <button class="btn sm primary"><i class="ti ti-send"></i>Generar</button>
     </div>
   </div>`}).join('');
@@ -5112,7 +5174,7 @@ function abrirRecordatorio(inmId,grupo){
     const iP=getInm(p.inmueble_id)||R.inm;
     const dd=descPago(p,iP),venc=getEstado(p)==='vencido';
     return`<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">
-      <span style="color:${venc?'#791F1F':'#55514A'}">${R.multi?`${UAB()} ${iP.num} · `:''}${(R.multi&&p.concepto==='renta')?'Renta':dd.desc} · ${dd.per}${venc?' (atrasado)':''}</span>
+      <span style="color:${venc?'#791F1F':'#55514A'}">${R.multi?`${UAB()} ${escHTML(iP.num)} · `:''}${(R.multi&&p.concepto==='renta')?'Renta':escHTML(dd.desc)} · ${dd.per}${venc?' (atrasado)':''}</span>
       <strong style="font-family:'DM Mono',monospace;white-space:nowrap">${fmt(saldoPago(p))}</strong></div>`;
   }).join('');
   // Si el mismo inquilino tiene más unidades, se ofrece juntarlas en un solo mensaje.
@@ -5120,26 +5182,26 @@ function abrirRecordatorio(inmId,grupo){
   const banner=(!R.multi&&hermanas.length>1)
     ? `<div style="background:#EDEBFE;border:1px solid #CFC8FB;border-radius:10px;padding:11px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <i class="ti ti-users" style="color:#4B3F9E;font-size:16px"></i>
-        <span style="flex:1;min-width:160px;font-size:12.5px;color:#4B3F9E">${R.inquilino||'Este inquilino'} renta ${hermanas.length} ${Up()} contigo.</span>
+        <span style="flex:1;min-width:160px;font-size:12.5px;color:#4B3F9E">${escHTML(R.inquilino||'Este inquilino')} renta ${hermanas.length} ${Up()} contigo.</span>
         <button onclick="abrirRecordatorio('${inmId}',${JSON.stringify(hermanas).replace(/"/g,'&quot;')})" data-hs="background:#7C3AED;color:#fff;border-color:#7C3AED" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #CFC8FB;background:#fff;color:#4B3F9E;border-radius:7px;cursor:pointer;transition:all .15s"><i class="ti ti-mail-share" style="font-size:13px"></i>Un solo recordatorio por ${UNI().art==='la'?'las':'los'} ${hermanas.length}</button>
       </div>`
     : (R.multi?`<div style="background:#EDEBFE;border:1px solid #CFC8FB;border-radius:10px;padding:11px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <i class="ti ti-users" style="color:#4B3F9E;font-size:16px"></i>
-        <span style="flex:1;min-width:160px;font-size:12.5px;color:#4B3F9E">Recordatorio conjunto por ${R.unidades.length} ${Up()}: ${R.unidades.join(', ')}</span>
-        <button onclick="abrirRecordatorio('${inmId}')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #CFC8FB;background:#fff;color:#4B3F9E;border-radius:7px;cursor:pointer"><i class="ti ti-arrow-back-up" style="font-size:13px"></i>Solo ${UAB()} ${R.inm.num}</button>
+        <span style="flex:1;min-width:160px;font-size:12.5px;color:#4B3F9E">Recordatorio conjunto por ${R.unidades.length} ${Up()}: ${escHTML(R.unidades.join(', '))}</span>
+        <button onclick="abrirRecordatorio('${inmId}')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #CFC8FB;background:#fff;color:#4B3F9E;border-radius:7px;cursor:pointer"><i class="ti ti-arrow-back-up" style="font-size:13px"></i>Solo ${UAB()} ${escHTML(R.inm.num)}</button>
       </div>`:'');
   document.getElementById('rec-preview-wrap').innerHTML=banner+`
     <div class="rec-preview">
-      <div class="rec-logo">${R.empresa}</div>
+      <div class="rec-logo">${escHTML(R.empresa)}</div>
       <div class="rec-title">Recordatorio<br>de pago</div>
-      ${R.inquilino?`<div style="font-size:13px;margin-bottom:.75rem">Para <strong>${R.inquilino}</strong> · ${R.multi?`${R.unidades.length} ${Up()} (${R.unidades.join(', ')})`:`${UAB()} ${R.inm.num}`}</div>`:''}
+      ${R.inquilino?`<div style="font-size:13px;margin-bottom:.75rem">Para <strong>${escHTML(R.inquilino)}</strong> · ${R.multi?`${R.unidades.length} ${Up()} (${escHTML(R.unidades.join(', '))})`:`${UAB()} ${escHTML(R.inm.num)}`}</div>`:''}
       <div class="rec-box">
         <div class="rec-box-title">Transferencia</div>
         <div class="rec-grid">
-          <div class="rec-field"><strong>Beneficiario</strong><span>${R.cobrador||'—'}</span></div>
-          <div class="rec-field"><strong>Cuenta Clabe</strong><span>${R.clabe||'—'}</span></div>
-          <div class="rec-field"><strong>Banco</strong><span>${R.banco||'—'}</span></div>
-          <div class="rec-field"><strong>Cuenta${R.banco?' '+R.banco:''}</strong><span>${R.scott||'—'}</span></div>
+          <div class="rec-field"><strong>Beneficiario</strong><span>${escHTML(R.cobrador||'—')}</span></div>
+          <div class="rec-field"><strong>Cuenta Clabe</strong><span>${escHTML(R.clabe||'—')}</span></div>
+          <div class="rec-field"><strong>Banco</strong><span>${escHTML(R.banco||'—')}</span></div>
+          <div class="rec-field"><strong>Cuenta${R.banco?' '+escHTML(R.banco):''}</strong><span>${escHTML(R.scott||'—')}</span></div>
         </div>
       </div>
       ${d.total>0.005?`<div style="background:${d.hayVencido?'var(--red-bg,#FCEBEB)':'var(--amber-bg)'};color:${d.hayVencido?'#791F1F':'var(--amber-tx)'};border-radius:8px;padding:10px 14px;margin-bottom:1rem;text-align:left">
@@ -5185,45 +5247,55 @@ function calcDepositoContrato(inm,c,cs){
   const totalDep=deps.reduce((s,p)=>s+Number(p.pagado||0),0);   // lo REALMENTE recibido
   const pactado=deps.reduce((s,p)=>s+Number(p.monto||0),0);     // lo pactado en el contrato
   const porCobrar=Math.max(0,pactado-totalDep);
-  const base={totalDep,pactado,porCobrar,serviciosPost:0,motivo:'activo'};
+  const base={deps,totalDep,pactado,porCobrar,adeudos:[],totalAdeudos:0,serviciosPost:0,salidaAnticipada:false,diasAntes:null,motivo:'activo'};
   // Pactado pero nunca cobrado: no hay nada en custodia y no hay nada que devolver.
   if(totalDep<=0.005)return{...base,estado:'por_cobrar',devolver:0,retenido:0,
     msg:`Depósito pactado por ${fmt(pactado)} pero aún no registrado como cobrado. No hay nada en custodia.`,motivo:'por_cobrar'};
   const fterStr=c.fecha_termino_contrato,fsalStr=c.fecha_salida,finiStr=c.fecha_inicio_contrato;
-  const fter=fterStr?new Date(fterStr+'T00:00:00'):null,fsal=fsalStr?new Date(fsalStr+'T00:00:00'):null;
   const aviso=porCobrar>0.005?` Faltan ${fmt(porCobrar)} por cobrar del depósito pactado.`:'';
-  if(!fsal)return{...base,estado:'activo',devolver:0,retenido:0,msg:'Inquilino activo. Sin fecha de salida registrada.'+aviso};
-  const fini=finiStr?new Date(finiStr+'T00:00:00'):null;
-  if(fini&&fsal<fini)return{...base,estado:'retenido',devolver:0,retenido:totalDep,motivo:'incumplimiento',
-    msg:'Salida antes del inicio del contrato. No se devuelve depósito.'+aviso};
-  if(fter&&fsal<fter)return{...base,estado:'retenido',devolver:0,retenido:totalDep,motivo:'incumplimiento',
-    msg:`Salida anticipada (${fd(fsalStr)}). Contrato era hasta ${fd(fterStr)}. No se devuelve depósito por incumplimiento.`+aviso};
-  // Cargos de servicio de ESTE contrato con período posterior al término del contrato.
-  // Se descuenta el SALDO (si el inquilino ya los pagó no hay nada que retener).
+  if(!fsalStr)return{...base,estado:'activo',devolver:0,retenido:0,msg:'Inquilino activo. Sin fecha de salida registrada.'+aviso};
+  // Salida registrada a futuro: sigue viviendo ahí, todavía no hay nada que liquidar.
+  if(fsalStr>hoyISO())return{...base,estado:'activo',devolver:0,retenido:0,msg:`Sale el ${fd(fsalStr)}. Podrás liquidar su depósito a partir de esa fecha.`+aviso};
+  // ── Liquidación al salir ──
+  // Lo que el inquilino dejó debiendo de SU contrato (rentas, servicios, mantenimiento…) se
+  // cubre con su depósito antes de devolverle nada. Antes solo se descontaban los servicios
+  // con período posterior al término del contrato, así que alguien que se iba debiendo dos
+  // rentas aparecía con su depósito completo "por devolver".
+  const adeudos=pagos.filter(p=>p.inmueble_id===inm.id&&esCobranza(p)&&p.concepto!=='deposito'
+      &&saldoPago(p)>0.005&&pagoEsDeContrato(p,c,cs))
+    .sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
+  const totalAdeudos=adeudos.reduce((s2,p)=>s2+saldoPago(p),0);
+  // Servicios viejos, anteriores a los cargos automáticos: no tienen cargo que cobrar, solo el
+  // reparto guardado. Se siguen descontando como antes (los posteriores al término).
   let serviciosPost=0;
-  if(fter){
-    // Un servicio solo puede tocarle a este contrato si su período coincide con los días
-    // que el inquilino realmente ocupó el espacio. Sin este filtro, un recibo emitido
-    // meses después —cuando ya vivía otro inquilino— se le descontaba a quien ya se fue.
+  const tieneCargosSvc=pagos.some(p=>p.servicio_id&&p.inmueble_id===inm.id&&pagoEsDeContrato(p,c,cs));
+  if(fterStr&&!tieneCargosSvc){
     const oc=ocupacionEfectiva(c,cs);
-    const tocaAlContrato=s=>{
-      if(!s||s.periodo_ini<=fterStr)return false;               // no es posterior al término
-      if(oc.ini&&s.periodo_fin<oc.ini)return false;              // terminó antes de que entrara
-      if(oc.fin&&s.periodo_ini>oc.fin)return false;              // empezó después de que salió
+    const tocaAlContrato=sv=>{
+      if(!sv||sv.periodo_ini<=fterStr)return false;
+      if(oc.ini&&sv.periodo_fin<oc.ini)return false;
+      if(oc.fin&&sv.periodo_ini>oc.fin)return false;
       return true;
     };
-    const ps=pagos.filter(p=>p.servicio_id&&p.inmueble_id===inm.id&&pagoEsDeContrato(p,c,cs));
-    if(ps.length){
-      ps.forEach(p=>{if(tocaAlContrato(servicios.find(x=>x.id===p.servicio_id)))serviciosPost+=saldoPago(p);});
-    }else{
-      // Servicios anteriores a los pagos automáticos: se cae al detalle guardado
-      svcDet.forEach(d=>{if(d.inmueble_id!==inm.id||d.es_administracion)return;if(tocaAlContrato(servicios.find(x=>x.id===d.servicio_id)))serviciosPost+=Number(d.monto);});
-    }
+    svcDet.forEach(d=>{if(d.inmueble_id!==inm.id||d.es_administracion)return;if(tocaAlContrato(servicios.find(x=>x.id===d.servicio_id)))serviciosPost+=Number(d.monto);});
   }
-  serviciosPost=Math.min(serviciosPost,totalDep);
-  const devolver=Math.max(0,totalDep-serviciosPost);
-  return{...base,serviciosPost,estado:devolver>0?'parcial':'retenido',devolver,retenido:serviciosPost,motivo:'servicios',
-    msg:`Contrato cumplido. Depósito recibido: ${fmt(totalDep)} − Servicios post-contrato: ${fmt(serviciosPost)} = A devolver: ${fmt(devolver)}`+aviso};
+  const descontar=Math.min(totalDep,totalAdeudos+serviciosPost);
+  const devolver=Math.max(0,totalDep-descontar);
+  // Salida anticipada: ya NO se retiene el 100% en automático (bastaba salir un día antes del
+  // término). Se avisa, y al liquidar el administrador decide si devuelve o retiene el resto
+  // como penalización, según lo que diga su contrato.
+  const salidaAnticipada=!!((finiStr&&fsalStr<finiStr)||(fterStr&&fsalStr<fterStr));
+  const diasAntes=(fterStr&&fsalStr<fterStr)?dB(new Date(fsalStr+'T00:00:00'),new Date(fterStr+'T00:00:00')):null;
+  const partes=[`Salió el ${fd(fsalStr)}. Depósito recibido ${fmt(totalDep)}`];
+  if(totalAdeudos>0.005)partes.push(`− lo que dejó debiendo ${fmt(Math.min(totalAdeudos,totalDep))} (${adeudos.length} cargo${adeudos.length===1?'':'s'})`);
+  if(serviciosPost>0.005)partes.push(`− servicios posteriores al contrato ${fmt(Math.min(serviciosPost,totalDep))}`);
+  let msg=partes.join(' ')+` = a devolver ${fmt(devolver)}.`;
+  if(totalAdeudos+serviciosPost>totalDep+0.005)msg+=` El depósito no alcanza: quedan ${fmt(totalAdeudos+serviciosPost-totalDep)} por cobrarle.`;
+  if(salidaAnticipada&&devolver>0.005)msg+=diasAntes!=null
+    ?` Salió ${diasAntes} día${diasAntes===1?'':'s'} antes del término (${fd(fterStr)}): si tu contrato lo establece, puedes retener ese resto como penalización al liquidar.`
+    :' Salió antes del inicio del contrato: si tu contrato lo establece, puedes retener el depósito como penalización al liquidar.';
+  return{...base,adeudos,totalAdeudos,serviciosPost,salidaAnticipada,diasAntes,
+    estado:devolver>0.005?'parcial':'retenido',devolver,retenido:descontar,motivo:'liquidacion',msg:msg+aviso};
 }
 // Devoluciones ya registradas de ESTE contrato. Antes se preguntaba por inmueble, así que
 // al devolver el de un inquilino el del siguiente nacía marcado como "Devuelto".
@@ -5255,16 +5327,19 @@ function renderDepositos(){
   const fichas=[];inmuebles.forEach(inm=>fichas.push(...depositosInm(inm)));
   if(!fichas.length){stats.innerHTML='';el.innerHTML=`<div class="empty"><i class="ti ti-safe"></i><p>Sin depósitos registrados.<br>Registra un pago con concepto "Depósito".</p></div>`;return;}
   let totalDeps=0,totalRet=0,totalDev=0,totalPorCobrar=0;
+  // Liquidable = ya salió, recibió depósito y todavía no se liquida (con o sin saldo a devolver)
+  const liquidable=(r,devuelto)=>!devuelto&&(r.estado==='parcial'||r.estado==='retenido');
   const CH={
     parcial:{accent:'#BA7517',chipBg:'#FAEEDA',chipC:'#633806',chipIco:'ti-corner-down-left',chipLbl:'Por devolver',msgBg:'#FAEEDA',msgC:'#633806',msgIco:'ti-info-circle'},
-    retenido:{accent:'#E24B4A',chipBg:'#FCEBEB',chipC:'#791F1F',chipIco:'ti-lock',chipLbl:'Retenido',msgBg:'#FCEBEB',msgC:'#791F1F',msgIco:'ti-alert-triangle'},
+    retenido:{accent:'#E24B4A',chipBg:'#FCEBEB',chipC:'#791F1F',chipIco:'ti-lock',chipLbl:'Cubre adeudos',msgBg:'#FCEBEB',msgC:'#791F1F',msgIco:'ti-alert-triangle'},
     activo:{accent:'#378ADD',chipBg:'#E6F1FB',chipC:'#0C447C',chipIco:'ti-clock',chipLbl:'Activo',msgBg:'#E6F1FB',msgC:'#0C447C',msgIco:'ti-info-circle'},
     por_cobrar:{accent:'#9D9B96',chipBg:'#F1EFE8',chipC:'#55514A',chipIco:'ti-hourglass',chipLbl:'Sin cobrar',msgBg:'#F1EFE8',msgC:'#55514A',msgIco:'ti-alert-circle'},
-    devuelto:{accent:'#1D9E75',chipBg:'#E1F5EE',chipC:'#085041',chipIco:'ti-check',chipLbl:'Devuelto',msgBg:'#E1F5EE',msgC:'#085041',msgIco:'ti-check'}
+    devuelto:{accent:'#1D9E75',chipBg:'#E1F5EE',chipC:'#085041',chipIco:'ti-check',chipLbl:'Liquidado',msgBg:'#E1F5EE',msgC:'#085041',msgIco:'ti-check'}
   };
   const panels=fichas.map(({inm,c,cs,r,devuelto})=>{
-    totalDeps+=r.totalDep;totalPorCobrar+=r.porCobrar;
-    if(!devuelto){if(r.estado==='retenido')totalRet+=r.retenido;if(r.estado==='parcial')totalDev+=r.devolver;}
+    // "En custodia" es lo que sigue en tus manos: un depósito ya liquidado no cuenta.
+    if(!devuelto){totalDeps+=r.totalDep;totalPorCobrar+=r.porCobrar;}
+    if(liquidable(r,devuelto)){totalRet+=r.retenido;totalDev+=r.devolver;}
     const est=devuelto?'devuelto':r.estado;const ch=CH[est]||CH.activo;
     const et=etiquetaContrato(inm.id,c.id);
     const contrato=c.fecha_inicio_contrato?`Contrato ${fd(c.fecha_inicio_contrato)} — ${c.fecha_termino_contrato?fd(c.fecha_termino_contrato):'—'}${c.fecha_salida?` · salida ${fd(c.fecha_salida)}`:''}`:'Sin fechas de contrato';
@@ -5272,27 +5347,27 @@ function renderDepositos(){
     // el cálculo daría hoy — si algo cambió después, el dato histórico es el que manda.
     const devs=devuelto?devolucionesDeContrato(inm,c,cs):[];
     const montoDevuelto=devs.reduce((s,p)=>s+Number(p.monto||0),0);
-    const msg=devuelto?`Depósito devuelto: ${fmt(montoDevuelto)} el ${fd(devs[0].fecha_pago||devs[0].vencimiento)}.`:r.msg;
-    const accionable=r.estado==='parcial'&&r.devolver>0&&!devuelto;
+    const msg=devuelto?`Liquidado el ${fd(devs[0].fecha_pago||devs[0].vencimiento)}${montoDevuelto>0.005?` · se devolvieron ${fmt(montoDevuelto)}`:''}. ${escHTML(devs[0].notas||'')}`:r.msg;
+    const accionable=liquidable(r,devuelto);
     const puedeRecordar=!estaDesocupado(inm.id)&&!!contratoVigente(inm.id)&&(contratoVigente(inm.id).id||null)===(c.id||null);
     return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-left:4px solid ${ch.accent};border-radius:12px;padding:18px 22px;box-shadow:0 1px 3px rgba(0,0,0,.05);opacity:${est==='devuelto'?'.72':'1'};transition:box-shadow .18s">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-        <div style="width:40px;height:40px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${inm.num}-${et}</div>
-        <div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:600">${c.inquilino||'—'}</div><div style="font-size:12px;color:#9D9B96">${contrato}</div></div>
+        <div style="width:40px;height:40px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${escHTML(inm.num)}-${et}</div>
+        <div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:600">${escHTML(c.inquilino||'—')}</div><div style="font-size:12px;color:#9D9B96">${contrato}</div></div>
         <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:${ch.chipBg};color:${ch.chipC}"><i class="ti ${ch.chipIco}" style="font-size:11px"></i>${ch.chipLbl}</span>
-        <div style="text-align:right;min-width:90px"><div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(r.totalDep)}</div><div style="font-size:10.5px;color:#9D9B96">${r.porCobrar>0.005?`de ${fmt0(r.pactado)} pactado`:'depósito'}</div></div>
+        <div style="text-align:right;min-width:90px"><div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(devuelto?montoDevuelto:r.totalDep)}</div><div style="font-size:10.5px;color:#9D9B96">${devuelto?'devuelto':r.porCobrar>0.005?`de ${fmt0(r.pactado)} pactado`:'depósito'}</div></div>
       </div>
       <div style="background:${ch.msgBg};color:${ch.msgC};border-radius:9px;padding:10px 14px;font-size:12.5px;display:flex;align-items:flex-start;gap:8px;line-height:1.5"><i class="ti ${ch.msgIco}" style="font-size:15px;margin-top:1px;flex-shrink:0"></i><span>${msg}</span></div>
       ${accionable?`<div style="display:flex;gap:8px;margin-top:12px">
-        <button onclick="abrirDevolucion('${inm.id}','${c.id||''}')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-check" style="font-size:14px"></i>Confirmar devolución de ${fmt(r.devolver)}</button>
+        <button onclick="abrirDevolucion('${inm.id}','${c.id||''}')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-check" style="font-size:14px"></i>${r.devolver>0.005?`Liquidar · devolver ${fmt(r.devolver)}`:'Liquidar · aplicar a lo que debe'}</button>
         ${puedeRecordar?`<button onclick="abrirRecordatorio('${inm.id}')" data-hs="background:#F1EFE8;color:#1A1917" style="display:inline-flex;align-items:center;gap:6px;padding:8px 15px;font-size:12.5px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#6B6963;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-send" style="font-size:14px"></i>Recordatorio</button>`:''}
       </div>`:''}
     </div>`;
   }).join('');
   stats.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-    <div style="background:#1A1917;border-radius:12px;padding:16px 20px"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">En custodia</div><div style="font-size:22px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt0(totalDeps)}</div><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">${fichas.length} contrato${fichas.length===1?'':'s'} con depósito${totalPorCobrar>0.005?` · ${fmt0(totalPorCobrar)} sin cobrar`:''}</div></div>
-    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-corner-down-left" style="color:#1D9E75;font-size:13px"></i>Por devolver</div><div style="font-size:22px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace">${fmt0(totalDev)}</div><div style="font-size:11px;color:#9D9B96;margin-top:2px">contrato cumplido</div></div>
-    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-lock" style="color:#E24B4A;font-size:13px"></i>Retenido</div><div style="font-size:22px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${fmt0(totalRet)}</div><div style="font-size:11px;color:#9D9B96">por incumplimiento o cargos pendientes</div></div>
+    <div style="background:#1A1917;border-radius:12px;padding:16px 20px"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">En custodia</div><div style="font-size:22px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt0(totalDeps)}</div><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">${fichas.filter(f=>!f.devuelto).length} contrato${fichas.filter(f=>!f.devuelto).length===1?'':'s'} sin liquidar${totalPorCobrar>0.005?` · ${fmt0(totalPorCobrar)} sin cobrar`:''}</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#085041;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-corner-down-left" style="color:#1D9E75;font-size:13px"></i>Por devolver</div><div style="font-size:22px;font-weight:500;color:#1D9E75;font-family:'DM Mono',monospace">${fmt0(totalDev)}</div><div style="font-size:11px;color:#9D9B96;margin-top:2px">de quienes ya salieron, por liquidar</div></div>
+    <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><div style="font-size:11px;font-weight:600;color:#791F1F;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px"><i class="ti ti-lock" style="color:#E24B4A;font-size:13px"></i>Cubre adeudos</div><div style="font-size:22px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace">${fmt0(totalRet)}</div><div style="font-size:11px;color:#9D9B96">lo que dejaron debiendo, se cobra del depósito</div></div>
   </div>`;
   el.innerHTML=panels||`<div style="background:#FFFFFF;border:1px dashed #CBC9C0;border-radius:14px;padding:56px 32px;text-align:center;color:#9D9B96"><i class="ti ti-shield-lock" style="font-size:30px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:15px;font-weight:600;color:#1A1917;margin-bottom:4px">Sin depósitos con salida registrada</div><div style="font-size:13px">Cuando un inquilino registre fecha de salida aparecerá aquí su liquidación.</div></div>`;
   mo(el);
@@ -5310,26 +5385,85 @@ function abrirDevolucion(inmId,cId){
   const ctx=ctxDevolucion(inmId,cId||null);if(!ctx)return;
   devDepInmId=inmId;devDepContratoId=ctx.c.id||null;
   const {inm,c,r}=ctx;
+  const lineaAdeudo=p=>{const dd=descPago(p,inm);return`<div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px"><span>${escHTML(dd.desc)} · ${dd.per}</span><span style="font-family:'DM Mono',monospace">${fmt(saldoPago(p))}</span></div>`};
   document.getElementById('m-dev-dep-body').innerHTML=`
-    <strong>${UAB()} ${inm.num}-${etiquetaContrato(inm.id,c.id)} — ${c.inquilino||'—'}</strong><br><br>
+    <strong>${UAB()} ${escHTML(inm.num)}-${etiquetaContrato(inm.id,c.id)} — ${escHTML(c.inquilino||'—')}</strong><br><br>
     Depósito recibido: <strong>${fmt(r.totalDep)}</strong><br>
     ${r.porCobrar>0.005?`<span style="color:var(--tx3)">(de ${fmt(r.pactado)} pactados; ${fmt(r.porCobrar)} nunca se cobraron)</span><br>`:''}
-    Servicios post-contrato: <strong style="color:var(--red)">− ${fmt(r.serviciosPost)}</strong><br>
-    <strong style="font-size:16px;color:var(--teal)">A devolver: ${fmt(r.devolver)}</strong><br><br>
-    <span style="color:var(--tx3)">Esto registrará la devolución en el historial de pagos de este contrato.</span>`;
+    ${r.adeudos.length?`<div style="margin:8px 0">Lo que dejó debiendo (se cobra del depósito):<div style="background:#FCEBEB;border-radius:9px;padding:8px 12px;margin-top:4px;color:#791F1F">${r.adeudos.map(lineaAdeudo).join('')}</div></div>`:''}
+    ${r.serviciosPost>0.005?`Servicios posteriores al contrato: <strong style="color:var(--red)">− ${fmt(r.serviciosPost)}</strong><br>`:''}
+    <strong style="font-size:16px;color:var(--teal)">A devolver: ${fmt(r.devolver)}</strong><br>
+    ${r.totalAdeudos+r.serviciosPost>r.totalDep+0.005?`<span style="color:#791F1F">El depósito no alcanza: quedan ${fmt(r.totalAdeudos+r.serviciosPost-r.totalDep)} por cobrarle.</span><br>`:''}
+    ${r.salidaAnticipada&&r.devolver>0.005?`<div style="background:#FDF0DB;color:#8A5A00;border-radius:9px;padding:9px 12px;margin-top:8px">${r.diasAntes!=null?`Salió ${r.diasAntes} día${r.diasAntes===1?'':'s'} antes del término del contrato.`:'Salió antes del inicio del contrato.'} Si tu contrato lo establece, puedes retener los ${fmt(r.devolver)} como penalización en lugar de devolverlos.</div>`:''}
+    <br><span style="color:var(--tx3)">Los cargos que cubre el depósito quedan cobrados, y la liquidación queda registrada en el historial de este contrato.</span>`;
+  const btnBase='class="btn teal"';
+  document.getElementById('m-dev-dep-mf').innerHTML=`<button class="btn" onclick="closeM('m-dev-dep')">Cancelar</button>`
+    +(r.salidaAnticipada&&r.devolver>0.005?`<button class="btn" onclick="confirmarDevolucion('retener')"><i class="ti ti-lock"></i>Retener ${fmt(r.devolver)}</button>`:'')
+    +`<button ${btnBase} onclick="confirmarDevolucion('devolver')"><i class="ti ti-check"></i>${r.devolver>0.005?`Devolver ${fmt(r.devolver)}`:'Aplicar a lo que debe'}</button>`;
   openM('m-dev-dep');
 }
-async function confirmarDevolucion(){
+// Liquidar = UN solo envío a la base (upsert de todas las filas a la vez), para que nunca
+// quede a medias. El depósito se "reclasifica": la parte que cubre adeudos deja de ser
+// depósito y pasa a ser el pago de esos cargos, con la fecha en que de verdad entró el dinero.
+// Así no se cuenta dos veces en caja ni en la cobranza, y los cargos dejan de salir como
+// adeudo en alertas y recordatorios. Si se retiene como penalización, esa parte queda como un
+// cargo 'penalizacion_deposito' cobrado (es ingreso tuyo). Al final se registra la
+// liquidación como 'devolucion_deposito' (con monto 0 si no se devolvió nada).
+async function confirmarDevolucion(modo){
   const ctx=ctxDevolucion(devDepInmId,devDepContratoId);if(!ctx)return;
-  const {c,r}=ctx;
-  if(r.devolver<=0.005){toast('No hay saldo por devolver en este contrato','ti-alert-triangle');return}
-  const d={workspace_id:CW.id,inmueble_id:devDepInmId,contrato_id:c.id||null,concepto:'devolucion_deposito',monto:r.devolver,pagado:r.devolver,vencimiento:hoyISO(),fecha_pago:hoyISO(),notas:`Devolución de depósito a ${c.inquilino||'—'}. Retenido por servicios post-contrato: ${fmt(r.serviciosPost)}`};
-  let {data:savedPago,error}=await sb.from('pagos').insert(d).select().single();
-  // Compat: si la columna contrato_id aún no existe, guarda sin ella
-  if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_c,...d2}=d;({data:savedPago,error}=await sb.from('pagos').insert(d2).select().single());}
-  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
-  pagos.unshift(savedPago);closeM('m-dev-dep');toast('Devolución registrada correctamente');
-  devDepContratoId=null;refresh();
+  const {inm,c,r}=ctx;
+  if(!(r.estado==='parcial'||r.estado==='retenido')){toast('Este depósito todavía no se puede liquidar','ti-alert-triangle');return}
+  const retener=modo==='retener'&&r.salidaAnticipada&&r.devolver>0.005;
+  const hoy=hoyISO();
+  const depsCobrados=r.deps.filter(p=>Number(p.pagado)>0.005);
+  const fechaDinero=(depsCobrados[0]&&(depsCobrados[0].fecha_pago||depsCobrados[0].vencimiento))||hoy;
+  const filas=[];
+  // 1) Adeudos cubiertos por el depósito (del más viejo al más nuevo)
+  let disponible=r.totalDep,aplicadoAdeudos=0;
+  for(const p of r.adeudos){
+    if(disponible<=0.005)break;
+    const aplicar=Math.min(disponible,saldoPago(p));
+    filas.push({...p,pagado:Number(p.pagado||0)+aplicar,fecha_pago:p.fecha_pago||fechaDinero,
+      notas:[p.notas,`${fdS(hoy)} · ${fmt(aplicar)} cubiertos con el depósito en garantía al liquidar`].filter(Boolean).join('\n')});
+    disponible-=aplicar;aplicadoAdeudos+=aplicar;
+  }
+  // Servicios viejos sin cargo: se descuentan, no hay cargo que marcar
+  const aplicadoSvc=Math.min(disponible,r.serviciosPost);disponible-=aplicadoSvc;
+  const penalizacion=retener?disponible:0;
+  const devuelto=retener?0:Math.max(0,disponible);
+  // 2) El depósito baja en lo que se reclasificó (adeudos + penalización). Lo devuelto y los
+  //    servicios viejos se quedan como depósito: lo primero sale con la devolución y lo segundo
+  //    es el descuento que siempre se hizo.
+  let quitar=aplicadoAdeudos+penalizacion;
+  const destinos=[aplicadoAdeudos>0.005?'cubrir lo que debía':'',penalizacion>0.005?'penalización':''].filter(Boolean).join(' y ');
+  for(const d of depsCobrados){
+    if(quitar<=0.005)break;
+    const q=Math.min(quitar,Number(d.pagado));
+    filas.push({...d,pagado:Number(d.pagado)-q,monto:Math.max(0,Number(d.monto)-q),
+      notas:[d.notas,`${fdS(hoy)} · al liquidar, ${fmt(q)} del depósito se aplicaron a ${destinos}`].filter(Boolean).join('\n')});
+    quitar-=q;
+  }
+  const plantilla=pagos[0]||{};
+  const nueva=(campos)=>{const o={};Object.keys(plantilla).forEach(k=>o[k]=null);
+    return Object.assign(o,{id:(crypto.randomUUID?crypto.randomUUID():undefined),workspace_id:CW.id,inmueble_id:inm.id,contrato_id:c.id||null,
+      pagado:0,monto:0,omitido:false,origen:'manual',servicio_id:null,created_at:new Date().toISOString()},campos)};
+  // 3) Penalización retenida (si se eligió)
+  if(penalizacion>0.005)filas.push(nueva({concepto:'penalizacion_deposito',monto:penalizacion,pagado:penalizacion,
+    vencimiento:c.fecha_salida||hoy,fecha_pago:fechaDinero,
+    notas:`Depósito retenido como penalización por salida anticipada (${c.inquilino||'—'})`}));
+  // 4) La liquidación misma
+  const resumen=[aplicadoAdeudos>0.005?`${fmt(aplicadoAdeudos)} cubrieron lo que debía`:'',aplicadoSvc>0.005?`${fmt(aplicadoSvc)} cubrieron servicios posteriores`:'',
+    penalizacion>0.005?`${fmt(penalizacion)} retenidos como penalización`:'',devuelto>0.005?`${fmt(devuelto)} devueltos`:''].filter(Boolean).join(' · ');
+  filas.push(nueva({concepto:'devolucion_deposito',monto:devuelto,pagado:devuelto,vencimiento:hoy,fecha_pago:hoy,
+    notas:`Liquidación del depósito de ${c.inquilino||'—'}: ${resumen||'sin movimientos'}.`}));
+  // Columnas que la base todavía no tenga (compat con migraciones viejas) se quitan
+  const limpias=filas.map(f=>{const o={...f};Object.keys(o).forEach(k=>{if(o[k]===undefined)delete o[k]});return o});
+  const {data,error}=await sb.from('pagos').upsert(limpias).select();
+  if(error){toast('No se pudo liquidar (no se cambió nada): '+error.message,'ti-alert-triangle');return}
+  (data||[]).forEach(row=>{const k=pagos.findIndex(x=>x.id===row.id);if(k>=0)pagos[k]=row;else pagos.unshift(row)});
+  closeM('m-dev-dep');devDepContratoId=null;
+  toast(`Depósito liquidado · ${resumen||'sin movimientos'}`);
+  refresh();
 }
 
 // ═══════════════════════════════════════
@@ -5352,11 +5486,11 @@ function renderSvcList(){
       const det=svcDet.filter(d=>d.servicio_id===s.id&&!d.es_administracion&&Number(d.ponderacion)>0).sort((a,b)=>{const ia=getInm(a.inmueble_id),ib=getInm(b.inmueble_id);return cmpNum(ia?.num,ib?.num)});
       const co=CO[s.tipo]||CO.agua;const maxP=Math.max(1,...det.map(d=>Number(d.ponderacion)||0));const pondTotal=det.reduce((x,d)=>x+(Number(d.ponderacion)||0),0);
       const enGrafica=svcSeleccion===null||svcSeleccion.has(s.id);
-      const filas=det.map((d,fi)=>{const i=getInm(d.inmueble_id);const pct=Math.round((Number(d.ponderacion)||0)/maxP*100);return`<div><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:3px"><span style="font-family:'DM Mono',monospace;font-weight:500">${i?.num||'?'} <span style="font-family:'DM Sans',sans-serif;color:#9D9B96;font-weight:400">· ${d.dias_uso} días × ${d.personas} pers.</span></span><span style="font-family:'DM Mono',monospace;color:#1A1917">${fmt(d.monto)}</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${co.c};opacity:.85;width:${pct}%;transform-origin:left;animation:growBar .75s cubic-bezier(.16,1,.3,1) ${(0.1+fi*0.07).toFixed(2)}s both"></div></div></div>`}).join('');
+      const filas=det.map((d,fi)=>{const i=getInm(d.inmueble_id);const pct=Math.round((Number(d.ponderacion)||0)/maxP*100);return`<div><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:3px"><span style="font-family:'DM Mono',monospace;font-weight:500">${escHTML(i?.num||'?')} <span style="font-family:'DM Sans',sans-serif;color:#9D9B96;font-weight:400">· ${d.dias_uso} días × ${d.personas} pers.</span></span><span style="font-family:'DM Mono',monospace;color:#1A1917">${fmt(d.monto)}</span></div><div style="height:6px;background:#F1EFE8;border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${co.c};opacity:.85;width:${pct}%;transform-origin:left;animation:growBar .75s cubic-bezier(.16,1,.3,1) ${(0.1+fi*0.07).toFixed(2)}s both"></div></div></div>`}).join('');
       return`<div data-hs="transform:translateY(-2px);box-shadow:0 8px 26px rgba(26,25,23,.08)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:20px 22px;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
           <div style="width:34px;height:34px;border-radius:9px;background:${co.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${co.ico}" style="font-size:17px;color:${co.c}"></i></div>
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">${s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1)}</div><div style="font-size:11.5px;color:#9D9B96">${fdS(s.periodo_ini)} — ${fdS(s.periodo_fin)} · ${s.dias_servicio||''} días</div></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">${escHTML(s.tipo.charAt(0).toUpperCase()+s.tipo.slice(1))}</div><div style="font-size:11.5px;color:#9D9B96">${fdS(s.periodo_ini)} — ${fdS(s.periodo_fin)} · ${s.dias_servicio||''} días</div></div>
           <div style="font-size:17px;font-weight:500;font-family:'DM Mono',monospace">${fmt0(s.total)}</div>
         </div>
         <div style="display:grid;gap:9px;margin-top:16px">${filas}</div>
@@ -5611,8 +5745,8 @@ function calcSvcRows(){
     // El vigente no puede facturar días que ya se le cobraron a un inquilino que salió
     const topeDias=Math.max(0,diasTotal-(partes?partes.salidos.reduce((a,s)=>a+s.dias,0):0));
     return`<tr id="sv-row-${idx}">
-      <td><strong style="font-family:'DM Mono',monospace;font-size:12px">${inm.num}</strong></td>
-      <td style="font-size:12px">${(vig.c?.inquilino||inm.inquilino||'').split(' ')[0]}${vig.motivo?`<br><span style="font-size:10px;color:var(--tx3)">${vig.motivo}</span>`:''}</td>
+      <td><strong style="font-family:'DM Mono',monospace;font-size:12px">${escHTML(inm.num)}</strong></td>
+      <td style="font-size:12px">${escHTML((vig.c?.inquilino||inm.inquilino||'').split(' ')[0])}${vig.motivo?`<br><span style="font-size:10px;color:var(--tx3)">${vig.motivo}</span>`:''}</td>
       <td><input type="checkbox" id="sv-aplica-${idx}" checked onchange="recalcSvc(${idx},'${inm.id}')" style="width:18px;height:18px;cursor:pointer"></td>
       <td><input type="number" id="sv-dias-${idx}" value="${Math.min(vig.dias,topeDias)}" min="0" max="${topeDias}" style="width:70px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
       <td><input type="number" id="sv-pers-${idx}" value="${vig.pers||1}" min="0" max="20" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit" oninput="recalcSvc(${idx},'${inm.id}')"></td>
@@ -5730,8 +5864,8 @@ function recalcAllSvc(){
     subRows.slice().reverse().forEach(s=>{
       const tr=document.createElement('tr');
       tr.className='sv-subsi-row';tr.style.background='#F7F5EF';
-      tr.innerHTML=`<td style="padding:5px 14px 5px 22px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx3)">${s.num}</td>
-        <td colspan="4" style="padding:5px 14px;font-size:11px;color:var(--tx3)"><i class="ti ti-corner-down-right" style="font-size:11px;vertical-align:-1px;opacity:.55"></i> ${s.motivo}</td>
+      tr.innerHTML=`<td style="padding:5px 14px 5px 22px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx3)">${escHTML(s.num)}</td>
+        <td colspan="4" style="padding:5px 14px;font-size:11px;color:var(--tx3)"><i class="ti ti-corner-down-right" style="font-size:11px;vertical-align:-1px;opacity:.55"></i> ${escHTML(s.motivo)}</td>
         <td style="padding:5px 14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx3)">${s.pond}</td>
         <td style="padding:5px 14px;font-size:11px;color:var(--tx3)">${Math.round(s.pct*100)}%</td>
         <td style="padding:5px 14px;font-size:11px;color:var(--tx3)">${fmt(s.monto)}</td>`;
@@ -5746,8 +5880,8 @@ function recalcAllSvc(){
     salidos.slice().reverse().forEach(s=>{
       const tr=document.createElement('tr');
       tr.className='sv-salido-row';tr.style.background='#FDF6EC';
-      tr.innerHTML=`<td><strong style="font-family:'DM Mono',monospace;font-size:12px">${s.inm.num}</strong></td>
-        <td style="font-size:12px">${(s.nombre||'—').split(' ')[0]}<br><span style="font-size:10px;color:var(--tx3)">Salió el ${s.fsalStr?fdS(s.fsalStr):'—'}</span></td>
+      tr.innerHTML=`<td><strong style="font-family:'DM Mono',monospace;font-size:12px">${escHTML(s.inm.num)}</strong></td>
+        <td style="font-size:12px">${escHTML((s.nombre||'—').split(' ')[0])}<br><span style="font-size:10px;color:var(--tx3)">Salió el ${s.fsalStr?fdS(s.fsalStr):'—'}</span></td>
         <td style="color:var(--tx3);font-size:11px">fijo</td>
         <td style="font-size:13px;padding-left:14px">${s.diasUso}</td>
         <td style="font-size:13px;padding-left:14px">${s.pers}</td>
@@ -5881,7 +6015,7 @@ async function verServicio(id){
   const adm=svcDet.find(d=>d.servicio_id===id&&d.es_administracion);
   const sumPond=det.reduce((s,d)=>s+Number(d.ponderacion),0)+(adm?Number(adm.ponderacion):0);
   const iconos={agua:'ti-droplet',luz:'ti-bolt',gas:'ti-flame'};
-  document.getElementById('msv-ttl').innerHTML=`<i class="ti ${iconos[svc.tipo]}" style="color:var(--amber)"></i>${svc.tipo.charAt(0).toUpperCase()+svc.tipo.slice(1)} — ${fmt(svc.total)}`;
+  document.getElementById('msv-ttl').innerHTML=`<i class="ti ${iconos[svc.tipo]}" style="color:var(--amber)"></i>${escHTML(svc.tipo.charAt(0).toUpperCase()+svc.tipo.slice(1))} — ${fmt(svc.total)}`;
   document.getElementById('msv-body').innerHTML=`
     <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;align-items:flex-end">
       <div><span style="font-size:12px;color:var(--tx2)">Período</span><br><strong>${fd(svc.periodo_ini)} al ${fd(svc.periodo_fin)}</strong></div>
@@ -5890,7 +6024,7 @@ async function verServicio(id){
       <button onclick="generarSvcPNG('${svc.id}')" data-hs="background:#1D9E75;color:#fff;border-color:#1D9E75" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:600;font-family:inherit;border:1px solid #BFE8D8;background:#E1F5EE;color:#085041;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-photo-down" style="font-size:14px"></i>Imagen para WhatsApp</button>
     </div>
     <div class="card"><div class="tw"><table><thead><tr><th>${UAB()}</th><th>Inquilino</th><th>Días</th><th>Personas</th><th>Ponderación</th><th>%</th><th>$ Pagar</th></tr></thead>
-    <tbody>${det.filter(d=>Number(d.ponderacion)>0).map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${i?.num||'?'}</strong></td><td style="font-size:12px">${d.inquilino||i?.inquilino||'—'}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((Number(d.ponderacion)/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
+    <tbody>${det.filter(d=>Number(d.ponderacion)>0).map(d=>{const i=getInm(d.inmueble_id);return`<tr><td><strong style="font-family:'DM Mono',monospace;font-size:12px">${escHTML(i?.num||'?')}</strong></td><td style="font-size:12px">${escHTML(d.inquilino||i?.inquilino||'—')}</td><td>${d.dias_uso}</td><td>${d.personas}</td><td>${d.ponderacion}</td><td>${Math.round((Number(d.ponderacion)/(sumPond||1))*100)}%</td><td style="font-weight:600">${fmt(d.monto)}</td></tr>`}).join('')}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px">${SUB_LBL}</td><td style="font-weight:600;padding:10px 14px">${adm?adm.ponderacion:0}</td><td style="font-weight:600;padding:10px 14px">${adm?Math.round(Number(adm.porcentaje)*100):0}%</td><td style="font-weight:600;padding:10px 14px">${fmt(adm?adm.monto:0)}</td></tr>
     ${Number(svc.apoyo_admin)>0?`<tr style="background:var(--sf2)"><td colspan="4" style="font-weight:600;padding:10px 14px;color:#1D9E75"><i class="ti ti-heart-handshake"></i> Apoyo de administración</td><td style="font-weight:600;padding:10px 14px">—</td><td style="font-weight:600;padding:10px 14px">${svc.total>0?Math.round(Number(svc.apoyo_admin)/svc.total*100):0}%</td><td style="font-weight:600;padding:10px 14px;color:#1D9E75">${fmt(svc.apoyo_admin)}</td></tr>`:''}
     <tr style="background:var(--sf2)"><td colspan="4" style="font-weight:700;padding:10px 14px">TOTAL</td><td style="font-weight:700;padding:10px 14px">${sumPond}</td><td style="font-weight:700;padding:10px 14px">100%</td><td style="font-weight:700;padding:10px 14px">${fmt(svc.total)}</td></tr>
@@ -5930,8 +6064,8 @@ async function generarSvcPNG(svcId){
     // apoyo ambos criterios dan exactamente el mismo número, así que no cambia nada.
     const pct=Number(svc.total)>0?Math.round(Number(d.monto)/Number(svc.total)*100):0;
     return `<tr>
-      <td style="${B};font-weight:600;text-align:center">${i?.num||'?'}</td>
-      <td style="${B}">${nombre}${nota?`<span style="color:#55514A;font-size:11.5px">${nota}</span>`:''}</td>
+      <td style="${B};font-weight:600;text-align:center">${escHTML(i?.num||'?')}</td>
+      <td style="${B}">${escHTML(nombre)}${nota?`<span style="color:#55514A;font-size:11.5px">${escHTML(nota)}</span>`:''}</td>
       <td style="${B};text-align:center;font-weight:${aplica?'400':'700'}">${aplica?'SÍ':'NO'}</td>
       <td style="${B};text-align:center">${d.dias_uso}</td>
       <td style="${B};text-align:center">${d.personas||i?.personas||''}</td>
@@ -5957,7 +6091,7 @@ async function generarSvcPNG(svcId){
   node.style.cssText='position:fixed;left:-10000px;top:0;width:1080px;background:#FFFFFF;padding:28px;font-family:"DM Sans",sans-serif';
   node.innerHTML=`
     <table style="border-collapse:collapse;width:auto;margin-bottom:14px">
-      <tr><td style="background:#1A1917;color:#fff;font-weight:700;font-size:16px;padding:8px 18px;border:1px solid #1A1917">Servicio de ${NOM[svc.tipo]||svc.tipo}</td>
+      <tr><td style="background:#1A1917;color:#fff;font-weight:700;font-size:16px;padding:8px 18px;border:1px solid #1A1917">Servicio de ${escHTML(NOM[svc.tipo]||svc.tipo)}</td>
           <td style="background:#1A1917;color:#fff;font-weight:700;font-size:16px;padding:8px 18px;border:1px solid #1A1917;text-align:right">${fmt(svc.total)}</td></tr>
       <tr><td style="padding:4px 18px;font-size:13px">Inicio Periodo:</td><td style="padding:4px 18px;font-size:13px;text-align:right;font-weight:600">${fdC(svc.periodo_ini)}</td></tr>
       <tr><td style="padding:4px 18px;font-size:13px">Fin de Periodo:</td><td style="padding:4px 18px;font-size:13px;text-align:right;font-weight:600">${fdC(svc.periodo_fin)}</td></tr>
@@ -6045,8 +6179,8 @@ function renderEC(){
       ? `<div style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:${deuda.hayVencido?'#E24B4A':'#8A5A00'}">${fmt(deuda.total)}</div><div style="font-size:10.5px;color:#9D9B96">debe hoy</div>`
       : `<div style="font-size:16px;font-weight:500;font-family:'DM Mono',monospace;color:#1D9E75">${fmt(0)}</div><div style="font-size:10.5px;color:#9D9B96">${desoc?'desocupado':'al día'}</div>`;
     return`<div data-hs="box-shadow:0 6px 22px rgba(26,25,23,.07);transform:translateY(-1px)" style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:box-shadow .18s,transform .18s cubic-bezier(.16,1,.3,1)">
-      <div style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${inm.num}</div>
-      <div style="flex:1;min-width:140px"><div style="font-size:14px;font-weight:600">${inqui}</div><div style="font-size:12px;color:#9D9B96">Renta ${fmt(rentaMensual)} · Servicios ${fmt(svcs)}</div></div>
+      <div style="width:42px;height:42px;border-radius:10px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;font-family:'DM Mono',monospace;flex-shrink:0">${escHTML(inm.num)}</div>
+      <div style="flex:1;min-width:140px"><div style="font-size:14px;font-weight:600">${escHTML(inqui)}</div><div style="font-size:12px;color:#9D9B96">Renta ${fmt(rentaMensual)} · Servicios ${fmt(svcs)}</div></div>
       <div style="text-align:right;margin-right:6px">${totalCol}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
         ${desoc?`<span style="font-size:12px;color:#9D9B96;font-style:italic;padding:8px 4px">Sin inquilino al que emitir estado de cuenta</span>`
@@ -6123,6 +6257,17 @@ async function cargarConfig(){
   const tipEl=document.getElementById('cfg-tipo');if(tipEl)tipEl.value=data.tipo_unidad||'departamento';
   const renEl=document.getElementById('cfg-renov');if(renEl)renEl.checked=data.avisar_renovacion!==false;
   const rdEl=document.getElementById('cfg-renov-dias');if(rdEl)rdEl.value=data.dias_aviso_renovacion??30;
+  // Los datos de cobro solo los cambia el propietario: la base lo exige (trigger
+  // tr_campos_solo_dueno), porque un colaborador que cambiara la CLABE desviaría el
+  // dinero de los inquilinos. Aquí solo se refleja: se ven, pero de solo lectura.
+  const esDueno=CW.role==='owner';
+  ['cfg-cobrador','cfg-clabe','cfg-banco','cfg-scott','cfg-oxxo','cfg-tienda'].forEach(id=>{
+    const e=document.getElementById(id);if(!e)return;
+    e.readOnly=!esDueno;e.style.background=esDueno?'#fff':'#F6F5F0';
+    e.title=esDueno?'':'Solo el propietario del negocio puede cambiar los datos de cobro';
+  });
+  const nota=document.getElementById('cfg-cobro-nota');if(nota)nota.style.display=esDueno?'none':'';
+  const cpw=document.getElementById('cfg-copiar-wrap');if(cpw)cpw.style.display=esDueno?'':'none';
   llenarCopiarWS();
   aplicarNomenclatura();
   refresh(); // re-pintar con la tolerancia y la nomenclatura reales (badges/alertas)
@@ -6132,7 +6277,9 @@ async function guardarConfig(){
   const tol=tolV===''||tolV==null?3:Math.max(0,Math.min(30,parseInt(tolV)||0));
   const rdV=document.getElementById('cfg-renov-dias')?.value;
   const rd=rdV===''||rdV==null?30:Math.max(1,Math.min(180,parseInt(rdV)||30));
-  const d={empresa:document.getElementById('cfg-empresa').value||'InmoPagos',nombre_cobrador:document.getElementById('cfg-cobrador').value||'',direccion:document.getElementById('cfg-dir').value||'',clabe:document.getElementById('cfg-clabe').value||'',cuenta_scotiabank:document.getElementById('cfg-scott').value||'',tarjeta_oxxo:document.getElementById('cfg-oxxo').value||'',dias_tolerancia:tol,
+  // Vacío se guarda como NULL, no como 'InmoPagos': así los estados de cuenta, recordatorios y el
+  // portal usan el nombre del negocio (todos caen a CW.nombre) en vez de la marca de la plataforma.
+  const d={empresa:document.getElementById('cfg-empresa').value.trim()||null,nombre_cobrador:document.getElementById('cfg-cobrador').value||'',direccion:document.getElementById('cfg-dir').value||'',clabe:document.getElementById('cfg-clabe').value||'',cuenta_scotiabank:document.getElementById('cfg-scott').value||'',tarjeta_oxxo:document.getElementById('cfg-oxxo').value||'',dias_tolerancia:tol,
     tipo_unidad:document.getElementById('cfg-tipo')?.value||'departamento',
     banco:document.getElementById('cfg-banco')?.value||'',
     tarjeta_tienda:document.getElementById('cfg-tienda')?.value||'',
@@ -6151,7 +6298,11 @@ async function guardarConfig(){
     ({error}=await sb.from('workspaces').update(d3).eq('id',CW.id));
     aviso='Guardado · corre la migración SQL para activar la tolerancia y lo demás';
   }
-  if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
+  if(error){
+    const m=error.message||'';
+    toast(/SOLO_DUENO/.test(m)?m.replace(/^SOLO_DUENO:\s*/,'').replace(/^./,c=>c.toUpperCase()):'Error: '+m,'ti-alert-triangle');
+    return;
+  }
   toast(aviso||'Configuración guardada',aviso?'ti-alert-triangle':'ti-check');
   CW.cfg=d;aplicarNomenclatura();refresh();
 }
@@ -6344,24 +6495,32 @@ function dibujarPDF(datos,download=true){
   doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(60,60,60);
   let py2=py+7;
   doc.setFont('helvetica','bold');doc.text('LA FORMA DE PAGO PODRÁ SER ÚNICAMENTE EN CUALQUIERA DE LAS SIGUIENTES FORMAS:',M,py2,{maxWidth:W-2*M});py2+=7;
+  // Las formas de pago van en letra normal aunque no haya CLABE (antes la normal se ponía
+  // solo dentro del bloque de la CLABE y lo demás salía en negritas).
+  doc.setFont('helvetica','normal');
+  // "A NOMBRE DE …" sin suponer el género: el texto decía "A NOMBRE DE LA SEÑORA" para
+  // cualquier beneficiario —hombre o empresa— y "LA SEÑORA ." si no se había capturado.
+  const aNombre=cobrador.trim()?` A NOMBRE DE ${cobrador.trim().toUpperCase()}`:'';
 
   if(clabe){
-    const txt1=doc.splitTextToSize(`-VÍA TRANSFERENCIA ELECTRÓNICA DESDE CUALQUIER BANCO A LA CUENTA CLABE N° ${clabe} A NOMBRE DE LA SEÑORA ${cobrador.toUpperCase()}.`,W-2*M);
-    doc.setFont('helvetica','normal');doc.text(txt1,M,py2);py2+=txt1.length*5+3;
+    const txt1=doc.splitTextToSize(`-VÍA TRANSFERENCIA ELECTRÓNICA DESDE CUALQUIER BANCO A LA CUENTA CLABE N° ${clabe}${aNombre}.`,W-2*M);
+    doc.text(txt1,M,py2);py2+=txt1.length*5+3;
   }
   // El banco sale de la configuración del negocio; si no lo capturaron, el texto no
   // inventa uno. Antes decía Scotiabank aunque el administrador cobrara en otro banco.
   const BCO=(banco||'').toUpperCase();
   if(scott){
     const txt2=doc.splitTextToSize(BCO
-      ?`-VÍA TRANSFERENCIA ELECTRÓNICA DESDE ${BCO} A LA CUENTA N° ${scott} DE ${BCO} A NOMBRE DE ${cobrador.toUpperCase()}.`
-      :`-VÍA TRANSFERENCIA ELECTRÓNICA A LA CUENTA N° ${scott} A NOMBRE DE ${cobrador.toUpperCase()}.`,W-2*M);
+      ?`-VÍA TRANSFERENCIA ELECTRÓNICA DESDE ${BCO} A LA CUENTA N° ${scott} DE ${BCO}${aNombre}.`
+      :`-VÍA TRANSFERENCIA ELECTRÓNICA A LA CUENTA N° ${scott}${aNombre}.`,W-2*M);
     doc.text(txt2,M,py2);py2+=txt2.length*5+3;
   }
   if(oxxo){
     // La tienda la elige el administrador: no todos cobran en OXXO.
     const TDA=(tienda||'').toUpperCase();
-    const txt3=doc.splitTextToSize(`-DEPOSITANDO ${TDA?'EN CUALQUIER TIENDA '+TDA:'EN TIENDA'} EL VALOR IGUAL A LA RENTA, A LA TARJETA DE DÉBITO ${oxxo}${BCO?' DEL BANCO '+BCO:''} A NOMBRE DE ${cobrador.toUpperCase()}.`,W-2*M);
+    // "EL TOTAL DE ESTE ESTADO DE CUENTA" y no "EL VALOR IGUAL A LA RENTA": el documento puede
+    // traer servicios, depósito o mantenimiento, no solo la renta.
+    const txt3=doc.splitTextToSize(`-DEPOSITANDO ${TDA?'EN CUALQUIER TIENDA '+TDA:'EN TIENDA'} EL TOTAL DE ESTE ESTADO DE CUENTA A LA TARJETA DE DÉBITO ${oxxo}${BCO?' DEL BANCO '+BCO:''}${aNombre}.`,W-2*M);
     doc.text(txt3,M,py2);py2+=txt3.length*5+3;
   }
 
@@ -6395,7 +6554,7 @@ function pobContratosPago(selId){
   const vig=contratoVigente(inmId);
   if(!cs.length){
     // Sin contratos migrados: una sola opción "actual" (contrato_id vacío)
-    sel.innerHTML=`<option value="">Actual${vig&&vig.inquilino?` — ${vig.inquilino}`:''}</option>`;return;
+    sel.innerHTML=`<option value="">Actual${vig&&vig.inquilino?` — ${escHTML(vig.inquilino)}`:''}</option>`;return;
   }
   const t=hoyISO();
   const def=selId!==undefined?selId:(vig&&vig.id?vig.id:'');
@@ -6403,7 +6562,7 @@ function pobContratosPago(selId){
     const et=etiquetaContrato(inmId,c.id);
     const activo=(!c.fecha_salida||c.fecha_salida>=t);
     const estado=activo?'vigente':`salió ${fdS(c.fecha_salida)}`;
-    return `<option value="${c.id}"${c.id===def?' selected':''}>${et} · ${c.inquilino||'—'} (${estado})</option>`;
+    return `<option value="${c.id}"${c.id===def?' selected':''}>${et} · ${escHTML(c.inquilino||'—')} (${estado})</option>`;
   }).join('');
 }
 // ── Alta de pagos: registrar dinero que YA entró ──────────────────────────────
@@ -6450,7 +6609,7 @@ function pobConceptosPago(reset){
   if(editPagoId||modoAlta==='cargo'){sel.innerHTML=libres;if(modoAlta==='cargo'&&!editPagoId&&!CONCEPTOS_PAGO.some(([v])=>v===sel.value))sel.value='mantenimiento';return}
   const prev=reset?'':sel.value;
   const ads=adeudosPago(document.getElementById('fp-dep').value,document.getElementById('fp-contrato')?.value);
-  sel.innerHTML=(ads.length?`<optgroup label="Abonar a un adeudo">${ads.map(p=>`<option value="#${p.id}">${etiquetaAdeudo(p)}</option>`).join('')}</optgroup>`:'')
+  sel.innerHTML=(ads.length?`<optgroup label="Abonar a un adeudo">${ads.map(p=>`<option value="#${p.id}">${escHTML(etiquetaAdeudo(p))}</option>`).join('')}</optgroup>`:'')
     +`<optgroup label="${ads.length?'Sin relacionar con un adeudo':'Concepto del pago'}">${libres}</optgroup>`;
   if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
   else sel.value=ads.length?`#${ads[0].id}`:'mantenimiento';
@@ -6546,7 +6705,7 @@ function abrirPago(inmId,modo){
   document.getElementById('mp-ttl').textContent='Registrar pago recibido';
   document.getElementById('btn-del-p').style.display='none';
   const sel=document.getElementById('fp-dep');
-  sel.innerHTML='<option value="">Seleccionar...</option>'+inmuebles.map(i=>`<option value="${i.id}"${i.id===inmId?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
+  sel.innerHTML='<option value="">Seleccionar...</option>'+inmuebles.map(i=>`<option value="${i.id}"${i.id===inmId?' selected':''}>${escHTML(i.num)} — ${escHTML(i.inquilino)}</option>`).join('');
   pobContratosPago();
   document.getElementById('fp-mto').value='';document.getElementById('fp-venc').value=hoyISO();
   document.getElementById('fp-pag').value='';document.getElementById('fp-not').value='';
@@ -6557,7 +6716,7 @@ function abrirPago(inmId,modo){
 function abrirEditPago(id){
   editPagoId=id;fpUltAdeudo=null;const p=pagos.find(x=>x.id===id);if(!p)return;
   document.getElementById('mp-ttl').textContent='Editar pago';document.getElementById('btn-del-p').style.display='inline-flex';
-  const sel=document.getElementById('fp-dep');sel.innerHTML=inmuebles.map(i=>`<option value="${i.id}"${i.id===p.inmueble_id?' selected':''}>${i.num} — ${i.inquilino}</option>`).join('');
+  const sel=document.getElementById('fp-dep');sel.innerHTML=inmuebles.map(i=>`<option value="${i.id}"${i.id===p.inmueble_id?' selected':''}>${escHTML(i.num)} — ${escHTML(i.inquilino)}</option>`).join('');
   pobContratosPago(p.contrato_id||'');
   modoPago(false);pobConceptosPago();
   document.getElementById('fp-con').value=p.concepto;document.getElementById('fp-mto').value=p.monto;document.getElementById('fp-pag').value=p.pagado;document.getElementById('fp-fpag').value=p.fecha_pago||'';document.getElementById('fp-not').value=p.notas||'';
@@ -6668,7 +6827,7 @@ function contratoFieldsFromForm(){
     tel:document.getElementById('fi-tel').value||null,
     email:document.getElementById('fi-em').value||null,
     renta:parseFloat(document.getElementById('fi-ren').value)||0,
-    dia:parseInt(document.getElementById('fi-dia').value)||1,
+    dia:parseInt(document.getElementById('fi-dia').value)||diaPagoPorDefecto(document.getElementById('fi-fini').value),
     personas:parseInt(document.getElementById('fi-per').value)||1,
     fecha_inicio_contrato:document.getElementById('fi-fini').value||null,
     fecha_termino_contrato:document.getElementById('fi-fter').value||null,
@@ -6784,6 +6943,9 @@ async function guardarInm(){
   // El tope solo aplica al dar de alta un espacio nuevo: editar uno existente
   // o registrar un contrato nuevo en un espacio que ya tienes nunca se bloquea.
   if(!editInmId&&LIM_DEP!==null&&inmuebles.length>=LIM_DEP){closeM('m-inm');modalUpgrade('deptos');return}
+  // Quién vivía ahí ANTES de guardar: si en esta edición se le pone fecha de salida, hay que
+  // limpiar sus rentas posteriores igual que con el botón "Registrar salida".
+  const vigAntes=editInmId?contratoVigente(editInmId):null;
   const d={workspace_id:CW.id,num,piso:document.getElementById('fi-pis').value||null,...cf};
   const {data:savedInm,error}=editInmId
     ? await sb.from('inmuebles').update(d).eq('id',editInmId).select().single()
@@ -6799,7 +6961,11 @@ async function guardarInm(){
   else{inmuebles.push(savedInm);ordenarInmuebles();inmId=savedInm.id;}
   await upsertContratoVigente(inmId,cf);
   if(!editInmId)await crearPagoDeposito(inmId,contratoVigente(inmId)?.id||null); // depósito del alta
-  else{await syncRentaPagos(inmId);await syncDeposito(inmId);} // renta/día/depósito editados
+  else{
+    if(vigAntes&&cf.fecha_salida&&cf.fecha_salida!==vigAntes.fecha_salida)
+      await limpiarRentasTrasSalida(inmId,vigAntes.id?(contratos.find(x=>x.id===vigAntes.id)||vigAntes):vigAntes,cf.fecha_salida);
+    await syncRentaPagos(inmId);await syncDeposito(inmId); // renta/día/depósito editados
+  }
   await ensureAutoPagos(vY,vM);
   closeM('m-inm');toast(editInmId?`${US()} actualizado`:`${US()} agregado`);
   refresh();
@@ -6857,6 +7023,22 @@ async function crearPagoDeposito(inmId,contratoId,fechaIni){
   if(error&&/contrato_id/i.test(error.message||'')){const{contrato_id:_c,origen:_o2,...d2}=d;({data,error}=await sb.from('pagos').insert(d2).select().single());}
   if(!error&&data)pagos.unshift(data);
 }
+// Borra las rentas pendientes de meses POSTERIORES a la salida (el mes de salida se cobra
+// completo). Una sola función para las dos rutas por las que se registra una salida: el botón
+// "Registrar salida" y capturar la fecha de salida en "Editar" y guardar. Antes solo el botón
+// limpiaba: por la otra ruta las rentas ya generadas se quedaban y salían "Retrasado" en un
+// espacio que ya decía "Desocupado".
+async function limpiarRentasTrasSalida(inmId,c,fecha){
+  if(!fecha)return;
+  try{
+    const fs=new Date(fecha+'T00:00:00');
+    const corteD=new Date(fs.getFullYear(),fs.getMonth()+1,1); // 1º del mes siguiente a la salida
+    const corteISO=`${corteD.getFullYear()}-${String(corteD.getMonth()+1).padStart(2,'0')}-01`;
+    const aBorrar=pagos.filter(p=>p.inmueble_id===inmId&&p.concepto==='renta'&&Number(p.pagado)===0&&p.vencimiento>=corteISO&&(c&&c.id?(p.contrato_id===c.id||!p.contrato_id):!p.contrato_id));
+    for(const p of aBorrar){const {error}=await sb.from('pagos').delete().eq('id',p.id);if(error)throw error;}
+    if(aBorrar.length)pagos=pagos.filter(p=>!aBorrar.some(b=>b.id===p.id));
+  }catch(e){console.warn('limpieza rentas salida:',e.message||e);toast('La salida se guardó, pero no se pudieron quitar algunas rentas posteriores: revísalas en Pagos','ti-alert-triangle');}
+}
 // Registrar salida del inquilino vigente → libera el espacio (mirror + contrato)
 async function registrarSalidaVigente(){
   const inmId=editInmId;if(!inmId)return;
@@ -6870,15 +7052,7 @@ async function registrarSalidaVigente(){
   const {data:savedInm,error}=await sb.from('inmuebles').update({fecha_salida:fecha}).eq('id',inmId).select().single();
   if(error){toast('Error: '+error.message,'ti-alert-triangle');return}
   const idx=inmuebles.findIndex(x=>x.id===inmId);if(idx!==-1)inmuebles[idx]=savedInm;
-  // Limpiar rentas pendientes de meses POSTERIORES a la salida (el mes de salida se cobra completo)
-  try{
-    const fs=new Date(fecha+'T00:00:00');
-    const corteD=new Date(fs.getFullYear(),fs.getMonth()+1,1); // 1º del mes siguiente a la salida
-    const corteISO=`${corteD.getFullYear()}-${String(corteD.getMonth()+1).padStart(2,'0')}-01`;
-    const aBorrar=pagos.filter(p=>p.inmueble_id===inmId&&p.concepto==='renta'&&Number(p.pagado)===0&&p.vencimiento>=corteISO&&(c.id?(p.contrato_id===c.id||!p.contrato_id):!p.contrato_id));
-    for(const p of aBorrar){await sb.from('pagos').delete().eq('id',p.id);}
-    if(aBorrar.length)pagos=pagos.filter(p=>!aBorrar.some(b=>b.id===p.id));
-  }catch(e){console.warn('limpieza rentas salida:',e.message||e);}
+  await limpiarRentasTrasSalida(inmId,c,fecha);
   closeM('m-inm');toast('Salida registrada · espacio desocupado','ti-door-exit');
   refresh();
 }
@@ -6931,19 +7105,19 @@ function renderHist(inmId){
     const rango=`${c.fecha_inicio_contrato?fd(c.fecha_inicio_contrato):'—'} → ${c.fecha_salida?fd(c.fecha_salida):(c.fecha_termino_contrato?fd(c.fecha_termino_contrato)+' (término)':'—')}`;
     const filasPagos=ps.length?ps.slice().sort((a,b)=>new Date(b.vencimiento)-new Date(a.vencimiento)).map(p=>{
       const est=getEstado(p),col={pagado:'#1D9E75',parcial:'#378ADD',vencido:'#E24B4A',pendiente:'#9D9B96'}[est];
-      return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-top:1px solid #F1EFE8"><span style="flex:1;color:#55514A">${p.concepto} · vence ${fdS(p.vencimiento)}</span><span style="font-family:'DM Mono',monospace">${fmt0(p.pagado)}/${fmt0(p.monto)}</span><span style="color:${col};font-size:10.5px;font-weight:600;text-transform:uppercase;min-width:60px;text-align:right">${est}</span></div>`;
+      return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-top:1px solid #F1EFE8"><span style="flex:1;color:#55514A">${escHTML(p.concepto)} · vence ${fdS(p.vencimiento)}</span><span style="font-family:'DM Mono',monospace">${fmt0(p.pagado)}/${fmt0(p.monto)}</span><span style="color:${col};font-size:10.5px;font-weight:600;text-transform:uppercase;min-width:60px;text-align:right">${est}</span></div>`;
     }).join(''):`<div style="font-size:12px;color:#9D9B96;padding:6px 0">Sin pagos registrados a este contrato.</div>`;
     return `<div style="border:1px solid #E2E0D8;border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <div style="width:30px;height:30px;border-radius:8px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0">${inm.num}-${et}</div>
-        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700">${c.inquilino||'—'}</div><div style="font-size:11.5px;color:#9D9B96">${rango}</div></div>
+        <div style="width:30px;height:30px;border-radius:8px;background:#F1EFE8;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0">${escHTML(inm.num)}-${et}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700">${escHTML(c.inquilino||'—')}</div><div style="font-size:11.5px;color:#9D9B96">${rango}</div></div>
         ${chip}
       </div>
       <div style="display:flex;gap:16px;font-size:11.5px;color:#55514A;margin:6px 0 2px">
         <span>Renta <b style="font-family:'DM Mono',monospace">${fmt0(c.renta)}</b></span>
         <span>Cobrado <b style="font-family:'DM Mono',monospace;color:#1D9E75">${fmt0(totCobrado)}</b></span>
         ${totPend>0?`<span>Pendiente <b style="font-family:'DM Mono',monospace;color:#E24B4A">${fmt0(totPend)}</b></span>`:''}
-        ${c.tel?`<span style="margin-left:auto">${c.tel}</span>`:''}
+        ${c.tel?`<span style="margin-left:auto">${escHTML(c.tel)}</span>`:''}
       </div>
       <div style="margin-top:6px">${filasPagos}</div>
     </div>`;
@@ -6964,23 +7138,57 @@ async function renderMem(){
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button onclick="copiarCodigo()" data-hs="background:#F1EFE8" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-copy" style="font-size:14px"></i>Copiar código</button>
         <button onclick="openM('m-inv-email')" data-hs="background:#17845F" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#1D9E75;color:#fff;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s"><i class="ti ti-mail" style="font-size:14px"></i>Invitar por correo</button>
+        ${CW.role==='owner'?`<button onclick="regenerarCodigo()" data-hs="background:#F1EFE8" data-as="transform:scale(.97)" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#1A1917;border-radius:8px;cursor:pointer;transition:all .15s"><i class="ti ti-refresh" style="font-size:14px"></i>Generar código nuevo</button>`:''}
       </div>
+      ${CW.role==='owner'?`<p style="font-size:11.5px;color:#9D9B96;margin:12px 0 0">Cuando quitas a alguien, el código cambia solo para que no pueda volver a entrar.</p>`:''}
     </div>
     <div style="background:#FFFFFF;border:1px solid #E2E0D8;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden">
       <div style="padding:16px 22px;border-bottom:1px solid #EEECE4;font-size:13px;font-weight:700">Miembros (${mems.length})</div>
       ${mems.map((m,idx)=>{const owner=m.role==='owner';const avBg=owner?'#E1F5EE':'#E6F1FB',avC=owner?'#085041':'#0C447C';return`<div style="padding:14px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #EEECE4;animation:slideIn .4s cubic-bezier(.16,1,.3,1) ${(0.08+idx*0.08).toFixed(2)}s both">
-        <div style="width:36px;height:36px;border-radius:50%;background:${avBg};color:${avC};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${(m.email||'?').slice(0,1).toUpperCase()}</div>
-        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis">${m.email||'Usuario'}</div><div style="font-size:12px;color:#9D9B96">${m.user_id===CU.id?'Tú · ':''}${owner?'Propietario':'Miembro'}</div></div>
+        <div style="width:36px;height:36px;border-radius:50%;background:${avBg};color:${avC};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${escHTML((m.email||'?').slice(0,1).toUpperCase())}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis">${escHTML(m.email||'Usuario')}</div><div style="font-size:12px;color:#9D9B96">${m.user_id===CU.id?'Tú · ':''}${owner?'Propietario':'Miembro'}</div></div>
         <span style="display:inline-flex;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;background:${avBg};color:${avC}">${owner?'Propietario':'Miembro'}</span>
         ${CW.role==='owner'&&m.user_id!==CU.id?`<button onclick="quitarMem('${m.id}')" title="Quitar acceso" data-hs="background:#FCEBEB;color:#791F1F;border-color:#F3D2D2" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-family:inherit;border:1px solid #E2E0D8;background:#fff;color:#9D9B96;border-radius:7px;cursor:pointer;transition:all .15s"><i class="ti ti-user-minus" style="font-size:14px"></i></button>`:''}
       </div>`}).join('')}
     </div>`;
 }
-async function quitarMem(id){if(!confirm('¿Quitar acceso?'))return;await sb.from('memberships').delete().eq('id',id);toast('Miembro eliminado');renderMem()}
+// Quitar a alguien regenera el código de invitación del negocio (lo hace la base, trigger
+// tr_rotar_codigo_al_salir): sin eso, el que quitaste volvía a entrar con el código que ya
+// conocía. Aquí solo se trae el código nuevo para mostrarlo. Se compara con el anterior para
+// no anunciar un cambio que no pasó (p. ej. si la migración todavía no está corrida).
+async function quitarMem(id){
+  if(!confirm('¿Quitarle el acceso a esta persona?'))return;
+  const {data,error}=await sb.from('memberships').delete().eq('id',id).select();
+  if(error){toast('No se pudo quitar: '+error.message,'ti-alert-triangle');return}
+  // Sin filas borradas no hubo error: fue el RLS diciendo que no (solo el propietario quita a otros)
+  if(!data||!data.length){toast('No se pudo quitar el acceso: solo el propietario puede hacerlo','ti-alert-triangle');return}
+  const antes=CW.invite_code;
+  await refrescarCodigo();
+  toast(CW.invite_code!==antes?'Miembro eliminado · el código de invitación cambió':'Miembro eliminado');
+  renderMem();
+}
+async function refrescarCodigo(){
+  const {data}=await sb.from('workspaces').select('invite_code').eq('id',CW.id).single();
+  if(data&&data.invite_code)ponerCodigo(data.invite_code);
+}
+function ponerCodigo(code){
+  CW.invite_code=code;
+  try{localStorage.setItem('ib_ws_code',code)}catch(e){}
+  const sc=document.getElementById('show-code');if(sc)sc.textContent=code;
+  const w=WS_LISTA.find(x=>x.id===CW.id);if(w)w.invite_code=code;
+}
+// El código viejo deja de servir; los que ya son miembros no pierden nada.
+async function regenerarCodigo(){
+  if(!confirm('¿Generar un código de invitación nuevo?\n\nEl código actual deja de servir. Quienes ya son miembros no pierden su acceso.'))return;
+  const {data:r,error}=await sb.rpc('regenerar_codigo_negocio',{w_id:CW.id});
+  if(error){toast(rpcFalta(error)?'Falta correr migracion_permisos_colaboradores.sql en Supabase':'No se pudo: '+error.message,'ti-alert-triangle');return}
+  if(!r?.ok){toast(r?.error==='SOLO_DUENO'?'Solo el propietario puede cambiar el código':'No se pudo generar el código','ti-alert-triangle');return}
+  ponerCodigo(r.invite_code);toast('Código nuevo listo','ti-refresh');renderMem();
+}
 async function invEmail(){
   const em=document.getElementById('inv-em').value.trim(),err=document.getElementById('ie-err'),ok=document.getElementById('ie-ok');
   err.style.display='none';ok.style.display='none';if(!em||!em.includes('@')){se(err,'Correo inválido');return}
-  ok.innerHTML=`Comparte este código con <strong>${em}</strong>: <strong style="font-family:'DM Mono',monospace;font-size:16px;letter-spacing:.1em">${CW.invite_code}</strong><br><span style="font-size:11px">La persona debe crear una cuenta y usar este código.</span>`;
+  ok.innerHTML=`Comparte este código con <strong>${escHTML(em)}</strong>: <strong style="font-family:'DM Mono',monospace;font-size:16px;letter-spacing:.1em">${CW.invite_code}</strong><br><span style="font-size:11px">La persona debe crear una cuenta y usar este código.</span>`;
   ok.style.display='block';navigator.clipboard?.writeText(CW.invite_code).catch(()=>{});
 }
 
@@ -7081,7 +7289,7 @@ function renderSvcDonut(){
       </div>
       ${legs}
       <div class="svcd-ins">
-        ${topInm?insight('ti-trophy','#BA7517','Mayor consumo · '+topInm.num,fmt0(perD[topId])):''}
+        ${topInm?insight('ti-trophy','#BA7517','Mayor consumo · '+escHTML(topInm.num),fmt0(perD[topId])):''}
         ${ids.length?insight('ti-divide','#378ADD','Promedio por depto',fmt0(prom)):''}
         ${insight('ti-file-invoice','#1D9E75','Facturas registradas',svcMes.length)}
       </div>
@@ -7159,7 +7367,7 @@ function renderDashboard(){
       <div style="font-size:26px;font-weight:500;color:#E24B4A;font-family:'DM Mono',monospace;margin-top:8px">${nAl}</div><div style="font-size:11.5px;color:#A8524F">${nAl===1?'requiere':'requieren'} tu atención</div></button>
     <button onclick="setTab('depositos')" data-hs="transform:translateY(-3px);box-shadow:0 10px 26px rgba(186,117,23,.18)" data-as="transform:scale(.97)" style="${TILE('#FAEEDA','.2s')}">
       <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#633806;text-transform:uppercase;letter-spacing:.06em"><i class="ti ti-corner-down-left" style="font-size:12px;color:#BA7517"></i>Por devolver</div>
-      <div style="font-size:26px;font-weight:500;color:#BA7517;font-family:'DM Mono',monospace;margin-top:8px">${fmtK(porDevolver)}</div><div style="font-size:11.5px;color:#96702F">${nDev} depósito${nDev===1?'':'s'} con contrato cumplido</div></button>
+      <div style="font-size:26px;font-weight:500;color:#BA7517;font-family:'DM Mono',monospace;margin-top:8px">${fmtK(porDevolver)}</div><div style="font-size:11.5px;color:#96702F">${nDev} depósito${nDev===1?'':'s'} por liquidar</div></button>
     <button onclick="setTab('servicios')" data-hs="transform:translateY(-3px);box-shadow:0 10px 26px rgba(55,138,221,.18)" data-as="transform:scale(.97)" style="${TILE('#E6F1FB','.3s')}">
       <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#0C447C;text-transform:uppercase;letter-spacing:.06em"><i class="ti ti-bolt" style="font-size:12px;color:#378ADD"></i>Servicios ${MESES[vM].slice(0,3).toLowerCase()}</div>
       <div style="font-size:26px;font-weight:500;color:#378ADD;font-family:'DM Mono',monospace;margin-top:8px">${fmtK(totalSvcMes)}</div><div style="font-size:11.5px;color:#4A6E93">${deptosSvc.size?'distribuidos entre '+deptosSvc.size+' deptos':'sin servicios este mes'}</div></button>
@@ -7200,11 +7408,11 @@ function renderDashboard(){
   else actEl.innerHTML=recientes.map((p,i)=>{
     const inm=getInm(p.inmueble_id),est=getEstado(p);
     let bg,c,icon,txt;
-    if(p.concepto==='devolucion_deposito'){bg='#E1F5EE';c='#1D9E75';icon='ti-corner-down-left';txt=`Devolución de depósito · ${UAB()} ${inm?.num||'?'} · <strong>${fmt(p.monto)}</strong>`;}
-    else if(est==='pagado'){bg='#E1F5EE';c='#1D9E75';icon='ti-check';txt=`Pago recibido · ${UAB()} ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.pagado)}</strong>`;}
-    else if(est==='vencido'){bg='#FCEBEB';c='#E24B4A';icon='ti-alert-triangle';txt=`Pago atrasado · ${UAB()} ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.monto)}</strong>`;}
-    else if(est==='parcial'){bg='#E6F1FB';c='#378ADD';icon='ti-percentage';txt=`Pago parcial · ${UAB()} ${inm?.num||'?'} · <strong>${fmt(p.pagado)}</strong> de ${fmt(p.monto)}`;}
-    else{bg='#FAEEDA';c='#BA7517';icon='ti-clock';txt=`Pago registrado · ${UAB()} ${inm?.num||'?'} · ${p.concepto} · <strong>${fmt(p.monto)}</strong>`;}
+    if(p.concepto==='devolucion_deposito'){bg='#E1F5EE';c='#1D9E75';icon='ti-corner-down-left';txt=`Devolución de depósito · ${UAB()} ${escHTML(inm?.num||'?')} · <strong>${fmt(p.monto)}</strong>`;}
+    else if(est==='pagado'){bg='#E1F5EE';c='#1D9E75';icon='ti-check';txt=`Pago recibido · ${UAB()} ${escHTML(inm?.num||'?')} · ${escHTML(p.concepto)} · <strong>${fmt(p.pagado)}</strong>`;}
+    else if(est==='vencido'){bg='#FCEBEB';c='#E24B4A';icon='ti-alert-triangle';txt=`Pago atrasado · ${UAB()} ${escHTML(inm?.num||'?')} · ${escHTML(p.concepto)} · <strong>${fmt(p.monto)}</strong>`;}
+    else if(est==='parcial'){bg='#E6F1FB';c='#378ADD';icon='ti-percentage';txt=`Pago parcial · ${UAB()} ${escHTML(inm?.num||'?')} · <strong>${fmt(p.pagado)}</strong> de ${fmt(p.monto)}`;}
+    else{bg='#FAEEDA';c='#BA7517';icon='ti-clock';txt=`Pago registrado · ${UAB()} ${escHTML(inm?.num||'?')} · ${escHTML(p.concepto)} · <strong>${fmt(p.monto)}</strong>`;}
     return `<div style="display:flex;align-items:center;gap:11px;animation:slideIn .4s cubic-bezier(.16,1,.3,1) ${(0.12+i*0.08).toFixed(2)}s both"><div style="width:30px;height:30px;border-radius:9px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${icon}" style="font-size:15px;color:${c}"></i></div><div style="flex:1;font-size:12.5px;line-height:1.4">${txt}</div><div style="font-size:11px;color:#9D9B96;flex-shrink:0">${tiempoRel(p.created_at)}</div></div>`;
   }).join('');
   // Ruleta de departamentos (casitas flotantes + liquid glass)
@@ -7325,8 +7533,8 @@ function renderRuleta(){
     const st=rulStatus(inm);
     const sec=st.k==='venc'?{top:'#B2CDA9',front:'#9FBF9B',shade:'#7FA37D'}:{top:'#DA9273',front:'#C97C5E',shade:'#A96246'};
     const V=RULV[i%RULV.length];
-    html+=`<div class="rul-item" data-i="${i}" role="button" tabindex="-1" aria-label="${US()} ${inm.num}, ${(contratoVigente(inm.id)||{}).inquilino||'desocupado'}, ${st.lbl}">
-      <div style="display:flex;justify-content:center;margin-bottom:10px"><span class="lg" style="border-radius:20px;padding:4px 13px;font-family:'DM Mono',monospace;font-size:11.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${st.main.front}"></span>${inm.num}${st.k==='venc'?'<span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>':''}</span></div>
+    html+=`<div class="rul-item" data-i="${i}" role="button" tabindex="-1" aria-label="${US()} ${escHTML(inm.num)}, ${escHTML((contratoVigente(inm.id)||{}).inquilino||'desocupado')}, ${st.lbl}">
+      <div style="display:flex;justify-content:center;margin-bottom:10px"><span class="lg" style="border-radius:20px;padding:4px 13px;font-family:'DM Mono',monospace;font-size:11.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${st.main.front}"></span>${escHTML(inm.num)}${st.k==='venc'?'<span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;animation:pulseVenc 2.2s ease-in-out infinite"></span>':''}</span></div>
       <div class="rul-focus"><div class="rul-house" style="animation-delay:${(i%5)*.55}s">${casaSVG(st.main,sec,i,V)}</div>
       <div class="rul-shadow" style="animation-delay:${(i%5)*.55}s"></div></div>
     </div>`;
@@ -7338,7 +7546,7 @@ function renderRuleta(){
   html+=`<div id="rul-glass" style="position:absolute;inset:0;pointer-events:none"></div>`;
   stage.classList.add('no-anim');
   stage.innerHTML=html;
-  if(dots)dots.innerHTML=inmuebles.map((inm,i)=>{const s2=rulStatus(inm);return `<button class="rul-dot lg" onclick="rulSet(${i})" aria-label="Ir a ${inm.num}"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${s2.main.front};margin-right:5px"></span>${inm.num}</button>`}).join('');
+  if(dots)dots.innerHTML=inmuebles.map((inm,i)=>{const s2=rulStatus(inm);return `<button class="rul-dot lg" onclick="rulSet(${i})" aria-label="Ir a ${escHTML(inm.num)}"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${s2.main.front};margin-right:5px"></span>${escHTML(inm.num)}</button>`}).join('');
   rulPosition(false);
   requestAnimationFrame(()=>stage.classList.remove('no-anim'));
 }
@@ -7383,14 +7591,14 @@ function rulGlassHTML(inm){
   const ult=pagos.filter(p=>p.inmueble_id===id&&p.fecha_pago&&esCobranza(p)).sort((a,b)=>new Date(b.fecha_pago)-new Date(a.fecha_pago))[0];
   const chip={venc:['rgba(226,75,74,.16)','#791F1F','ti-alert-triangle'],ok:['rgba(29,158,117,.16)','#085041','ti-circle-check'],proc:['rgba(186,117,23,.16)','#633806','ti-clock'],none:['rgba(26,25,23,.08)','#6B6963','ti-minus'],libre:['rgba(75,63,158,.16)','#4B3F9E','ti-door-exit']}[st.k];
   const IB='display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.5);color:#4A453E;border-radius:9px;cursor:pointer;transition:all .15s;font-family:inherit;backdrop-filter:blur(6px)';
-  const row=(ico,lbl,val,c)=>`<div class="rul-row"><i class="ti ${ico}" style="font-size:14px;color:${c||'#8A857D'};width:16px;text-align:center"></i><span style="color:#55514A;flex:1">${lbl}</span><span style="font-family:'DM Mono',monospace;font-weight:500;color:#1A1917">${val}</span></div>`;
+  const row=(ico,lbl,val,c)=>`<div class="rul-row"><i class="ti ${ico}" style="font-size:14px;color:${c||'#8A857D'};width:16px;text-align:center"></i><span style="color:#55514A;flex:1">${lbl}</span><span style="font-family:'DM Mono',monospace;font-weight:500;color:#1A1917">${escHTML(val)}</span></div>`;
   let depRow='';
   if(dep){const dc=dep.estado==='retenido'?'#E24B4A':dep.estado==='parcial'?'#1D9E75':'#378ADD';depRow=row('ti-shield-lock','Depósito',fmt0(dep.totalDep)+(dep.estado==='parcial'?' · devolver':dep.estado==='retenido'?' · retenido':' · activo'),dc);}
   const barC=st.pct===100?'#1D9E75':st.k==='venc'?'#E24B4A':'#BA7517';
   return `
     <div class="rul-gwrap side" style="left:calc(50% - 332px);top:46px"><div class="lg rul-pill" style="display:flex;align-items:center;gap:9px">
       <i class="ti ti-building" style="color:#1D9E75;font-size:16px"></i>
-      <div><div style="font-size:12.5px;font-weight:700">${UAB()} ${inm.num}</div><div style="font-size:11px;color:#55514A">Piso ${inm.piso||'—'}${desoc?' · sin inquilino':` · ${vig.personas||1} pers. · paga el día ${vig.dia||'—'}`}</div></div>
+      <div><div style="font-size:12.5px;font-weight:700">${UAB()} ${escHTML(inm.num)}</div><div style="font-size:11px;color:#55514A">Piso ${escHTML(inm.piso||'—')}${desoc?' · sin inquilino':` · ${vig.personas||1} pers. · paga el día ${vig.dia||'—'}`}</div></div>
     </div></div>
     <div class="rul-gwrap side" style="left:calc(50% - 348px);bottom:92px;animation-delay:.12s"><div class="lg rul-pill" style="text-align:center;animation-delay:1.6s">
       <div style="font-size:9.5px;font-weight:700;color:#55514A;text-transform:uppercase;letter-spacing:.08em">Renta</div>
@@ -7398,8 +7606,8 @@ function rulGlassHTML(inm){
     </div></div>
     <div class="rul-gwrap main" style="left:calc(50% + 172px);top:16px;animation-delay:.06s"><div class="lg rul-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;flex-shrink:0">${inm.num}</div>
-        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${desoc?';color:#6B6963;font-style:italic':''}">${desoc?'Espacio disponible':(vig.inquilino||'—')}</div>
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;flex-shrink:0">${escHTML(inm.num)}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${desoc?';color:#6B6963;font-style:italic':''}">${desoc?'Espacio disponible':escHTML(vig.inquilino||'—')}</div>
         <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;background:${chip[0]};color:${chip[1]}"><i class="ti ${chip[2]}" style="font-size:10px"></i>${st.lbl}</span></div>
         <button onclick="rulOpen=false;rulPosition(false)" title="Cerrar ficha" style="border:none;background:none;cursor:pointer;color:#8A857D;font-size:16px;padding:4px;border-radius:6px;display:flex;font-family:inherit">✕</button>
       </div>
@@ -7512,7 +7720,8 @@ function finDSServicios(){return finGlobal?finGData.svcs.filter(s=>finWSok(s.wor
 function finDSSvcDet(){return finGlobal?finGData.svcdets.filter(d=>finWSok(d.workspace_id)):svcDet;}
 function finGetInm(id){return finGlobal?finGData.inms.find(i=>i.id===id):getInm(id);}
 function finWSName(id){return finWS.find(w=>w.id===id)?.nombre||'—';}
-function finRowLoc(r){const n=finGetInm(r.inmueble_id)?.num||'—';return finGlobal?`${finWSName(r.workspace_id)} · ${n}`:n;}
+// Solo se usa dentro de HTML: sale ya escapado.
+function finRowLoc(r){const n=escHTML(finGetInm(r.inmueble_id)?.num||'—');return finGlobal?`${escHTML(finWSName(r.workspace_id))} · ${n}`:n;}
 function finWSLbl(){if(!finGSel.size)return'Todos los negocios';const a=finWS.filter(w=>finGSel.has(w.id));return a.length===1?a[0].nombre:a.length+' negocios';}
 // ── Qué pagos entran a la cascada como ingreso ──
 // Un pago es de servicio si lo generó un recibo (servicio_id) o si su concepto es
@@ -7721,11 +7930,11 @@ function finWSFormOpts(sel){
 function finWSFormChange(kind){
   const wsId=document.getElementById(kind==='g'?'fga-ws':'fim-ws').value;
   const inms=finGData.inms.filter(i=>i.workspace_id===wsId);
-  const req='<option value="">Seleccionar propiedad…</option>'+inms.map(i=>`<option value="${i.id}">${i.num} — ${i.inquilino}</option>`).join('');
+  const req='<option value="">Seleccionar propiedad…</option>'+inms.map(i=>`<option value="${i.id}">${escHTML(i.num)} — ${escHTML(i.inquilino)}</option>`).join('');
   document.getElementById(kind==='g'?'fga-prop':'fim-prop').innerHTML=req;
   if(kind==='g'){
     const cats=finGData.cats.filter(c=>c.workspace_id===wsId);
-    document.getElementById('fga-cat').innerHTML=cats.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+    document.getElementById('fga-cat').innerHTML=cats.map(c=>`<option value="${c.id}">${escHTML(c.nombre)}</option>`).join('');
   }
 }
 
@@ -7801,9 +8010,11 @@ function finContratosDe(inmId){
 function finContratoVigente(inmId){
   if(!finGlobal)return contratoVigente(inmId);
   const t=hoyISO(),cs=finContratosDe(inmId);
-  if(cs.length){const vig=cs.filter(c=>!c.fecha_salida||c.fecha_salida>=t);return vig.length?vig[vig.length-1]:null;}
+  // Misma regla que contratoVigente(): ya empezó y no ha salido.
+  if(cs.length){const vig=cs.filter(c=>(!c.fecha_salida||c.fecha_salida>=t)&&yaEmpezo(c,t));return vig.length?vig[vig.length-1]:null;}
   const inm=finGetInm(inmId);if(!inm)return null;
   if(inm.fecha_salida&&inm.fecha_salida<t)return null;
+  if(!yaEmpezo(inm,t))return null;
   return contratoSintetico(inm);
 }
 function finDesocupado(inmId){return !finContratoVigente(inmId);}
@@ -7982,11 +8193,11 @@ function finFillSelects(){
     if(document.getElementById('fim-ws').value)finWSFormChange('i');
     return;
   }
-  const ops='<option value="">◈ Consolidado — todas</option>'+inmuebles.map(i=>`<option value="${i.id}">${i.num} — ${i.inquilino}</option>`).join('');
+  const ops='<option value="">◈ Consolidado — todas</option>'+inmuebles.map(i=>`<option value="${i.id}">${escHTML(i.num)} — ${escHTML(i.inquilino)}</option>`).join('');
   document.getElementById('fin-prop').innerHTML=ops;document.getElementById('fin-prop').value=finProp;
-  const req='<option value="">Seleccionar propiedad…</option>'+inmuebles.map(i=>`<option value="${i.id}">${i.num} — ${i.inquilino}</option>`).join('');
+  const req='<option value="">Seleccionar propiedad…</option>'+inmuebles.map(i=>`<option value="${i.id}">${escHTML(i.num)} — ${escHTML(i.inquilino)}</option>`).join('');
   document.getElementById('fga-prop').innerHTML=req;document.getElementById('fim-prop').innerHTML=req;
-  document.getElementById('fga-cat').innerHTML=gastoCats.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  document.getElementById('fga-cat').innerHTML=gastoCats.map(c=>`<option value="${c.id}">${escHTML(c.nombre)}</option>`).join('');
 }
 function finRenderAll(){
   if(!document.getElementById('fin-app'))return;
@@ -8399,7 +8610,7 @@ function finCellTip(ev,kind,wi,di){
 function finCatColor(catId){const k=Math.max(0,finDSCats().findIndex(c=>c.id===catId));return FIN_CATC[k%FIN_CATC.length];}
 function finCatNombre(g){
   if(g._svc)return'Servicios que absorbes';
-  const c=finDSCats().find(x=>x.id===g.categoria_id);return c?c.nombre:(g.categoria||'Sin categoría');
+  const c=finDSCats().find(x=>x.id===g.categoria_id);return escHTML(c?c.nombre:(g.categoria||'Sin categoría'));  // solo se pinta en HTML
 }
 function finRenderGastos(C){
   // resumen por categoría
@@ -8411,8 +8622,8 @@ function finRenderGastos(C){
     // cuenta cuadre, pero se editan allá, no aquí.
     if(g._svc)return`<div class="fin-row" style="animation-delay:${Math.min(i2*.04,.4)}s;cursor:default;opacity:.92">
       <span style="width:9px;height:9px;border-radius:3px;background:#38BDF8;box-shadow:0 0 8px #38BDF888;flex-shrink:0"></span>
-      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${finCatNombre(g)} <span style="color:#8E89A8;font-weight:400">· ${g.descripcion}</span></div>
-      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${finGlobal?finWSName(g.workspace_id)+' · ':''}${fdS(g.fecha)} · <i class="ti ti-bolt" style="font-size:10px"></i> desde Servicios</div></div>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${finCatNombre(g)} <span style="color:#8E89A8;font-weight:400">· ${escHTML(g.descripcion)}</span></div>
+      <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${finGlobal?escHTML(finWSName(g.workspace_id))+' · ':''}${fdS(g.fecha)} · <i class="ti ti-bolt" style="font-size:10px"></i> desde Servicios</div></div>
       <span style="font-family:'DM Mono',monospace;font-weight:500;font-size:13px">${fmt(g.monto)}</span>
       <span style="width:26px"></span>
     </div>`;
@@ -8420,7 +8631,7 @@ function finRenderGastos(C){
     const act=virt?`finEditGasto('${g.id}',${g._vm},${g._vy})`:`finEditGasto('${g.id}')`;
     return`<div class="fin-row" style="animation-delay:${Math.min(i2*.04,.4)}s;cursor:pointer" onclick="${act}">
       <span style="width:9px;height:9px;border-radius:3px;background:${col};box-shadow:0 0 8px ${col}88;flex-shrink:0"></span>
-      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${finCatNombre(g)}${g.descripcion?` <span style="color:#8E89A8;font-weight:400">· ${g.descripcion}</span>`:''}</div>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${finCatNombre(g)}${g.descripcion?` <span style="color:#8E89A8;font-weight:400">· ${escHTML(g.descripcion)}</span>`:''}</div>
       <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${finRowLoc(g)} · ${fdS(g.fecha)}${g.es_recurrente||virt?' · <i class="ti ti-repeat" style="font-size:10px"></i> recurrente':''}${g._inst==='override'?' · editado':''}${virt?' · auto':''}</div></div>
       <span style="font-family:'DM Mono',monospace;font-weight:500;font-size:13px">${fmt(g.monto)}</span>
       <button class="fin-ib" title="Editar" onclick="event.stopPropagation();${act}"><i class="ti ti-pencil" style="font-size:13px"></i></button>
@@ -8441,7 +8652,7 @@ function finRenderImps(C){
   const rows=[...C.il].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).map((x,i2)=>{
     return`<div class="fin-row" style="animation-delay:${Math.min(i2*.04,.4)}s;cursor:pointer" onclick="finEditImp('${x.id}')">
       <span style="width:9px;height:9px;border-radius:3px;background:#FBBF24;box-shadow:0 0 8px #FBBF2488;flex-shrink:0"></span>
-      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px">${x.concepto||'Impuesto'}</div>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px">${escHTML(x.concepto||'Impuesto')}</div>
       <div style="font-size:10.5px;color:#8E89A8;font-family:'DM Mono',monospace">${finRowLoc(x)} · ${fdS(x.fecha)}</div></div>
       <span style="font-family:'DM Mono',monospace;font-weight:500;font-size:13px">${fmt(x.monto)}</span>
       <button class="fin-ib" title="Editar" onclick="event.stopPropagation();finEditImp('${x.id}')"><i class="ti ti-pencil" style="font-size:13px"></i></button>
@@ -8465,14 +8676,14 @@ function finDrawer(kind){
   const line=(l,v,c,b)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px ${b?'solid':'dashed'} rgba(139,92,246,.2);font-size:${b?'14px':'12.5px'};${b?'font-weight:700':''}"><span style="color:${b?'#EDEBFA':'#8E89A8'}">${l}</span><span style="font-family:'DM Mono',monospace;color:${c||'#EDEBFA'}">${typeof v==='number'?fmt(v):v}</span></div>`;
   const nota=t=>`<p style="font-size:11px;color:#8E89A8;margin-top:12px;line-height:1.6">${t}</p>`;
   let body='';
-  if(kind==='fact')body=C.cl.map(p=>line(`${finRowLoc(p)} · ${p.concepto} · ${fdS(fechaPeriodo(p))}`,Number(p.pagado))).join('')
+  if(kind==='fact')body=C.cl.map(p=>line(`${finRowLoc(p)} · ${escHTML(p.concepto)} · ${fdS(fechaPeriodo(p))}`,Number(p.pagado))).join('')
     +line('Total cobrado',C.cobr,'#C4B5FD',1)
     +line('Facturado en el periodo',C.fact,'#8E89A8')
     +(C.porCobrar>0.005?line('Aún por cobrar',C.porCobrar,'#FB7185'):'')
     +nota('La cascada parte de lo <b>cobrado</b>, no de lo facturado: la renta que todavía no entra no es utilidad. Cada cobro cuenta en el <b>mes del cargo</b> que liquida, no en el día en que se capturó, para que registrar hoy una renta atrasada no vacíe su mes. <b>Los cobros de agua, luz y gas no aparecen aquí</b>: son un reembolso de lo que adelantaste, no ingreso del negocio.');
   else if(kind==='gastos')body=C.gl.map(g=>line(`${g._svc?finCatNombre(g):finRowLoc(g)+' · '+finCatNombre(g)}${g._inst==='virtual'?' ↻':''} · ${fdS(g.fecha)}`,Number(g.monto))).join('')+line('Total gastos',C.gTot,'#F0ABFC',1)
     +nota('Los recibos de agua, luz y gas <b>no entran como gasto</b>: los adelantas y te los reembolsan. De cada recibo sólo se cuenta la parte que <b>nunca le cargaste a nadie</b> —el subsidio de los departamentos vacíos o de los días sin ocupar, más tu apoyo de administración—, porque ése sí es dinero tuyo.');
-  else if(kind==='imp')body=C.il.map(x=>line(`${finRowLoc(x)} · ${x.concepto||'Impuesto'} · ${fdS(x.fecha)}`,Number(x.monto))).join('')+line('Total impuestos',C.iTot,'#FBBF24',1);
+  else if(kind==='imp')body=C.il.map(x=>line(`${finRowLoc(x)} · ${escHTML(x.concepto||'Impuesto')} · ${fdS(x.fecha)}`,Number(x.monto))).join('')+line('Total impuestos',C.iTot,'#FBBF24',1);
   else if(kind==='util')body=line('Ingresos cobrados',C.cobr,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,col,1)+nota(`Valor calculado — no es editable. Se recalcula al cambiar cualquier cobro o gasto del periodo.${C.util<0?' <b style="color:#FB7185">Utilidad negativa</b>: hubo más gastos que cobranza (p. ej. vacancia o un recibo alto).':''}`);
   else body=line('Ingresos cobrados',C.cobr,'#C4B5FD')+line('− Gastos de operación',-C.gTot,'#F0ABFC')+line('= Utilidad',C.util,C.util<0?'#FB7185':'#6EE7B7',1)+line('− Impuestos',-C.iTot,'#FBBF24')+line('= Utilidad neta',C.neta,col,1)+nota('Lo que realmente queda después de gastos operativos e impuestos, sobre dinero cobrado. Calculado en cascada estricta; nunca editable.');
   d.innerHTML=`
@@ -8614,7 +8825,7 @@ function finRenderCats(){
     const used=finArr('gastos_operacion').some(g=>g.categoria_id===c.id);
     return`<div style="display:flex;align-items:center;gap:9px;padding:8px 11px;background:#0C0A16;border:1px solid rgba(139,92,246,.22);border-radius:9px;font-size:12.5px">
       <span style="width:9px;height:9px;border-radius:3px;background:${FIN_CATC[i2%FIN_CATC.length]}"></span>
-      <span style="flex:1">${c.nombre}${c.clave==='servicio_facturacion'?' <span class="fin-chip" style="font-size:9px;padding:1px 6px" title="Costo del servicio que emite las facturas de renta">servicio_facturacion</span>':''}</span>
+      <span style="flex:1">${escHTML(c.nombre)}${c.clave==='servicio_facturacion'?' <span class="fin-chip" style="font-size:9px;padding:1px 6px" title="Costo del servicio que emite las facturas de renta">servicio_facturacion</span>':''}</span>
       ${used?'<span style="font-size:10px;color:#8E89A8">en uso</span>':`<button class="fin-ib" style="width:24px;height:24px" title="Eliminar" onclick="finDelCat('${c.id}')"><i class="ti ti-trash" style="font-size:12px"></i></button>`}
     </div>`;}).join('')||'<p style="color:#8E89A8;font-size:12px">Sin categorías.</p>';
 }
@@ -8731,20 +8942,22 @@ async function invitarPortal(inmId,contratoId){
   renderPortalAdmin();
   mostrarInvitacion(data,inm,vig);
 }
+let INV_ACTUAL={enlace:'',msg:'',tel:''};   // lo que usan los botones del modal de invitación
 function mostrarInvitacion(q,inm,vig){
   const enlace=location.origin+location.pathname+'#inv='+q.codigo;
   const nom=(vig?.inquilino||inm.inquilino||'').split(' ')[0]||'';
   const emp=CW?.cfg?.empresa||CW?.nombre||'InmoPagos';
   const msg=`Hola ${nom}, soy de ${emp}. Te abrí tu portal de inquilino: ahí ves cuánto debes, tus recibos y me puedes escribir directo.\n\nEntra aquí y crea tu contraseña:\n${enlace}\n\nTu código por si te lo pide: ${q.codigo}`;
+  INV_ACTUAL={enlace,msg,tel:vig?.tel||inm.tel||''};
   document.getElementById('inv-body').innerHTML=`
-    <p style="font-size:13.5px;color:#6B6963;line-height:1.6;margin-bottom:16px">Mándale este enlace a <strong style="color:#1A1917">${(vig?.inquilino||inm.inquilino||'tu inquilino')}</strong>. Con él crea su contraseña y entra directo a su portal — no tiene que teclear nada más.</p>
+    <p style="font-size:13.5px;color:#6B6963;line-height:1.6;margin-bottom:16px">Mándale este enlace a <strong style="color:#1A1917">${escHTML(vig?.inquilino||inm.inquilino||'tu inquilino')}</strong>. Con él crea su contraseña y entra directo a su portal — no tiene que teclear nada más.</p>
     <div style="background:#1A1917;border-radius:12px;padding:16px 18px;text-align:center;margin-bottom:14px">
       <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em">Código de invitación</div>
       <div style="font-family:'DM Mono',monospace;font-size:27px;font-weight:500;color:#fff;letter-spacing:.16em;margin-top:6px">${q.codigo}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
-      <button class="btn" onclick="navigator.clipboard?.writeText('${enlace}').then(()=>toast('Enlace copiado','ti-copy'))"><i class="ti ti-link"></i>Copiar enlace</button>
-      <button class="btn primary" onclick="abrirWA('${telWA(vig?.tel||inm.tel||'')}',${JSON.stringify(msg)})"><i class="ti ti-brand-whatsapp"></i>Mandar por WhatsApp</button>
+      <button class="btn" onclick="navigator.clipboard?.writeText(INV_ACTUAL.enlace).then(()=>toast('Enlace copiado','ti-copy'))"><i class="ti ti-link"></i>Copiar enlace</button>
+      <button class="btn primary" onclick="abrirWA(INV_ACTUAL.tel,INV_ACTUAL.msg)"><i class="ti ti-brand-whatsapp"></i>Mandar por WhatsApp</button>
     </div>
     <p style="font-size:11.5px;color:#9D9B96;margin-top:13px;line-height:1.5">El código sirve una sola vez y se quema al usarse. Si se pierde, vuelve a darle a "Reenviar" y se genera uno nuevo.</p>`;
   openM('m-invitar');
@@ -8924,7 +9137,7 @@ function renderHilo(){
       background:${mio?'#1D9E75':'#F1EFE8'};color:${mio?'#fff':'#1A1917'};border-bottom-${mio?'right':'left'}-radius:5px">
       ${m.asunto?`<b style="display:block;margin-bottom:3px">${esc(m.asunto)}</b>`:''}
       ${esc(m.cuerpo).replace(/\n/g,'<br>')}
-      ${m.adjunto_url?`<button class="btn" style="margin-top:8px;padding:5px 10px;font-size:11.5px" onclick="bzVerAdjunto('${esc(m.adjunto_url)}')"><i class="ti ti-photo"></i>Ver foto</button>`:''}
+      ${m.adjunto_url?`<button class="btn" style="margin-top:8px;padding:5px 10px;font-size:11.5px" onclick="bzVerAdjunto('${m.id}')"><i class="ti ti-photo"></i>Ver foto</button>`:''}
       <div style="font-size:10.5px;opacity:.65;margin-top:5px;font-family:'DM Mono',monospace">${new Date(m.created_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`;}).join('');
   const b=document.getElementById('hilo-body');b.scrollTop=b.scrollHeight;
@@ -8951,7 +9164,9 @@ async function bzEstadoHilo(id,estado){
   toast({abierto:'Marcado como abierto',en_proceso:'Marcado en proceso',resuelto:'Marcado como resuelto'}[estado],'ti-check');
   renderHilo();renderBuzon();
 }
-async function bzVerAdjunto(path){
+async function bzVerAdjunto(id){
+  const path=BUZON.mensajes.find(x=>x.id===id)?.adjunto_url||BUZON.reportes.find(x=>x.id===id)?.comprobante_url;
+  if(!path){toast('No se encontró el archivo','ti-alert-triangle');return}
   const {data,error}=await sb.storage.from('comprobantes').createSignedUrl(path,300);
   if(error||!data?.signedUrl){toast('No se pudo abrir el archivo','ti-alert-triangle');return}
   window.open(data.signedUrl,'_blank','noopener');
@@ -8973,8 +9188,9 @@ function bzAbrirPago(id){
       <div style="font-size:24px;font-weight:500;color:#fff;font-family:'DM Mono',monospace">${fmt(r.monto)}</div>
     </div>
     ${r.nota?`<div style="font-size:13px;color:#6B6963;line-height:1.55;margin-bottom:14px;background:#F1EFE8;border-radius:10px;padding:11px 14px">"${esc(r.nota)}"</div>`:''}
-    ${r.comprobante_url?`<button class="btn" style="width:100%;justify-content:center;margin-bottom:14px" onclick="bzVerAdjunto('${esc(r.comprobante_url)}')"><i class="ti ti-photo"></i>Ver su comprobante</button>`:'<div style="font-size:12.5px;color:#9D9B96;margin-bottom:14px">No adjuntó comprobante.</div>'}
-    <div style="font-size:12.5px;font-weight:600;margin-bottom:8px">Al confirmar se cobran estos cargos${cargos.length?` (${fmt(suma)})`:''}:</div>
+    ${r.comprobante_url?`<button class="btn" style="width:100%;justify-content:center;margin-bottom:14px" onclick="bzVerAdjunto('${r.id}')"><i class="ti ti-photo"></i>Ver su comprobante</button>`:'<div style="font-size:12.5px;color:#9D9B96;margin-bottom:14px">No adjuntó comprobante.</div>'}
+    <div style="font-size:12.5px;font-weight:600;margin-bottom:8px">${cargos.length?`Al confirmar se aplican los ${fmt(r.monto)} que reportó a estos cargos, del más viejo al más nuevo, con fecha ${fd(r.fecha)}:`:'Cargos que señaló:'}</div>
+    ${cargos.length&&Number(r.monto)<suma-0.005?`<div style="font-size:12px;color:#8A5A00;background:#FDF0DB;border-radius:9px;padding:9px 12px;margin-bottom:8px">Reportó ${fmt(r.monto)} y los cargos suman ${fmt(suma)}: el último quedará con saldo pendiente.</div>`:''}
     ${cargos.length?cargos.map(p=>{
       const dd=descPago(p,i||{num:'—'});
       return `<label style="display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid #EEECE4;cursor:pointer">
@@ -8984,18 +9200,42 @@ function bzAbrirPago(id){
     }).join(''):`<div style="font-size:12.5px;color:#9D9B96">No señaló ningún cargo. Confírmalo y regístralo tú a mano donde corresponda.</div>`}`;
   openM('m-repago');
 }
+// Confirmar = "sí, recibí lo que dice". Se abona lo que el inquilino REPORTÓ, con la fecha que
+// reportó, del cargo más viejo al más nuevo (igual que "Registrar pago recibido"). Antes se
+// usaba marcarPagado(): cobraba los cargos completos aunque hubiera reportado menos, y si un
+// cargo era de un mes pasado abría la ventanita de "¿cuándo te pagaron?" y se salía SIN
+// cobrar, mientras el aviso quedaba "confirmado" y el toast decía "N cargos cobrados".
 async function bzConfirmar(){
   const r=repagoAbierto;if(!r)return;
   const ids=[...document.querySelectorAll('.rp-c:checked')].map(c=>c.value);
-  // Cobrar reusa marcarPagado(): misma ruta, mismas validaciones y mismo
-  // confeti que cuando Diego cobra a mano desde Pagos.
-  for(const id of ids)await marcarPagado(id);
+  const cargos=ids.map(id=>pagos.find(p=>p.id===id)).filter(p=>p&&saldoPago(p)>0.005)
+    .sort((a,b)=>a.vencimiento<b.vencimiento?-1:1);
+  const fecha=r.fecha||hoyISO();
+  const ref=[r.metodo,r.referencia].filter(Boolean).join(' · ');
+  let resto=Number(r.monto)||0,aplicados=0,total=0;
+  for(const p of cargos){
+    if(resto<=0.005)break;
+    const aplicar=Math.min(resto,saldoPago(p));
+    const linea=`${fdS(fecha)} · abono ${fmt(aplicar)} (aviso de pago del portal${ref?': '+ref:''})`;
+    const {data:saved,error}=await guardarFilaPago({pagado:Number(p.pagado||0)+aplicar,fecha_pago:fecha,notas:[p.notas,linea].filter(Boolean).join('\n')},p.id);
+    if(error){
+      // Lo que ya se aplicó se queda (y se ve en pantalla); el aviso sigue pendiente para
+      // revisarlo, en vez de quedar "confirmado" con un cobro a medias.
+      toast(`No se pudo cobrar un cargo (${error.message}). El aviso sigue pendiente; revisa sus cargos.`,'ti-alert-triangle');
+      refresh();return;
+    }
+    const k=pagos.findIndex(x=>x.id===p.id);if(k>=0)pagos[k]=saved;
+    resto-=aplicar;aplicados++;total+=aplicar;
+  }
   const {error}=await sb.from('reportes_pago').update({estado:'confirmado',revisado_por:CU.id,revisado_at:new Date().toISOString()}).eq('id',r.id);
-  if(error){toast('Se cobró, pero no se pudo marcar el aviso','ti-alert-triangle')}
+  if(error){toast('Se cobró, pero no se pudo marcar el aviso como confirmado','ti-alert-triangle')}
   else{r.estado='confirmado';r.revisado_at=new Date().toISOString()}
   closeM('m-repago');repagoAbierto=null;
-  toast(ids.length?`Confirmado · ${ids.length} cargo${ids.length===1?'':'s'} cobrado${ids.length===1?'':'s'}`:'Aviso confirmado','ti-check');
-  renderPortalAdmin();
+  toast(aplicados
+    ?`Confirmado · ${fmt(total)} aplicados a ${aplicados} cargo${aplicados===1?'':'s'}${resto>0.005?` · sobran ${fmt(resto)}: regístralos a mano`:''}`
+    :(Number(r.monto)>0?'Aviso confirmado · no había cargos marcados: registra el pago a mano donde corresponda':'Aviso confirmado'),'ti-check');
+  if(aplicados)lanzarConfetti(window.innerWidth/2,window.innerHeight*0.4);
+  refresh();
 }
 async function bzRechazar(){
   const r=repagoAbierto;if(!r)return;
@@ -9258,9 +9498,9 @@ function pFormasPago(neg){
   if(neg.scotiabank)f.push({l:neg.banco?`Cuenta ${neg.banco}`:'Número de cuenta',v:neg.scotiabank,i:'ti-credit-card'});
   if(neg.oxxo)f.push({l:neg.tienda?`Tarjeta para ${neg.tienda}`:'Tarjeta para depósito',v:neg.oxxo,i:'ti-building-store'});
   if(!f.length)return pVacio('ti-cash-off','Sin datos de pago','Tu administrador todavía no cargó a dónde depositar. Pregúntale por WhatsApp.');
-  return f.map(x=>`<button class="p-copy" onclick="pCopiar(this,'${pEsc(x.v)}')">
+  return f.map(x=>`<button class="p-copy" data-v="${pEsc(x.v)}" onclick="pCopiar(this,this.dataset.v)">
     <i class="ti ${x.i}"></i>
-    <span class="p-copy-tx"><small>${x.l}</small><b>${pEsc(x.v)}</b></span>
+    <span class="p-copy-tx"><small>${pEsc(x.l)}</small><b>${pEsc(x.v)}</b></span>
     <i class="ti ti-copy"></i></button>`).join('');
 }
 function pCopiar(btn,txt){
@@ -9365,7 +9605,7 @@ function pPintaChat(){
         <div class="p-msg ${m.autor==='inquilino'?'mio':'suyo'}">
           ${m.asunto?`<b style="display:block;margin-bottom:3px">${pEsc(m.asunto)}</b>`:''}
           ${pEsc(m.cuerpo).replace(/\n/g,'<br>')}
-          ${m.adjunto_url?`<button class="p-btn" style="margin-top:8px;min-height:36px;padding:6px 11px;font-size:12px" onclick="pVerAdjunto('${pEsc(m.adjunto_url)}')"><i class="ti ti-photo"></i>Ver foto</button>`:''}
+          ${m.adjunto_url?`<button class="p-btn" style="margin-top:8px;min-height:36px;padding:6px 11px;font-size:12px" onclick="pVerAdjunto('${m.id}')"><i class="ti ti-photo"></i>Ver foto</button>`:''}
           <time>${new Date(m.created_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</time>
         </div>`).join(''):
         pVacio('ti-message-2','Nada por aquí todavía','Escríbele a tu administrador lo que necesites: una duda del recibo, un permiso, lo que sea. Queda registrado para los dos.')}
@@ -9542,7 +9782,9 @@ function pUAB(){
   const t=P.info?.negocio?.tipo_unidad;
   return (TIPOS_UNIDAD[t]||TIPOS_UNIDAD.departamento).ab;
 }
-async function pVerAdjunto(path){
+async function pVerAdjunto(id){
+  const path=(P.mensajes||[]).find(x=>x.id===id)?.adjunto_url;
+  if(!path){toast('No se encontró el archivo','ti-alert-triangle');return}
   const {data,error}=await sb.storage.from('comprobantes').createSignedUrl(path,300);
   if(error||!data?.signedUrl){toast('No se pudo abrir el archivo','ti-alert-triangle');return}
   pSheetHTML('Archivo',`<img src="${data.signedUrl}" alt="Adjunto" style="width:100%;border-radius:12px">`);
