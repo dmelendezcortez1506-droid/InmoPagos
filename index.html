@@ -5,7 +5,7 @@
   <link rel="icon" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>InmoPagos — MC Conecta Living</title>
+<title>InmoPagos — Administra tus rentas</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
 <!-- Space Grotesk es exclusiva del portal del inquilino: los displays (el saldo,
      los títulos de sección) en una tipografía distinta son lo que más rápido
@@ -1277,142 +1277,6 @@ button.p-row:active{transform:scale(.99)}
 </head>
 <body>
 
-<!-- ════ SETUP ════ -->
-<div id="s-setup" class="screen">
-<div class="setup-card">
-  <h1><i class="ti ti-building" style="color:var(--teal)"></i>InmoPagos — Configuración inicial</h1>
-  <p class="sub">Solo necesitas hacer esto una vez.</p>
-  <div class="step-list">
-    <div class="step"><div class="sn">1</div><div><b>Crea cuenta gratis en Supabase</b>Ve a <a href="https://supabase.com" target="_blank" style="color:var(--teal)">supabase.com</a> → New Project</div></div>
-    <div class="step"><div class="sn">2</div><div><b>Activa autenticación por email</b>Authentication → Providers → Email → Enable</div></div>
-    <div class="step"><div class="sn">3</div><div><b>Ejecuta este SQL en SQL Editor → New Query → Run:</b>
-<div class="sql-box">-- Workspaces (negocios)
-CREATE TABLE workspaces (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  nombre text NOT NULL,
-  owner_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  invite_code text UNIQUE DEFAULT upper(substr(replace(gen_random_uuid()::text,'-',''),1,8)),
-  empresa text DEFAULT 'MC Conecta Living',
-  direccion text,
-  clabe text,
-  cuenta_scotiabank text,
-  tarjeta_oxxo text,
-  dias_tolerancia integer DEFAULT 3,
-  nombre_cobrador text,
-  created_at timestamptz DEFAULT now()
-);
-CREATE TABLE memberships (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text DEFAULT 'member',
-  email text,
-  UNIQUE(workspace_id, user_id)
-);
-CREATE TABLE inmuebles (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
-  num text NOT NULL,
-  piso text,
-  inquilino text NOT NULL,
-  tel text,
-  email text,
-  renta numeric DEFAULT 0,
-  dia integer DEFAULT 1,
-  personas integer DEFAULT 1,
-  notas text,
-  fecha_inicio_contrato date,
-  fecha_termino_contrato date,
-  fecha_salida date,
-  created_at timestamptz DEFAULT now()
-);
--- Contratos: cada inquilino de un espacio (historial). El inmueble espeja al vigente.
-CREATE TABLE contratos (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
-  inmueble_id uuid REFERENCES inmuebles(id) ON DELETE CASCADE,
-  inquilino text NOT NULL,
-  tel text,
-  email text,
-  renta numeric DEFAULT 0,
-  dia integer DEFAULT 1,
-  personas integer DEFAULT 1,
-  fecha_inicio_contrato date,
-  fecha_termino_contrato date,
-  fecha_salida date,
-  notas text,
-  created_at timestamptz DEFAULT now()
-);
-CREATE TABLE pagos (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
-  inmueble_id uuid REFERENCES inmuebles(id) ON DELETE CASCADE,
-  contrato_id uuid REFERENCES contratos(id) ON DELETE SET NULL,
-  concepto text DEFAULT 'renta',
-  monto numeric DEFAULT 0,
-  pagado numeric DEFAULT 0,
-  vencimiento date NOT NULL,
-  fecha_pago date,
-  notas text,
-  origen text DEFAULT 'manual',
-  servicio_id uuid,
-  omitido boolean DEFAULT false,
-  created_at timestamptz DEFAULT now()
-);
-CREATE TABLE servicios (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
-  tipo text NOT NULL,
-  total numeric NOT NULL,
-  periodo_ini date NOT NULL,
-  periodo_fin date NOT NULL,
-  dias_servicio integer,
-  mes integer,
-  anio integer,
-  subsidio_modo text DEFAULT 'adeudo',
-  notas text,
-  created_at timestamptz DEFAULT now()
-);
-CREATE TABLE servicio_detalles (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  servicio_id uuid REFERENCES servicios(id) ON DELETE CASCADE,
-  inmueble_id uuid REFERENCES inmuebles(id) ON DELETE CASCADE,
-  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
-  dias_uso integer DEFAULT 0,
-  personas integer DEFAULT 1,
-  ponderacion numeric DEFAULT 0,
-  porcentaje numeric DEFAULT 0,
-  monto numeric DEFAULT 0,
-  es_administracion boolean DEFAULT false
-);
-ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inmuebles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contratos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pagos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE servicios ENABLE ROW LEVEL SECURITY;
-ALTER TABLE servicio_detalles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "ws" ON workspaces FOR ALL USING (id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-CREATE POLICY "mem" ON memberships FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-CREATE POLICY "inm" ON inmuebles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-CREATE POLICY "con" ON contratos FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-CREATE POLICY "pag" ON pagos FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-CREATE POLICY "svc" ON servicios FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT workspace_id FROM memberships WHERE user_id=auth.uid()));
-
--- NOTA: este script es el de instalación desde cero y NO refleja el esquema
--- actual en producción (faltan clientes, contratos, gastos, y las políticas
--- reales usan es_miembro_del_workspace). Para la colaboración por código, corre
--- además migracion_colaboradores.sql.</div></div></div>
-    <div class="step"><div class="sn">4</div><div><b>Copia URL y Anon Key</b>Project Settings → API</div></div>
-  </div>
-  <div class="fg2"><label>Supabase Project URL</label><input type="url" id="cfg-url" placeholder="https://xxxx.supabase.co"></div>
-  <div class="fg2"><label>Supabase Anon Key</label><input type="text" id="cfg-key" placeholder="eyJhbGciOiJI..."></div>
-  <div class="err" id="setup-err"></div>
-  <button class="btn primary" style="width:100%;justify-content:center;padding:11px" onclick="doSetup()"><i class="ti ti-plug"></i>Guardar y continuar</button>
-</div>
-</div>
-
 <!-- ════ SUSCRIPCIÓN VENCIDA ════ -->
 <div id="s-bloqueado" class="screen">
 <div class="blq-card">
@@ -1487,7 +1351,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <input type="email" id="r-email" autocomplete="email" placeholder="correo@ejemplo.com" onblur="authBlur(this,'email')">
         <span class="field-msg" id="msg-r-email"></span></div>
       <div class="fg2"><label for="r-pass">Contraseña</label>
-        <input type="password" id="r-pass" autocomplete="new-password" placeholder="Mínimo 6 caracteres" onblur="authBlur(this,'pass')">
+        <input type="password" id="r-pass" autocomplete="new-password" placeholder="Mínimo 8 caracteres" onblur="authBlur(this,'pass')">
         <span class="field-msg" id="msg-r-pass"></span></div>
       <div class="err" id="reg-err" role="alert"></div><div class="ok" id="reg-ok" role="status"></div>
       <button class="btn primary" type="submit" style="width:100%;justify-content:center" id="btn-reg"><i class="ti ti-user-plus"></i>Crear cuenta</button>
@@ -1508,7 +1372,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
       <h2 style="font-size:16px;font-weight:600;color:var(--atx);margin-bottom:5px">Elige tu nueva contraseña</h2>
       <p style="font-size:13px;color:var(--amut);margin-bottom:1.1rem">Ya validamos tu enlace. Solo falta esto.</p>
       <div class="fg2"><label for="n-pass">Nueva contraseña</label>
-        <input type="password" id="n-pass" autocomplete="new-password" placeholder="Mínimo 6 caracteres" onblur="authBlur(this,'pass')">
+        <input type="password" id="n-pass" autocomplete="new-password" placeholder="Mínimo 8 caracteres" onblur="authBlur(this,'pass')">
         <span class="field-msg" id="msg-n-pass"></span></div>
       <div class="fg2"><label for="n-pass2">Confírmala</label>
         <input type="password" id="n-pass2" autocomplete="new-password" placeholder="Escríbela otra vez"></div>
@@ -2005,6 +1869,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">¿Qué rentas en este negocio?</label><select id="cfg-tipo" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"><option value="departamento">Departamentos</option><option value="cuarto">Cuartos</option><option value="casa">Casas</option><option value="local">Locales comerciales</option><option value="oficina">Oficinas</option><option value="bodega">Bodegas</option><option value="completa">La propiedad completa (una sola renta)</option></select><span style="font-size:11.5px;color:#9D9B96">Cambia el nombre que usa toda la app. Si rentas la casa entera, elige la última opción y en vez de "Agregar departamento" verás "Agregar datos de renta".</span></div>
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Nombre del cobrador / propietario</label><input type="text" id="cfg-cobrador" placeholder="Brenda Verenice Cortez Suárez" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"><span id="cfg-cobro-nota" style="display:none;font-size:11.5px;color:#9D9B96"><i class="ti ti-lock" style="font-size:11px"></i> Los datos de cobro (beneficiario, CLABE, banco, cuenta y tarjeta) solo los cambia el propietario del negocio.</span></div>
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">Dirección del inmueble</label><input type="text" id="cfg-dir" placeholder="Girasol 7012, Col. Santa María, Guadalupe, N.L." style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
+        <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">WhatsApp para tus inquilinos</label><input type="tel" id="cfg-whatsapp" inputmode="tel" placeholder="81 1234 5678" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"><span style="font-size:11.5px;color:#9D9B96">Con este número le aparece al inquilino el botón "Escribirle" en su portal. Si lo dejas vacío, el botón no se muestra.</span></div>
         <div style="display:flex;flex-direction:column;gap:5px;grid-column:1/-1"><label style="font-size:12px;font-weight:600;color:#6B6963">CLABE interbancaria</label><input type="text" id="cfg-clabe" placeholder="044420038023331555" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
         <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Banco</label><input type="text" id="cfg-banco" placeholder="Scotiabank, BBVA, Banorte..." style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%"></div>
         <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:12px;font-weight:600;color:#6B6963">Número de cuenta</label><input type="text" id="cfg-scott" placeholder="0248687525" style="font-size:13px;padding:9px 12px;border:1px solid #E2E0D8;background:#fff;border-radius:8px;color:#1A1917;width:100%;font-family:'DM Mono',monospace"></div>
@@ -2221,7 +2086,7 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
 <!-- Unirse con código -->
 <div class="overlay" id="m-jws"><div class="modal sm">
   <div class="mh"><h3><i class="ti ti-door-enter" style="color:var(--blue)"></i>Unirse con código</h3><button class="mc" onclick="closeM('m-jws')"><i class="ti ti-x"></i></button></div>
-  <div class="fg2"><label>Código de invitación</label><input type="text" id="jcode" placeholder="AB12CD34" style="text-transform:uppercase;font-family:'DM Mono',monospace;font-size:20px;letter-spacing:.1em;text-align:center"></div>
+  <div class="fg2"><label>Código de invitación</label><input type="text" id="jcode" placeholder="ABCD EFGH JKLM" maxlength="20" style="text-transform:uppercase;font-family:'DM Mono',monospace;font-size:20px;letter-spacing:.1em;text-align:center"></div>
   <div class="err" id="jws-err"></div>
   <div class="mf"><button class="btn" onclick="closeM('m-jws')">Cancelar</button><button class="btn primary" onclick="unirseWS()"><i class="ti ti-check"></i>Unirse</button></div>
 </div></div>
@@ -2503,10 +2368,11 @@ CREATE POLICY "svcd" ON servicio_detalles FOR ALL USING (workspace_id IN (SELECT
   </div>
 </div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/motion@10.18.0/dist/motion.min.js"></script>
+<!-- Versiones fijas + integrity: si el CDN sirviera otro archivo (actualización o ataque), el navegador no lo ejecuta. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js" integrity="sha384-UagCvVPT5XXA0Hx+nJYUAGBFseHT9zBgpJMSebsAxl9lciTwbT+39j5VfRjdP5Tp" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@10.18.0/dist/motion.min.js" integrity="sha384-Yqz+BqPRR4A0raMrkHbKigm/8NYHfFXmYdcEoZ5qhPPjpYxIFfDxEuHMdTIoZ+c5" crossorigin="anonymous"></script>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
@@ -3193,19 +3059,6 @@ async function revertirPago(id){
 // ═══════════════════════════════════════
 //  SETUP
 // ═══════════════════════════════════════
-async function doSetup(){
-  const url=document.getElementById('cfg-url').value.trim(),key=document.getElementById('cfg-key').value.trim(),err=document.getElementById('setup-err');
-  err.style.display='none';
-  if(!url.startsWith('https://')){se(err,'La URL debe comenzar con https://');return}
-  if(key.length<20){se(err,'La clave anon parece incorrecta');return}
-  try{
-    const c=supabase.createClient(url,key);
-    const {error}=await c.from('workspaces').select('id').limit(1);
-    if(error&&!['PGRST116','PGRST301','42501','42P01'].includes(error.code))throw error;
-    localStorage.setItem('ib_url',url);localStorage.setItem('ib_key',key);
-    sb=c;show('s-auth');
-  }catch(e){se(err,'Error: '+e.message)}
-}
 
 // ═══════════════════════════════════════
 //  AUTH
@@ -3227,7 +3080,7 @@ function authBlur(inp,tipo){
   const v=inp.value.trim(); let mal='';
   if(v){
     if(tipo==='email'&&!/^\S+@\S+\.\S+$/.test(v)) mal='Revisa el correo, parece incompleto.';
-    if(tipo==='pass'&&inp.value.length<6)          mal='Mínimo 6 caracteres.';
+    if(tipo==='pass'&&inp.value.length<8)          mal='Mínimo 8 caracteres.';
   }
   msg.textContent=mal;
   inp.setAttribute('aria-invalid',mal?'true':'false');
@@ -3256,7 +3109,7 @@ async function doForgot(){
 async function doNuevaPass(){
   const p1=document.getElementById('n-pass').value,p2=document.getElementById('n-pass2').value,err=document.getElementById('nueva-err'),ok=document.getElementById('nueva-ok'),btn=document.getElementById('btn-nueva');
   err.style.display='none';ok.style.display='none';
-  if(p1.length<6){se(err,'La contraseña debe tener mínimo 6 caracteres');return}
+  if(p1.length<8){se(err,'La contraseña debe tener mínimo 8 caracteres');return}
   if(p1!==p2){se(err,'Las dos contraseñas no coinciden');return}
   btn.innerHTML='<span class="spinner"></span>Guardando…';btn.disabled=true;
   const {data,error}=await sb.auth.updateUser({password:p1});
@@ -3268,7 +3121,7 @@ async function doNuevaPass(){
 async function doReg(){
   const nm=document.getElementById('r-name').value.trim(),em=document.getElementById('r-email').value.trim(),ps=document.getElementById('r-pass').value,err=document.getElementById('reg-err'),ok=document.getElementById('reg-ok'),btn=document.getElementById('btn-reg');
   err.style.display='none';ok.style.display='none';if(!nm||!em||!ps){se(err,'Completa todos los campos');return}
-  if(ps.length<6){se(err,'Contraseña mínimo 6 caracteres');return}
+  if(ps.length<8){se(err,'Contraseña mínimo 8 caracteres');return}
   btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
   const {data,error}=await sb.auth.signUp({email:em,password:ps,options:{data:{full_name:nm}}});
   btn.innerHTML='<i class="ti ti-user-plus"></i>Crear cuenta';btn.disabled=false;
@@ -3894,7 +3747,8 @@ async function unirseWS(){
     CODIGO_INVALIDO:'Código inválido',
     VACIO:'Ingresa el código',
     TU_CUENTA_INACTIVA:'Tu suscripción no está activa. Renuévala para poder unirte a un negocio.',
-    DUENO_INACTIVO:'Ese negocio está inactivo: su propietario debe renovar su suscripción.'
+    DUENO_INACTIVO:'Ese negocio está inactivo: su propietario debe renovar su suscripción.',
+    DEMASIADOS_INTENTOS:'Demasiados códigos equivocados. Espera una hora e inténtalo de nuevo.'
   }[r?.error]||'No se pudo unir');return}
   document.getElementById('jcode').value='';
   closeM('m-jws');
@@ -4178,6 +4032,22 @@ async function ensureAutoPagos(anioVista,mesVista){
       // Compat: si las columnas nuevas aún no existen, reintenta sin ellas
       if(error&&/origen|omitido|servicio_id/i.test(error.message||'')){const sin=lote.map(({origen:_o,...r})=>r);({data,error}=await sb.from('pagos').insert(sin).select());}
       if(error&&/contrato_id/i.test(error.message||'')){const sin2=lote.map(({origen:_o,contrato_id:_c,...r})=>r);({data,error}=await sb.from('pagos').insert(sin2).select());}
+      // La base no deja dos rentas automáticas del mismo contrato y mes (índice
+      // pagos_renta_auto_unica). Si otro navegador abierto ya creó alguna en este momento,
+      // el lote completo se rechaza: se reintenta uno por uno y la que ya existe se trae.
+      if(error&&error.code==='23505'){
+        error=null;data=[];
+        for(const row of lote){
+          const r1=await sb.from('pagos').insert(row).select().single();
+          if(!r1.error&&r1.data){data.push(r1.data);continue;}
+          if(r1.error?.code!=='23505'||!row.contrato_id)continue;
+          const ini=row.vencimiento.slice(0,8)+'01',[yy,mm]=ini.split('-').map(Number);
+          const fin=new Date(Date.UTC(yy,mm,1)).toISOString().slice(0,10);
+          const r2=await sb.from('pagos').select('*').eq('contrato_id',row.contrato_id).eq('concepto','renta')
+            .eq('origen','auto_renta').gte('vencimiento',ini).lt('vencimiento',fin).limit(1);
+          (r2.data||[]).forEach(p=>{if(!pagos.some(x=>x.id===p.id))data.push(p);});
+        }
+      }
       if(!error&&data)pagos.push(...data);
     }
   }finally{motorBusy=false;}
@@ -6240,7 +6110,8 @@ function verEC(inmId){
 const CFG_COLS_BASE='empresa,nombre_cobrador,direccion,clabe,cuenta_scotiabank,tarjeta_oxxo';
 const CFG_COLS_NUEVAS='dias_tolerancia,tipo_unidad,banco,tarjeta_tienda,avisar_renovacion,dias_aviso_renovacion';
 async function cargarConfig(){
-  let {data,error}=await sb.from('workspaces').select(CFG_COLS_BASE+','+CFG_COLS_NUEVAS).eq('id',CW.id).single();
+  let {data,error}=await sb.from('workspaces').select(CFG_COLS_BASE+','+CFG_COLS_NUEVAS+',whatsapp_cobro').eq('id',CW.id).single();
+  if(error)({data,error}=await sb.from('workspaces').select(CFG_COLS_BASE+','+CFG_COLS_NUEVAS).eq('id',CW.id).single());
   if(error)({data}=await sb.from('workspaces').select(CFG_COLS_BASE+',dias_tolerancia').eq('id',CW.id).single());
   if(!data)({data}=await sb.from('workspaces').select(CFG_COLS_BASE).eq('id',CW.id).single());
   if(!data)return;
@@ -6253,6 +6124,7 @@ async function cargarConfig(){
   document.getElementById('cfg-oxxo').value=data.tarjeta_oxxo||'';
   const bcoEl=document.getElementById('cfg-banco');if(bcoEl)bcoEl.value=data.banco||'';
   const tdaEl=document.getElementById('cfg-tienda');if(tdaEl)tdaEl.value=data.tarjeta_tienda||'';
+  const waEl=document.getElementById('cfg-whatsapp');if(waEl)waEl.value=data.whatsapp_cobro||'';
   const tolEl=document.getElementById('cfg-tol');if(tolEl)tolEl.value=data.dias_tolerancia??3;
   const tipEl=document.getElementById('cfg-tipo');if(tipEl)tipEl.value=data.tipo_unidad||'departamento';
   const renEl=document.getElementById('cfg-renov');if(renEl)renEl.checked=data.avisar_renovacion!==false;
@@ -6261,7 +6133,7 @@ async function cargarConfig(){
   // tr_campos_solo_dueno), porque un colaborador que cambiara la CLABE desviaría el
   // dinero de los inquilinos. Aquí solo se refleja: se ven, pero de solo lectura.
   const esDueno=CW.role==='owner';
-  ['cfg-cobrador','cfg-clabe','cfg-banco','cfg-scott','cfg-oxxo','cfg-tienda'].forEach(id=>{
+  ['cfg-cobrador','cfg-clabe','cfg-banco','cfg-scott','cfg-oxxo','cfg-tienda','cfg-whatsapp'].forEach(id=>{
     const e=document.getElementById(id);if(!e)return;
     e.readOnly=!esDueno;e.style.background=esDueno?'#fff':'#F6F5F0';
     e.title=esDueno?'':'Solo el propietario del negocio puede cambiar los datos de cobro';
@@ -6284,9 +6156,16 @@ async function guardarConfig(){
     banco:document.getElementById('cfg-banco')?.value||'',
     tarjeta_tienda:document.getElementById('cfg-tienda')?.value||'',
     avisar_renovacion:!!document.getElementById('cfg-renov')?.checked,
-    dias_aviso_renovacion:rd};
+    dias_aviso_renovacion:rd,
+    whatsapp_cobro:(document.getElementById('cfg-whatsapp')?.value||'').trim()};
   let {error}=await sb.from('workspaces').update(d).eq('id',CW.id);
   let aviso='';
+  // Compat: whatsapp_cobro llega con la migración de endurecimiento; sin ella se guarda lo demás.
+  if(error&&/whatsapp_cobro/i.test(error.message||'')){
+    delete d.whatsapp_cobro;
+    ({error}=await sb.from('workspaces').update(d).eq('id',CW.id));
+    aviso='Guardado · el WhatsApp para inquilinos se activa al correr la migración SQL';
+  }
   // Compat: si alguna columna nueva aún no existe, guarda lo que sí y lo dice.
   if(error&&/tipo_unidad|banco|tarjeta_tienda|avisar_renovacion|dias_aviso_renovacion/i.test(error.message||'')){
     const{tipo_unidad:_u,banco:_b,tarjeta_tienda:_td,avisar_renovacion:_a,dias_aviso_renovacion:_r,...d2}=d;
@@ -6321,7 +6200,8 @@ function llenarCopiarWS(){
 async function copiarDatosCobro(){
   const id=document.getElementById('cfg-copiar-ws')?.value;
   if(!id){toast('Elige de qué negocio copiar','ti-alert-triangle');return}
-  let {data,error}=await sb.from('workspaces').select(CFG_COLS_BASE+',banco,tarjeta_tienda').eq('id',id).single();
+  let {data,error}=await sb.from('workspaces').select(CFG_COLS_BASE+',banco,tarjeta_tienda,whatsapp_cobro').eq('id',id).single();
+  if(error)({data,error}=await sb.from('workspaces').select(CFG_COLS_BASE+',banco,tarjeta_tienda').eq('id',id).single());
   if(error)({data,error}=await sb.from('workspaces').select(CFG_COLS_BASE).eq('id',id).single());
   if(error||!data){toast('No se pudieron leer los datos de ese negocio','ti-alert-triangle');return}
   document.getElementById('cfg-cobrador').value=data.nombre_cobrador||'';
@@ -6330,6 +6210,7 @@ async function copiarDatosCobro(){
   document.getElementById('cfg-oxxo').value=data.tarjeta_oxxo||'';
   const b=document.getElementById('cfg-banco');if(b)b.value=data.banco||'';
   const td=document.getElementById('cfg-tienda');if(td)td.value=data.tarjeta_tienda||'';
+  if(data.whatsapp_cobro!=null){const wa=document.getElementById('cfg-whatsapp');if(wa)wa.value=data.whatsapp_cobro||'';}
   toast('Datos traídos · revísalos y dale Guardar','ti-copy');
 }
 
@@ -6405,7 +6286,9 @@ function generarPDF(inmId,download=true,selPagos=null){
   // activo. No hay un botón extra a propósito: emitir el estado de cuenta ES
   // mandárselo. Lo que se guarda es este snapshot, no una referencia a los
   // pagos, para que el PDF no cambie si mañana se cobra uno de esos cargos.
-  publicarEstadoCuenta(inmId,datosPDF,totalEC,fechaVenc);
+  // Solo al descargarlo: "Ver" es una vista previa del administrador y no debe llegarle
+  // al inquilino un borrador que nadie decidió mandar.
+  if(download)publicarEstadoCuenta(inmId,datosPDF,totalEC,fechaVenc);
 }
 
 // ── Dibujo del estado de cuenta ────────────────────────────────────────────
@@ -7060,8 +6943,13 @@ async function registrarSalidaVigente(){
 // la tarjeta, sus pagos y sus alertas seguían en pantalla hasta recargar. Y como no miraba
 // el error, si el borrado fallaba igual decía "Eliminado" y no pasaba nada.
 async function elimInm(){
-  if(!confirm(`¿Eliminar est${UNI().art==='la'?'a':'e'} ${Us()} y todos sus pagos e historial de contratos?`))return;
   const id=editInmId;if(!id)return;
+  // Borra pagos e historial sin vuelta atrás: se pide escribir el número para que un clic
+  // equivocado no se lleve años de cobranza.
+  const num=String(getInm(id)?.num??'').trim();
+  const resp=prompt(`Esto elimina ${UNI().art==='la'?'esta':'este'} ${Us()} con TODOS sus pagos e historial de contratos, y no se puede deshacer.\n\nPara confirmar, escribe el número: ${num}`);
+  if(resp==null)return;
+  if(resp.trim().toUpperCase()!==num.toUpperCase()){toast('El número no coincide: no se eliminó nada','ti-alert-triangle');return}
   await sb.from('pagos').delete().eq('inmueble_id',id);
   await sb.from('contratos').delete().eq('inmueble_id',id);
   const {error}=await sb.from('inmuebles').delete().eq('id',id);
@@ -7727,7 +7615,7 @@ function finWSLbl(){if(!finGSel.size)return'Todos los negocios';const a=finWS.fi
 // Un pago es de servicio si lo generó un recibo (servicio_id) o si su concepto es
 // agua/luz/gas: eso último cubre los históricos, cuyo servicio_id quedó en NULL cuando
 // se borró el recibo pero el cobro se conservó.
-const FIN_SVC_CONCEPTOS=['agua','luz','gas'];
+const FIN_SVC_CONCEPTOS=['agua','luz','gas','servicios'];
 function finEsSvcPago(p){return !!p.servicio_id||FIN_SVC_CONCEPTOS.includes(p.concepto);}
 // Fuera de la cascada: el depósito es dinero en garantía (no es tuyo), y los servicios
 // son pass-through —te reembolsan lo que adelantaste—. De los servicios sólo entra, del
@@ -7959,6 +7847,7 @@ async function finLoad(){
       finLocal=false;gastosOp=g.data||[];impuestosPag=i.data||[];gastoCats=c.data||[];
     }catch(e){
       finLocal=true;
+      toast('Finanzas sin conexión a la base: los gastos que registres ahora se guardan solo en este navegador','ti-alert-triangle');
       let s={g:[],i:[],c:[]};try{s=JSON.parse(localStorage.getItem(finLSKey()))||s;}catch(e2){}
       gastosOp=s.g||[];impuestosPag=s.i||[];gastoCats=s.c||[];
     }
@@ -8988,7 +8877,7 @@ function previewInquilino(inmId){
       salida:vig?.fecha_salida||inm.fecha_salida},
     negocio:{id:CW.id,nombre:CW.nombre,empresa:cfg.empresa||CW.nombre,direccion:cfg.direccion,
       cobrador:cfg.nombre_cobrador,clabe:cfg.clabe,scotiabank:cfg.cuenta_scotiabank,banco:cfg.banco||'',tienda:cfg.tarjeta_tienda||'',
-      oxxo:cfg.tarjeta_oxxo,tolerancia:getTolerancia(),whatsapp:vig?.tel||inm.tel||''}
+      oxxo:cfg.tarjeta_oxxo,tolerancia:getTolerancia(),whatsapp:cfg.whatsapp_cobro||''}
   };
   // Los mismos cargos que ya tiene cargados la app, filtrados con el criterio
   // de siempre: así la vista previa no puede desviarse de lo real.
@@ -9861,7 +9750,8 @@ async function pCanjear(){
       REVOCADO:'Ese acceso fue dado de baja. Pídele uno nuevo a tu administrador.',
       DUENO_INACTIVO:'El portal de este negocio está desactivado. Contacta a tu administrador.',
       SIN_SESION:'Vuelve a iniciar sesión.',
-      VACIO:'Escribe el código que te mandaron'
+      VACIO:'Escribe el código que te mandaron',
+      DEMASIADOS_INTENTOS:'Demasiados códigos equivocados. Espera una hora e inténtalo de nuevo.'
     }[data?.error]||'No se pudo conectar. Intenta de nuevo.';
     err.style.display='block';return;
   }
@@ -9928,6 +9818,7 @@ async function canjearPendiente(){
   if(error||!data?.ok){
     toast(data?.error==='YA_USADO'?'Esa invitación ya la usó otra cuenta'
          :data?.error==='CODIGO_INVALIDO'?'La invitación ya no es válida'
+         :data?.error==='DEMASIADOS_INTENTOS'?'Demasiados intentos: espera una hora y vuelve a abrir tu invitación'
          :'No pudimos usar tu invitación','ti-alert-triangle');
     return false;
   }
